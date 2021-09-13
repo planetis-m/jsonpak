@@ -32,8 +32,8 @@ const
   opcodeMask = 0b111
 
 template kind*(n: Node): int32 = n.int32 and opcodeMask
-template operand*(n: Node): int32 = n.int32 shr opcodeBits
-template toNode*(kind, operand: int32): Node = Node(operand shl opcodeBits or kind)
+template operand*(n: Node): int32 = n.int32 shr opcodeBits.int32
+template toNode*(kind, operand: int32): Node = Node(operand shl opcodeBits.int32 or kind)
 
 type
   JsonTree = object
@@ -49,7 +49,7 @@ proc nextChild(tree: JsonTree; pos: var int) {.inline.} =
     inc pos, tree.nodes[pos].operand
   else:
     inc pos
-#[
+
 iterator sonsReadonly*(tree: JsonTree; n: NodePos): NodePos =
   var pos = n.int
   assert tree.nodes[pos].kind > opcodeString
@@ -69,34 +69,20 @@ proc parentImpl(tree: JsonTree; n: NodePos): NodePos =
 
 template parent*(n: NodePos): NodePos = parentImpl(tree, n)
 
-proc identIdImpl(tree: JsonTree; n: NodePos): LitId =
-  if n.kind == opcodeIdent:
-    result = n.litId
-  elif n.kind == opcodeSym:
-    result = tree.sh.syms[int n.symId].name
-  else:
-    result = LitId(0)
-
-template identId*(n: NodePos): LitId = identIdImpl(tree, n)
-
-template kind*(n: NodePos): TNodeKind = tree.nodes[n.int].kind
+template kind*(n: NodePos): int32 = tree.nodes[n.int].kind
 template litId*(n: NodePos): LitId = LitId tree.nodes[n.int].operand
-
-template symId*(n: NodePos): SymId = SymId tree.nodes[n.int].operand
 
 proc firstSon*(n: NodePos): NodePos {.inline.} = NodePos(n.int+1)
 
-proc hasPragma*(tree: JsonTree; n: NodePos; pragma: string): bool =
-  let litId = tree.sh.strings.getKeyId(pragma)
+proc hasKey*(tree: JsonTree; n: NodePos; pragma: string): bool =
+  let litId = tree.atoms.getKeyId(pragma)
   if litId == LitId(0):
     return false
-  assert n.kind == opcodePragma
+  assert n.kind == opcodeObject
   for ch0 in sonsReadonly(tree, n):
-    if ch0.kind == opcodeExprColonExpr:
-      if ch0.firstSon.identId == litId:
-        return true
-    elif ch0.identId == litId:
-      return true]#
+    assert ch0.kind == opcodeKeyValuePair
+    if ch0.firstSon.litId == litId:
+      return true
 
 type
   PatchPos = distinct int
@@ -170,3 +156,4 @@ when isMainModule:
     eat(p, tkEof)
   finally:
     close(p)
+  echo hasKey(x, NodePos 6, "key")
