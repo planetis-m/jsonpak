@@ -219,11 +219,14 @@ proc parseFile*(filename: string): JsonTree =
     raise newException(IOError, "cannot read from file: " & filename)
   result = parseJson(stream, filename)
 
+const
+  jsonRoot* = JsonNode 0 ## Each JsonTree's root node has this index.
+
 when isMainModule:
   let data = """{"a": [1, false, {"key": [4, 5]}, 4]}"""
   var x = parseJson(data)
-  assert hasKey(x, JsonNode 0, "a")
-  assert kind(x, JsonNode 0) == JObject
+  assert hasKey(x, jsonRoot, "a")
+  assert kind(x, jsonRoot) == JObject
   assert hasKey(x, JsonNode 6, "key")
   assert kind(x, JsonNode 5) == JBool
   assert getBool(x, JsonNode 5) == false
