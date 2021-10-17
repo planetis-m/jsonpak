@@ -4,9 +4,10 @@ import
 export JsonParsingError, JsonKindError
 
 type
-  JsonNode* = distinct int
+  JsonNode* = distinct int32
 
   Node = distinct int32
+  NodePos = distinct int
   JsonNodeKind* = enum ## possible JSON node types
     JNull,
     JBool,
@@ -16,6 +17,11 @@ type
     JObject,
     JArray
 
+const
+  rootJsonNode* = JsonNode(0)  ## Each `JsonTree` starts from this index.
+  nullJsonNode* = JsonNode(-1) ## Null `JsonNode`
+
+proc `==`*(a, b: NodePos): bool {.borrow.}
 proc `==`*(a, b: JsonNode): bool {.borrow.}
 
 const
@@ -56,38 +62,38 @@ proc nextChild(tree: JsonTree; pos: var int) {.inline.} =
 proc kind*(tree: JsonTree; n: JsonNode): JsonNodeKind {.inline.} =
   JsonNodeKind tree.nodes[n.int].kind
 
-iterator sonsReadonly(tree: JsonTree; n: JsonNode): JsonNode =
+iterator sonsReadonly(tree: JsonTree; n: NodePos): NodePos =
   var pos = n.int
   assert tree.nodes[pos].kind > opcodeString
   let last = pos + tree.nodes[pos].operand
   inc pos
   while pos < last:
-    yield JsonNode(pos)
+    yield NodePos(pos)
     nextChild tree, pos
 
-proc parentImpl(tree: JsonTree; n: JsonNode): JsonNode =
+proc parentImpl(tree: JsonTree; n: NodePos): NodePos =
   # finding the parent of a node is rather easy:
   var pos = n.int - 1
   while pos >= 0 and (isAtom(tree, pos) or (pos + tree.nodes[pos].operand - 1 < n.int)):
     dec pos
   #assert pos >= 0, "node has no parent"
-  result = JsonNode(pos)
+  result = NodePos(pos)
 
-template parent(n: JsonNode): JsonNode = parentImpl(tree, n)
+template parent(n: NodePos): NodePos = parentImpl(tree, n)
 
-proc firstSon(n: JsonNode): JsonNode {.inline.} = JsonNode(n.int+1)
+proc firstSon(n: NodePos): NodePos {.inline.} = NodePos(n.int+1)
 
-template kind(n: JsonNode): int32 = tree.nodes[n.int].kind
-template litId(n: JsonNode): LitId = LitId tree.nodes[n.int].operand
+template kind(n: NodePos): int32 = tree.nodes[n.int].kind
+template litId(n: NodePos): LitId = LitId tree.nodes[n.int].operand
 
-template operand(n: JsonNode): int32 = tree.nodes[n.int].operand
+template operand(n: NodePos): int32 = tree.nodes[n.int].operand
 
 proc hasKey*(tree: JsonTree; n: JsonNode; key: string): bool =
   let litId = tree.atoms.getKeyId(key)
   if litId == LitId(0):
     return false
-  assert n.kind == opcodeObject
-  for ch0 in sonsReadonly(tree, n):
+  assert kind(tree, n) == JObject
+  for ch0 in sonsReadonly(tree, NodePos n):
     assert ch0.kind == opcodeKeyValuePair
     if ch0.firstSon.litId == litId:
       return true
@@ -96,32 +102,32 @@ proc getStr*(tree: JsonTree, n: JsonNode, default: string = ""): string =
   ## Retrieves the string value of a `JString`.
   ##
   ## Returns `default` if `x` is not a `JString`.
-  if n.kind == opcodeString: result = tree.atoms[n.litId]
+  if kind(tree, n) == JString: result = tree.atoms[NodePos(n).litId]
   else: result = default
 
 proc getInt*(tree: JsonTree, n: JsonNode, default: int = 0): int =
   ## Retrieves the int value of a `JInt`.
   ##
   ## Returns `default` if `x` is not a `JInt`, or if `x` is nil.
-  if n.kind == opcodeInt: result = parseInt tree.atoms[n.litId]
+  if kind(tree, n) == JInt: result = parseInt tree.atoms[NodePos(n).litId]
   else: result = default
 
 proc getBiggestInt*(tree: JsonTree, n: JsonNode, default: BiggestInt = 0): BiggestInt =
   ## Retrieves the BiggestInt value of a `JInt`.
   ##
   ## Returns `default` if `x` is not a `JInt`, or if `x` is nil.
-  if n.kind == opcodeInt: result = parseBiggestInt tree.atoms[n.litId]
+  if kind(tree, n) == JInt: result = parseBiggestInt tree.atoms[NodePos(n).litId]
   else: result = default
 
 proc getFloat*(tree: JsonTree, n: JsonNode, default: float = 0.0): float =
   ## Retrieves the float value of a `JFloat`.
   ##
   ## Returns `default` if `x` is not a `JFloat` or `JInt`, or if `x` is nil.
-  case n.kind
-  of opcodeFloat:
-    result = parseFloat tree.atoms[n.litId]
-  of opcodeInt:
-    result = float(parseBiggestInt tree.atoms[n.litId])
+  case kind(tree, n)
+  of JFloat:
+    result = parseFloat tree.atoms[NodePos(n).litId]
+  of JInt:
+    result = float(parseBiggestInt tree.atoms[NodePos(n).litId])
   else:
     result = default
 
@@ -129,7 +135,7 @@ proc getBool*(tree: JsonTree, n: JsonNode, default: bool = false): bool =
   ## Retrieves the bool value of a `JBool`.
   ##
   ## Returns `default` if `n` is not a `JBool`, or if `n` is nil.
-  if n.kind == opcodeBool: result = n.operand == 1
+  if kind(tree, n) == JBool: result = NodePos(n).operand == 1
   else: result = default
 
 type
@@ -219,14 +225,11 @@ proc parseFile*(filename: string): JsonTree =
     raise newException(IOError, "cannot read from file: " & filename)
   result = parseJson(stream, filename)
 
-const
-  jsonRoot* = JsonNode 0 ## Each JsonTree's root node has this index.
-
 when isMainModule:
   let data = """{"a": [1, false, {"key": [4, 5]}, 4]}"""
   var x = parseJson(data)
-  assert hasKey(x, jsonRoot, "a")
-  assert kind(x, jsonRoot) == JObject
+  assert hasKey(x, rootJsonNode, "a")
+  assert kind(x, rootJsonNode) == JObject
   assert hasKey(x, JsonNode 6, "key")
   assert kind(x, JsonNode 5) == JBool
   assert getBool(x, JsonNode 5) == false
