@@ -139,7 +139,7 @@ proc getBool*(tree: JsonTree, n: JsonNode, default: bool = false): bool =
   else: result = default
 
 type
-  PatchPos = distinct int
+  PatchPos = distinct int32
 
 proc prepare(tree: var JsonTree; kind: int32): PatchPos =
   result = PatchPos tree.nodes.len
@@ -221,11 +221,11 @@ proc parseJson(tree: var JsonTree; p: var JsonParser) =
           discard getTok(p)
           if insertPos.len == 0: break
         else:
-          raiseParseErr(p, "[")
+          raiseParseErr(p, "{")
         if p.tok == tkComma:
           discard getTok(p)
       else:
-        raiseParseErr(p, "{ or [")
+        raiseParseErr(p, "{")
   of tkError, tkCurlyRi, tkBracketRi, tkColon, tkComma, tkEof:
     raiseParseErr(p, "{")
 
@@ -257,7 +257,8 @@ proc parseFile*(filename: string): JsonTree =
 
 when isMainModule:
   let data = """{"a": [1, false, {"key": [4, 5]}, 4]}"""
-  var x = parseJson(data)
+  let x = parseJson(data)
+  assert x.atoms.len == 5
   assert hasKey(x, rootJsonNode, "a")
   assert x.nodes[1].kind == opcodeKeyValuePair
   assert x.nodes[1].operand == 12
