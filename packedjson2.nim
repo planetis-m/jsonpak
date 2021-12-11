@@ -18,8 +18,8 @@ type
     JArray
 
 const
-  rootJsonNode* = JsonNode(0)  ## Each `JsonTree` starts from this index.
-  nullJsonNode* = JsonNode(-1) ## Null `JsonNode`
+  jsRoot* = JsonNode(0)  ## Each `JsonTree` starts from this index.
+  jsNull* = JsonNode(-1) ## Null `JsonNode`
 
 proc `==`*(a, b: NodePos): bool {.borrow.}
 proc `==`*(a, b: JsonNode): bool {.borrow.}
@@ -259,11 +259,13 @@ when isMainModule:
   let data = """{"a": [1, false, {"key": [4, 5]}, 4]}"""
   let x = parseJson(data)
   assert x.atoms.len == 5
-  assert hasKey(x, rootJsonNode, "a")
+  assert kind(x, jsRoot) == JObject
+  assert hasKey(x, jsRoot, "a")
   assert x.nodes[1].kind == opcodeKeyValuePair
   assert x.nodes[1].operand == 12
-  assert kind(x, rootJsonNode) == JObject
   assert hasKey(x, JsonNode 6, "key")
+  assert x.nodes[7].kind == opcodeKeyValuePair
+  assert x.nodes[7].operand == 5
   assert kind(x, JsonNode 5) == JBool
   assert getBool(x, JsonNode 5) == false
   assert kind(x, JsonNode 4) == JInt
