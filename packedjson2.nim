@@ -92,7 +92,7 @@ proc hasKey*(tree: JsonTree; n: JsonNode; key: string): bool =
   let litId = tree.atoms.getKeyId(key)
   if litId == LitId(0):
     return false
-  assert kind(tree, n) == JObject
+  assert kind(NodePos n) == opcodeObject
   for ch0 in sonsReadonly(tree, NodePos n):
     assert ch0.kind == opcodeKeyValuePair
     if ch0.firstSon.litId == litId:
@@ -151,51 +151,86 @@ proc patch(tree: var JsonTree; pos: PatchPos) =
   let distance = int32(tree.nodes.len - pos)
   tree.nodes[pos] = toNode(tree.nodes[pos].int32, distance)
 
-proc parseJson(x: var JsonTree; p: var JsonParser) =
+proc parseJson(tree: var JsonTree; p: var JsonParser) =
   case p.tok
   of tkString:
-    x.nodes.add toNode(opcodeString, int32 getOrIncl(x.atoms, p.a))
+    tree.nodes.add toNode(opcodeString, int32 getOrIncl(tree.atoms, p.a))
     discard getTok(p)
   of tkInt:
-    x.nodes.add toNode(opcodeInt, int32 getOrIncl(x.atoms, p.a))
+    tree.nodes.add toNode(opcodeInt, int32 getOrIncl(tree.atoms, p.a))
     discard getTok(p)
   of tkFloat:
-    x.nodes.add toNode(opcodeFloat, int32 getOrIncl(x.atoms, p.a))
+    tree.nodes.add toNode(opcodeFloat, int32 getOrIncl(tree.atoms, p.a))
     discard getTok(p)
   of tkTrue:
-    x.nodes.add Node opcodeTrue
+    tree.nodes.add Node opcodeTrue
     discard getTok(p)
   of tkFalse:
-    x.nodes.add Node opcodeFalse
+    tree.nodes.add Node opcodeFalse
     discard getTok(p)
   of tkNull:
-    x.nodes.add Node opcodeNull
+    tree.nodes.add Node opcodeNull
     discard getTok(p)
-  of tkCurlyLe:
-    let patchPos = x.prepare(opcodeObject)
-    discard getTok(p)
-    while p.tok != tkCurlyRi:
-      if p.tok != tkString:
-        raiseParseErr(p, "string literal as key")
-      let patchPos = x.prepare(opcodeKeyValuePair)
-      x.nodes.add toNode(opcodeString, int32 getOrIncl(x.atoms, p.a))
-      discard getTok(p)
-      eat(p, tkColon)
-      parseJson(x, p)
-      x.patch patchPos
-      if p.tok != tkComma: break
-      discard getTok(p)
-    eat(p, tkCurlyRi)
-    x.patch patchPos
-  of tkBracketLe:
-    let patchPos = x.prepare(opcodeArray)
-    discard getTok(p)
-    while p.tok != tkBracketRi:
-      parseJson(x, p)
-      if p.tok != tkComma: break
-      discard getTok(p)
-    eat(p, tkBracketRi)
-    x.patch patchPos
+  of tkCurlyLe, tkBracketLe:
+    var insertPos: seq[PatchPos] = @[]
+    while true:
+      if insertPos.len > 0 and
+          kind(NodePos insertPos[^1]) == opcodeObject and p.tok != tkCurlyRi:
+        if p.tok != tkString:
+          raiseParseErr(p, "string literal as key")
+        else:
+          let patchPos = tree.prepare(opcodeKeyValuePair)
+          tree.nodes.add toNode(opcodeString, int32 getOrIncl(tree.atoms, p.a))
+          insertPos.add patchPos
+          discard getTok(p)
+          eat(p, tkColon)
+
+      template putVal() =
+        if insertPos.len > 0:
+          if kind(NodePos insertPos[^1]) == opcodeKeyValuePair:
+            let patchPos = insertPos.pop()
+            tree.patch patchPos
+
+      case p.tok
+      of tkString, tkInt, tkFloat, tkTrue, tkFalse, tkNull:
+        # this recursion for atoms is fine and could easily be avoided
+        # since it deals with atoms only.
+        parseJson(tree, p)
+        putVal()
+        if p.tok == tkComma:
+          discard getTok(p)
+      of tkCurlyLe:
+        let patchPos = tree.prepare(opcodeObject)
+        putVal()
+        insertPos.add patchPos
+        discard getTok(p)
+      of tkBracketLe:
+        let patchPos = tree.prepare(opcodeArray)
+        putVal()
+        insertPos.add patchPos
+        discard getTok(p)
+      of tkCurlyRi:
+        if insertPos.len > 0 and kind(NodePos insertPos[^1]) == opcodeObject:
+          let patchPos = insertPos.pop()
+          tree.patch patchPos
+          discard getTok(p)
+          if insertPos.len == 0: break
+        else:
+          raiseParseErr(p, "{")
+        if p.tok == tkComma:
+          discard getTok(p)
+      of tkBracketRi:
+        if insertPos.len > 0 and kind(NodePos insertPos[^1]) == opcodeArray:
+          let patchPos = insertPos.pop()
+          tree.patch patchPos
+          discard getTok(p)
+          if insertPos.len == 0: break
+        else:
+          raiseParseErr(p, "[")
+        if p.tok == tkComma:
+          discard getTok(p)
+      else:
+        raiseParseErr(p, "{ or [")
   of tkError, tkCurlyRi, tkBracketRi, tkColon, tkComma, tkEof:
     raiseParseErr(p, "{")
 
