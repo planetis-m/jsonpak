@@ -188,8 +188,7 @@ proc parseJson(tree: var JsonTree; p: var JsonParser) =
       template putVal() =
         if insertPos.len > 0:
           if kind(NodePos insertPos[^1]) == opcodeKeyValuePair:
-            let patchPos = insertPos.pop()
-            tree.patch patchPos
+            tree.patch insertPos.pop()
 
       case p.tok
       of tkString, tkInt, tkFloat, tkTrue, tkFalse, tkNull:
@@ -200,19 +199,15 @@ proc parseJson(tree: var JsonTree; p: var JsonParser) =
         if p.tok == tkComma:
           discard getTok(p)
       of tkCurlyLe:
-        let patchPos = tree.prepare(opcodeObject)
-        putVal()
-        insertPos.add patchPos
+        insertPos.add tree.prepare(opcodeObject)
         discard getTok(p)
       of tkBracketLe:
-        let patchPos = tree.prepare(opcodeArray)
-        putVal()
-        insertPos.add patchPos
+        insertPos.add tree.prepare(opcodeArray)
         discard getTok(p)
       of tkCurlyRi:
         if insertPos.len > 0 and kind(NodePos insertPos[^1]) == opcodeObject:
-          let patchPos = insertPos.pop()
-          tree.patch patchPos
+          tree.patch insertPos.pop()
+          putVal()
           discard getTok(p)
           if insertPos.len == 0: break
         else:
@@ -221,8 +216,8 @@ proc parseJson(tree: var JsonTree; p: var JsonParser) =
           discard getTok(p)
       of tkBracketRi:
         if insertPos.len > 0 and kind(NodePos insertPos[^1]) == opcodeArray:
-          let patchPos = insertPos.pop()
-          tree.patch patchPos
+          tree.patch insertPos.pop()
+          putVal()
           discard getTok(p)
           if insertPos.len == 0: break
         else:
@@ -264,9 +259,13 @@ when isMainModule:
   let data = """{"a": [1, false, {"key": [4, 5]}, 4]}"""
   var x = parseJson(data)
   assert hasKey(x, rootJsonNode, "a")
+  assert x.nodes[1].kind == opcodeKeyValuePair
+  assert x.nodes[1].operand == 12
   assert kind(x, rootJsonNode) == JObject
   assert hasKey(x, JsonNode 6, "key")
   assert kind(x, JsonNode 5) == JBool
   assert getBool(x, JsonNode 5) == false
   assert kind(x, JsonNode 4) == JInt
   assert getInt(x, JsonNode 4) == 1
+  assert kind(x, JsonNode 11) == JInt
+  assert getInt(x, JsonNode 11) == 5
