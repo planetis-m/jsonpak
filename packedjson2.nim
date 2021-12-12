@@ -50,6 +50,8 @@ type
     nodes: seq[Node]
     atoms: BiTable[string]
 
+proc isEmpty*(tree: JsonTree): bool {.inline.} = tree.nodes.len == 0
+
 proc isAtom(tree: JsonTree; pos: int): bool {.inline.} =
   tree.nodes[pos].kind <= opcodeString
 
@@ -338,6 +340,7 @@ when isMainModule:
   block:
     let data = """{"a": [1, false, {"key": [4, 5]}, 4]}"""
     let x = parseJson(data)
+    assert not x.isEmpty
     assert x.atoms.len == 5
     assert kind(x, jsRoot) == JObject
     assert get(x, jsRoot, "a") == JsonNode 3
@@ -361,6 +364,7 @@ when isMainModule:
   block:
     let data = """{"a": {"key": [4, [1, 2, 3]]}}"""
     let x = parseJson(data)
+    assert not x.isEmpty
     assert x.atoms.len == 6
     assert kind(x, jsRoot) == JObject
     assert get(x, jsRoot, "a", "key") == JsonNode 6
