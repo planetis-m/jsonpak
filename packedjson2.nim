@@ -134,10 +134,40 @@ proc hasKey*(tree: JsonTree, n: JsonNode, key: string): bool =
   ## Checks if `key` exists in `n`.
   result = contains(tree, n, key)
 
-#proc get*(tree: JsonTree, n: JsonNode, keys: varargs[string]): JsonNode =
+proc get*(tree: JsonTree, n: JsonNode, keys: varargs[string]): JsonNode =
+  ## Traverses the tree and gets the given value. If any of the
+  ## keys do not exist, returns ``JNull``. Also returns ``JNull`` if one of the
+  ## intermediate data structures is not an object.
+  result = n
+  for kk in keys:
+    if kind(tree, result) != JObject: return jsNull
+    block searchLoop:
+      let litId = tree.atoms.getKeyId(kk)
+      if litId == LitId(0):
+        return jsNull
+      for ch0 in sonsReadonly(tree, NodePos result):
+        assert ch0.kind == opcodeKeyValuePair
+        if ch0.firstSon.litId == litId:
+          result = JsonNode(ch0.int+2) # guaranteed that firstSon isAtom
+          break searchLoop
+      return jsNull
 
-#proc get*(tree: JsonTree, n: JsonNode, indexes: varargs[int]): JsonNode =
-
+proc get*(tree: JsonTree, n: JsonNode, indexes: varargs[int]): JsonNode =
+  ## Traverses the tree and gets the given value. If any of the
+  ## indexes do not exist, returns ``JNull``. Also returns ``JNull`` if one of the
+  ## intermediate data structures is not an array.
+  result = n
+  for j in indexes:
+    if kind(tree, result) != JArray: return jsNull
+    echo NodePos(n).operand
+    block searchLoop:
+      var i = j
+      for ch0 in sonsReadonly(tree, NodePos result):
+        if i == 0:
+          result = JsonNode ch0
+          break searchLoop
+        dec i
+      return jsNull
 
 proc getStr*(tree: JsonTree, n: JsonNode, default: string = ""): string =
   ## Retrieves the string value of a `JString`.
@@ -298,23 +328,33 @@ proc parseFile*(filename: string): JsonTree =
   result = parseJson(stream, filename)
 
 when isMainModule:
-  let data = """{"a": [1, false, {"key": [4, 5]}, 4]}"""
-  let x = parseJson(data)
-  assert x.atoms.len == 5
-  assert kind(x, jsRoot) == JObject
-  assert get(x, jsRoot, "a") == JsonNode 3
-  assert hasKey(x, jsRoot, "a")
-  assert x.nodes[1].kind == opcodeKeyValuePair
-  assert x.nodes[1].operand == 12
-  assert get(x, JsonNode 6, "key") == JsonNode 9
-  assert hasKey(x, JsonNode 6, "key")
-  assert x.nodes[7].kind == opcodeKeyValuePair
-  assert x.nodes[7].operand == 5
-  assert kind(x, JsonNode 9) == JArray
-  assert get(x, JsonNode 9, 1) == JsonNode 11
-  assert kind(x, JsonNode 5) == JBool
-  assert getBool(x, JsonNode 5) == false
-  assert kind(x, JsonNode 4) == JInt
-  assert getInt(x, JsonNode 4) == 1
-  assert kind(x, JsonNode 11) == JInt
-  assert getInt(x, JsonNode 11) == 5
+  block:
+    let data = """{"a": [1, false, {"key": [4, 5]}, 4]}"""
+    let x = parseJson(data)
+    assert x.atoms.len == 5
+    assert kind(x, jsRoot) == JObject
+    assert get(x, jsRoot, "a") == JsonNode 3
+    assert hasKey(x, jsRoot, "a")
+    assert x.nodes[1].kind == opcodeKeyValuePair
+    assert x.nodes[1].operand == 12
+    assert get(x, JsonNode 6, "key") == JsonNode 9
+    assert hasKey(x, JsonNode 6, "key")
+    assert x.nodes[7].kind == opcodeKeyValuePair
+    assert x.nodes[7].operand == 5
+    assert kind(x, JsonNode 9) == JArray
+    assert get(x, JsonNode 9, 1) == JsonNode 11
+    assert kind(x, JsonNode 5) == JBool
+    assert getBool(x, JsonNode 5) == false
+    assert kind(x, JsonNode 4) == JInt
+    assert getInt(x, JsonNode 4) == 1
+    assert kind(x, JsonNode 11) == JInt
+    assert getInt(x, JsonNode 11) == 5
+    assert get(x, jsRoot, "a", "key") == jsNull
+    assert get(x, JsonNode 3, 2) == JsonNode 6
+  block:
+    let data = """{"a": {"key": [4, [1, 2, 3]]}}"""
+    let x = parseJson(data)
+    assert x.atoms.len == 6
+    assert kind(x, jsRoot) == JObject
+    assert get(x, jsRoot, "a", "key") == JsonNode 6
+    assert get(x, JsonNode 6, 1, 2) == JsonNode 11
