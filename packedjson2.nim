@@ -21,9 +21,9 @@ const
   jsRoot* = JsonNode(0)  ## Each `JsonTree` starts from this index.
   jsNull* = JsonNode(-1) ## Null `JsonNode`
 
-proc `==`*(a, b: JsonNode): bool {.borrow.}
 proc `<`*(a, b: JsonNode): bool {.borrow.}
 proc `<=`*(a, b: JsonNode): bool {.borrow.}
+proc `==`*(a, b: JsonNode): bool {.borrow.}
 
 const
   opcodeBits = 3
@@ -89,6 +89,19 @@ template litId(n: NodePos): LitId = LitId tree.nodes[n.int].operand
 
 template operand(n: NodePos): int32 = tree.nodes[n.int].operand
 
+iterator items*(tree: JsonTree, n: JsonNode): JsonNode =
+  ## Iterator for the items of `x`. `x` has to be a JArray.
+  assert kind(tree, n) == JArray
+  for ch0 in sonsReadonly(tree, NodePos n):
+    yield JsonNode ch0
+
+iterator pairs*(tree: JsonTree, n: JsonNode): (lent string, JsonNode) =
+  ## Iterator for the pairs of `x`. `x` has to be a JObject.
+  for ch0 in sonsReadonly(tree, NodePos n):
+    assert ch0.kind == opcodeKeyValuePair
+    assert hasLitId(tree.atoms, ch0.firstSon.litId)
+    yield (tree.atoms[ch0.firstSon.litId], JsonNode(ch0.int+2))
+
 proc rawGet(tree: JsonTree, n: JsonNode, name: string): JsonNode =
   assert kind(tree, n) == JObject
   let litId = tree.atoms.getKeyId(name)
@@ -118,10 +131,9 @@ proc get*(tree: JsonTree, n: JsonNode, index: int): JsonNode =
   ## Gets the node at `index` in an Array. Result is undefined if `index`
   ## is out of bounds, but as long as array bound checks are enabled it will
   ## result in an exception.
-  assert kind(tree, n) == JArray
   var i = index
-  for ch0 in sonsReadonly(tree, NodePos n):
-    if i == 0: return JsonNode ch0
+  for x in items(tree, n):
+    if i == 0: return x
     dec i
   raiseIndexDefect()
 
@@ -159,12 +171,11 @@ proc get*(tree: JsonTree, n: JsonNode, indexes: varargs[int]): JsonNode =
   result = n
   for j in indexes:
     if kind(tree, result) != JArray: return jsNull
-    echo NodePos(n).operand
     block searchLoop:
       var i = j
-      for ch0 in sonsReadonly(tree, NodePos result):
+      for x in items(tree, result):
         if i == 0:
-          result = JsonNode ch0
+          result = x
           break searchLoop
         dec i
       return jsNull
@@ -358,3 +369,6 @@ when isMainModule:
     assert kind(x, jsRoot) == JObject
     assert get(x, jsRoot, "a", "key") == JsonNode 6
     assert get(x, JsonNode 6, 1, 2) == JsonNode 11
+    for k, v in pairs(x, jsRoot):
+      assert k == "a"
+      assert kind(x, v) == JObject
