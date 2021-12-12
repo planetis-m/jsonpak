@@ -21,8 +21,9 @@ const
   jsRoot* = JsonNode(0)  ## Each `JsonTree` starts from this index.
   jsNull* = JsonNode(-1) ## Null `JsonNode`
 
-proc `==`*(a, b: NodePos): bool {.borrow.}
 proc `==`*(a, b: JsonNode): bool {.borrow.}
+proc `<`*(a, b: JsonNode): bool {.borrow.}
+proc `<=`*(a, b: JsonNode): bool {.borrow.}
 
 const
   opcodeBits = 3
@@ -88,15 +89,53 @@ template litId(n: NodePos): LitId = LitId tree.nodes[n.int].operand
 
 template operand(n: NodePos): int32 = tree.nodes[n.int].operand
 
-proc hasKey*(tree: JsonTree; n: JsonNode; key: string): bool =
-  let litId = tree.atoms.getKeyId(key)
+proc rawGet(tree: JsonTree, n: JsonNode, name: string): JsonNode =
+  assert kind(tree, n) == JObject
+  let litId = tree.atoms.getKeyId(name)
   if litId == LitId(0):
-    return false
-  assert kind(NodePos n) == opcodeObject
+    return jsNull
   for ch0 in sonsReadonly(tree, NodePos n):
     assert ch0.kind == opcodeKeyValuePair
     if ch0.firstSon.litId == litId:
-      return true
+      return JsonNode(ch0.int+2) # guaranteed that firstSon isAtom
+
+proc raiseKeyError(name: string) {.noinline, noreturn.} =
+  raise newException(KeyError, "key not found in object: " & name)
+
+proc get*(tree: JsonTree, n: JsonNode, name: string): JsonNode =
+  ## Gets a field from a `JObject`.
+  ## If the value at `name` does not exist, raises KeyError.
+  result = rawGet(tree, n, name)
+  if result < jsRoot:
+    raiseKeyError(name)
+
+proc raiseIndexDefect() {.noinline, noreturn.} =
+  raise newException(IndexDefect, "index out of bounds")
+
+proc get*(tree: JsonTree, n: JsonNode, index: int): JsonNode =
+  ## Gets the node at `index` in an Array. Result is undefined if `index`
+  ## is out of bounds, but as long as array bound checks are enabled it will
+  ## result in an exception.
+  assert kind(tree, n) == JArray
+  var i = index
+  for ch0 in sonsReadonly(tree, NodePos n):
+    if i == 0: return JsonNode ch0
+    dec i
+  raiseIndexDefect()
+
+proc contains*(tree: JsonTree, n: JsonNode, key: string): bool =
+  ## Checks if `key` exists in `n`.
+  let x = rawGet(tree, n, key)
+  result = x >= jsRoot
+
+proc hasKey*(tree: JsonTree, n: JsonNode, key: string): bool =
+  ## Checks if `key` exists in `n`.
+  result = contains(tree, n, key)
+
+#proc get*(tree: JsonTree, n: JsonNode, keys: varargs[string]): JsonNode =
+
+#proc get*(tree: JsonTree, n: JsonNode, indexes: varargs[int]): JsonNode =
+
 
 proc getStr*(tree: JsonTree, n: JsonNode, default: string = ""): string =
   ## Retrieves the string value of a `JString`.
@@ -261,12 +300,16 @@ when isMainModule:
   let x = parseJson(data)
   assert x.atoms.len == 5
   assert kind(x, jsRoot) == JObject
+  assert get(x, jsRoot, "a") == JsonNode 3
   assert hasKey(x, jsRoot, "a")
   assert x.nodes[1].kind == opcodeKeyValuePair
   assert x.nodes[1].operand == 12
+  assert get(x, JsonNode 6, "key") == JsonNode 9
   assert hasKey(x, JsonNode 6, "key")
   assert x.nodes[7].kind == opcodeKeyValuePair
   assert x.nodes[7].operand == 5
+  assert kind(x, JsonNode 9) == JArray
+  assert get(x, JsonNode 9, 1) == JsonNode 11
   assert kind(x, JsonNode 5) == JBool
   assert getBool(x, JsonNode 5) == false
   assert kind(x, JsonNode 4) == JInt
