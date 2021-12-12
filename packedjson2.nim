@@ -99,11 +99,11 @@ iterator pairs*(tree: JsonTree, n: JsonNode): (lent string, JsonNode) =
   ## Iterator for the pairs of `x`. `x` has to be a JObject.
   for ch0 in sonsReadonly(tree, NodePos n):
     assert ch0.kind == opcodeKeyValuePair
-    assert hasLitId(tree.atoms, ch0.firstSon.litId)
-    yield (tree.atoms[ch0.firstSon.litId], JsonNode(ch0.int+2))
+    let litId = ch0.firstSon.litId
+    assert hasLitId(tree.atoms, litId)
+    yield (tree.atoms[litId], JsonNode(ch0.int+2))
 
 proc rawGet(tree: JsonTree, n: JsonNode, name: string): JsonNode =
-  assert kind(tree, n) == JObject
   let litId = tree.atoms.getKeyId(name)
   if litId == LitId(0):
     return jsNull
@@ -120,6 +120,7 @@ proc raiseKeyError(name: string) {.noinline, noreturn.} =
 proc get*(tree: JsonTree, n: JsonNode, name: string): JsonNode =
   ## Gets a field from a `JObject`.
   ## If the value at `name` does not exist, raises KeyError.
+  assert kind(tree, n) == JObject
   result = rawGet(tree, n, name)
   if result.isNil:
     raiseKeyError(name)
@@ -139,6 +140,7 @@ proc get*(tree: JsonTree, n: JsonNode, index: int): JsonNode =
 
 proc contains*(tree: JsonTree, n: JsonNode, key: string): bool =
   ## Checks if `key` exists in `n`.
+  assert kind(tree, n) == JObject
   let x = rawGet(tree, n, key)
   result = x >= jsRoot
 
@@ -153,16 +155,8 @@ proc get*(tree: JsonTree, n: JsonNode, keys: varargs[string]): JsonNode =
   result = n
   for kk in keys:
     if kind(tree, result) != JObject: return jsNull
-    block searchLoop:
-      let litId = tree.atoms.getKeyId(kk)
-      if litId == LitId(0):
-        return jsNull
-      for ch0 in sonsReadonly(tree, NodePos result):
-        assert ch0.kind == opcodeKeyValuePair
-        if ch0.firstSon.litId == litId:
-          result = JsonNode(ch0.int+2) # guaranteed that firstSon isAtom
-          break searchLoop
-      return jsNull
+    result = rawGet(tree, result, kk)
+    if result.isNil: return
 
 proc get*(tree: JsonTree, n: JsonNode, indexes: varargs[int]): JsonNode =
   ## Traverses the tree and gets the given value. If any of the
@@ -372,3 +366,9 @@ when isMainModule:
     for k, v in pairs(x, jsRoot):
       assert k == "a"
       assert kind(x, v) == JObject
+
+    let v = fromJson x:
+      get("a", "key")
+      get(1, 2)
+      getInt()
+    assert traverse(x, "a", 2, "key", 1, getInt(-1)) == 5
