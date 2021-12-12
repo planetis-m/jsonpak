@@ -102,27 +102,28 @@ proc getStr*(tree: JsonTree, n: JsonNode, default: string = ""): string =
   ## Retrieves the string value of a `JString`.
   ##
   ## Returns `default` if `x` is not a `JString`.
-  if kind(tree, n) == JString: result = tree.atoms[NodePos(n).litId]
-  else: result = default
+  if n == jsNull or kind(tree, n) != JString: result = default
+  else: result = tree.atoms[NodePos(n).litId]
 
 proc getInt*(tree: JsonTree, n: JsonNode, default: int = 0): int =
   ## Retrieves the int value of a `JInt`.
   ##
   ## Returns `default` if `x` is not a `JInt`, or if `x` is nil.
-  if kind(tree, n) == JInt: result = parseInt tree.atoms[NodePos(n).litId]
-  else: result = default
+  if n == jsNull or kind(tree, n) != JInt: result = default
+  else: result = parseInt tree.atoms[NodePos(n).litId]
 
 proc getBiggestInt*(tree: JsonTree, n: JsonNode, default: BiggestInt = 0): BiggestInt =
   ## Retrieves the BiggestInt value of a `JInt`.
   ##
   ## Returns `default` if `x` is not a `JInt`, or if `x` is nil.
-  if kind(tree, n) == JInt: result = parseBiggestInt tree.atoms[NodePos(n).litId]
-  else: result = default
+  if n == jsNull or kind(tree, n) != JInt: result = default
+  else: result = parseBiggestInt tree.atoms[NodePos(n).litId]
 
 proc getFloat*(tree: JsonTree, n: JsonNode, default: float = 0.0): float =
   ## Retrieves the float value of a `JFloat`.
   ##
   ## Returns `default` if `x` is not a `JFloat` or `JInt`, or if `x` is nil.
+  if n == jsNull: return default
   case kind(tree, n)
   of JFloat:
     result = parseFloat tree.atoms[NodePos(n).litId]
@@ -135,8 +136,8 @@ proc getBool*(tree: JsonTree, n: JsonNode, default: bool = false): bool =
   ## Retrieves the bool value of a `JBool`.
   ##
   ## Returns `default` if `n` is not a `JBool`, or if `n` is nil.
-  if kind(tree, n) == JBool: result = NodePos(n).operand == 1
-  else: result = default
+  if n == jsNull or kind(tree, n) != JBool: result = default
+  else: result = NodePos(n).operand == 1
 
 type
   PatchPos = distinct int32
