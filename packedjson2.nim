@@ -86,17 +86,21 @@ proc firstSon(n: NodePos): NodePos {.inline.} = NodePos(n.int+1)
 
 template kind(n: NodePos): int32 = tree.nodes[n.int].kind
 template litId(n: NodePos): LitId = LitId tree.nodes[n.int].operand
-
 template operand(n: NodePos): int32 = tree.nodes[n.int].operand
+
+proc isNil*(n: JsonNode): bool {.inline.} = n < jsRoot
 
 iterator items*(tree: JsonTree, n: JsonNode): JsonNode =
   ## Iterator for the items of `x`. `x` has to be a JArray.
+  assert not n.isNil
   assert kind(tree, n) == JArray
   for ch0 in sonsReadonly(tree, NodePos n):
     yield JsonNode ch0
 
 iterator pairs*(tree: JsonTree, n: JsonNode): (lent string, JsonNode) =
   ## Iterator for the pairs of `x`. `x` has to be a JObject.
+  assert not n.isNil
+  assert kind(tree, n) == JObject
   for ch0 in sonsReadonly(tree, NodePos n):
     assert ch0.kind == opcodeKeyValuePair
     let litId = ch0.firstSon.litId
@@ -104,6 +108,8 @@ iterator pairs*(tree: JsonTree, n: JsonNode): (lent string, JsonNode) =
     yield (tree.atoms[litId], JsonNode(ch0.int+2))
 
 proc rawGet(tree: JsonTree, n: JsonNode, name: string): JsonNode =
+  assert not n.isNil
+  assert kind(tree, n) == JObject
   let litId = tree.atoms.getKeyId(name)
   if litId == LitId(0):
     return jsNull
@@ -112,15 +118,12 @@ proc rawGet(tree: JsonTree, n: JsonNode, name: string): JsonNode =
     if ch0.firstSon.litId == litId:
       return JsonNode(ch0.int+2) # guaranteed that firstSon isAtom
 
-proc isNil*(n: JsonNode): bool {.inline.} = n < jsRoot
-
 proc raiseKeyError(name: string) {.noinline, noreturn.} =
   raise newException(KeyError, "key not found in object: " & name)
 
 proc get*(tree: JsonTree, n: JsonNode, name: string): JsonNode =
   ## Gets a field from a `JObject`.
   ## If the value at `name` does not exist, raises KeyError.
-  assert kind(tree, n) == JObject
   result = rawGet(tree, n, name)
   if result.isNil:
     raiseKeyError(name)
@@ -140,7 +143,6 @@ proc get*(tree: JsonTree, n: JsonNode, index: int): JsonNode =
 
 proc contains*(tree: JsonTree, n: JsonNode, key: string): bool =
   ## Checks if `key` exists in `n`.
-  assert kind(tree, n) == JObject
   let x = rawGet(tree, n, key)
   result = x >= jsRoot
 
@@ -154,7 +156,7 @@ proc get*(tree: JsonTree, n: JsonNode, keys: varargs[string]): JsonNode =
   ## intermediate data structures is not an object.
   result = n
   for kk in keys:
-    if kind(tree, result) != JObject: return jsNull
+    if result.isNil or kind(tree, result) != JObject: return jsNull
     result = rawGet(tree, result, kk)
     if result.isNil: return
 
@@ -164,7 +166,7 @@ proc get*(tree: JsonTree, n: JsonNode, indexes: varargs[int]): JsonNode =
   ## intermediate data structures is not an array.
   result = n
   for j in indexes:
-    if kind(tree, result) != JArray: return jsNull
+    if result.isNil or kind(tree, result) != JArray: return jsNull
     block searchLoop:
       var i = j
       for x in items(tree, result):
@@ -367,8 +369,8 @@ when isMainModule:
       assert k == "a"
       assert kind(x, v) == JObject
 
-    let v = fromJson x:
-      get("a", "key")
-      get(1, 2)
-      getInt()
-    assert traverse(x, "a", 2, "key", 1, getInt(-1)) == 5
+    #let v = fromJson x:
+      #get("a", "key")
+      #get(1, 2)
+      #getInt()
+    #assert traverse(x, "a", 2, "key", 1, getInt(-1)) == 5
