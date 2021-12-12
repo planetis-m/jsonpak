@@ -157,8 +157,9 @@ proc get*(tree: JsonTree, n: JsonNode, keys: varargs[string]): JsonNode =
   ## keys do not exist, returns ``JNull``. Also returns ``JNull`` if one of the
   ## intermediate data structures is not an object.
   result = n
+  if result.isNil: return
   for kk in keys:
-    if result.isNil or kind(tree, result) != JObject: return jsNull
+    if kind(tree, result) != JObject: return jsNull
     result = rawGet(tree, result, kk)
     if result.isNil: return
 
@@ -167,8 +168,9 @@ proc get*(tree: JsonTree, n: JsonNode, indexes: varargs[int]): JsonNode =
   ## indexes do not exist, returns ``JNull``. Also returns ``JNull`` if one of the
   ## intermediate data structures is not an array.
   result = n
+  if result.isNil: return
   for j in indexes:
-    if result.isNil or kind(tree, result) != JArray: return jsNull
+    if kind(tree, result) != JArray: return jsNull
     block searchLoop:
       var i = j
       for x in items(tree, result):
@@ -398,6 +400,8 @@ when isMainModule:
     assert get(x, JsonNode 3, 2) == JsonNode 6
     assert traverse(x, jsRoot, "a", 2, "key", 1) == JsonNode 11
     #assert %.get(x, JsonNode 9, 1).getInt() == 5
+    assert get(x, jsRoot, "b", "key") == jsNull
+    assert get(x, JsonNode 3, 2, 1) == jsNull
 
   block:
     let data = """{"a": {"key": [4, [1, 2, 3]]}}"""
