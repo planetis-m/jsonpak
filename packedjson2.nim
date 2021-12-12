@@ -1,6 +1,6 @@
 import
   packedjson2 / bitabs,
-  std / [parsejson, streams, strutils]
+  std / [parsejson, streams, strutils, macros]
 export JsonParsingError, JsonKindError
 
 type
@@ -336,6 +336,41 @@ proc parseFile*(filename: string): JsonTree =
     raise newException(IOError, "cannot read from file: " & filename)
   result = parseJson(stream, filename)
 
+#macro `%.`*(a: typed): untyped =
+
+macro traverse*(tree: JsonTree, n: JsonNode, keys: varargs[typed]): JsonNode =
+  template tget(res, tree, key) =
+    when typeof(key) is string:
+      if res.isNil or kind(x, res) != JObject:
+        res = jsNull
+        return
+      res = rawGet(tree, res, key)
+    elif typeof(key) is int:
+      if res.isNil or kind(tree, res) != JArray:
+        res = jsNull
+        return
+      block searchLoop:
+        var i = key
+        for x in items(tree, res):
+          if i == 0:
+            res = x
+            break searchLoop
+          dec i
+        res = jsNull
+        return
+    else:
+      {.error("The tree can be traversed either by a key or an index").}
+
+  result = newNimNode(nnkStmtListExpr)
+  let res = genSym(nskVar, "tResult")
+  result.add newVarStmt(res, n)
+  let name = genSym(nskProc, "tProc")
+  let body = newStmtList()
+  for kk in keys:
+    body.add getAst(tget(res, tree, kk))
+  let prc = newProc(name, body = body)
+  result.add(prc, newCall(name), res)
+
 when isMainModule:
   block:
     let data = """{"a": [1, false, {"key": [4, 5]}, 4]}"""
@@ -361,6 +396,9 @@ when isMainModule:
     assert getInt(x, JsonNode 11) == 5
     assert get(x, jsRoot, "a", "key") == jsNull
     assert get(x, JsonNode 3, 2) == JsonNode 6
+    assert traverse(x, jsRoot, "a", 2, "key", 1) == JsonNode 11
+    #assert %.get(x, JsonNode 9, 1).getInt() == 5
+
   block:
     let data = """{"a": {"key": [4, [1, 2, 3]]}}"""
     let x = parseJson(data)
@@ -372,9 +410,5 @@ when isMainModule:
     for k, v in pairs(x, jsRoot):
       assert k == "a"
       assert kind(x, v) == JObject
-
-    #let v = fromJson x:
-      #get("a", "key")
-      #get(1, 2)
-      #getInt()
-    #assert traverse(x, "a", 2, "key", 1, getInt(-1)) == 5
+    assert traverse(x, jsRoot, "a", "key", 1, 2) == JsonNode 11
+    #assert %.get(x, jsRoot, "a", "key").get(1, 2).getInt() == 3
