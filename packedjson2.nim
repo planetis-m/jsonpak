@@ -338,26 +338,21 @@ proc parseFile*(filename: string): JsonTree =
     raise newException(IOError, "cannot read from file: " & filename)
   result = parseJson(stream, filename)
 
+# Internal procs that don't raise, used in the traverse macro.
 proc tGet(tree: JsonTree, n: JsonNode, key: string): JsonNode =
-  result = n
-  if result.isNil or kind(tree, result) != JObject: return jNull
-  result = rawGet(tree, result, key)
+  if n.isNil or kind(tree, n) != JObject: return jNull
+  result = rawGet(tree, n, key)
 
 proc tGet(tree: JsonTree, n: JsonNode, index: int): JsonNode =
-  result = n
-  if result.isNil or kind(tree, result) != JArray: return jNull
-  block searchLoop:
-    var i = index
-    for x in items(tree, result):
-      if i == 0:
-        result = x
-        break searchLoop
-      dec i
-    return jNull
+  if n.isNil or kind(tree, n) != JArray: return jNull
+  var i = index
+  for x in items(tree, n):
+    if i == 0: return x
+    dec i
+  result = jNull
 
 proc tGet[T](tree: JsonTree, n: JsonNode, a: T): JsonNode
-    {.error("The tree can be traversed either by a key or an index").} =
-  discard
+    {.error("The tree can be traversed either by a key or an index").}
 
 macro traverse*(tree: JsonTree, n: JsonNode, keys: varargs[typed]): JsonNode =
   ## Traverses the tree and gets the given value.
