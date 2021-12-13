@@ -338,38 +338,35 @@ proc parseFile*(filename: string): JsonTree =
     raise newException(IOError, "cannot read from file: " & filename)
   result = parseJson(stream, filename)
 
-macro traverse*(tree: JsonTree, n: JsonNode, keys: varargs[typed]): JsonNode =
-  template tget(res, tree, key) =
-    when typeof(key) is string:
-      if res.isNil or kind(x, res) != JObject:
-        res = jNull
-        return
-      res = rawGet(tree, res, key)
-    elif typeof(key) is int:
-      if res.isNil or kind(tree, res) != JArray:
-        res = jNull
-        return
-      block searchLoop:
-        var i = key
-        for x in items(tree, res):
-          if i == 0:
-            res = x
-            break searchLoop
-          dec i
-        res = jNull
-        return
-    else:
-      {.error("The tree can be traversed either by a key or an index").}
+proc tGet(tree: JsonTree, n: JsonNode, key: string): JsonNode =
+  result = n
+  if result.isNil or kind(tree, result) != JObject: return jNull
+  result = rawGet(tree, result, key)
 
+proc tGet(tree: JsonTree, n: JsonNode, index: int): JsonNode =
+  result = n
+  if result.isNil or kind(tree, result) != JArray: return jNull
+  block searchLoop:
+    var i = index
+    for x in items(tree, result):
+      if i == 0:
+        result = x
+        break searchLoop
+      dec i
+    return jNull
+
+proc tGet[T](tree: JsonTree, n: JsonNode, a: T): JsonNode
+    {.error("The tree can be traversed either by a key or an index").} =
+  discard
+
+macro traverse*(tree: JsonTree, n: JsonNode, keys: varargs[typed]): JsonNode =
+  ## Traverses the tree and gets the given value.
   result = newNimNode(nnkStmtListExpr)
   let res = genSym(nskVar, "tResult")
   result.add newVarStmt(res, n)
-  let name = genSym(nskProc, "tProc")
-  let body = newStmtList()
   for kk in keys:
-    body.add getAst(tget(res, tree, kk))
-  let prc = newProc(name, body = body)
-  result.add(prc, newCall(name), res)
+    result.add newAssignment(res, newCall(bindSym"tGet", tree, res, kk))
+  result.add(res)
 
 when isMainModule:
   block:
@@ -413,4 +410,4 @@ when isMainModule:
       assert k == "a"
       assert kind(x, v) == JObject
     assert traverse(x, jRoot, "a", "key", 1, 2) == JsonNode 11
-    #dumptree: assert %.get(x, jRoot, "a", "key").get(1, 2).getInt == 3
+    #assert %.get(x, jRoot, "a", "key").get(1, 2).getInt == 3
