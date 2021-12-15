@@ -119,9 +119,10 @@ proc rawGet(tree: JsonTree, n: JsonNode, name: string): JsonNode =
     assert ch0.kind == opcodeKeyValuePair
     if ch0.firstSon.litId == litId:
       return JsonNode(ch0.int+2) # guaranteed that firstSon isAtom
+  return jNull
 
-proc raiseKeyError(name: string) {.noinline, noreturn.} =
-  raise newException(KeyError, "key not found in object: " & name)
+proc raiseKeyError(key: string) {.noinline, noreturn.} =
+  raise newException(KeyError, "key not in object: " & key)
 
 proc get*(tree: JsonTree, n: JsonNode, name: string): JsonNode =
   ## Gets a field from a `JObject`.
@@ -179,6 +180,36 @@ proc get*(tree: JsonTree, n: JsonNode, indexes: varargs[int]): JsonNode =
           break searchLoop
         dec i
       return jNull
+
+proc rawDelete(tree: var JsonTree, n: JsonNode, key: string) =
+  assert not n.isNil
+  assert kind(tree, n) == JObject
+  let litId = tree.atoms.getKeyId(key)
+  if litId == LitId(0):
+    raiseKeyError(key)
+  var start = -1
+  for ch0 in sonsReadonly(tree, NodePos n):
+    assert ch0.kind == opcodeKeyValuePair
+    if ch0.firstSon.litId == litId:
+      start = ch0.int
+      break
+  if start >= 0:
+    let diff = NodePos(start).operand
+    var pos = n.int
+    while true:
+      let distance = int32(tree.nodes[pos].operand - diff)
+      tree.nodes[pos] = toNode(tree.nodes[pos].kind, distance)
+      if pos <= 0: break
+      pos = NodePos(pos).parent.int
+    let oldfull = tree.nodes.len
+    for i in countup(start, oldfull-diff-1): tree.nodes[i] = tree.nodes[i+diff]
+    setLen(tree.nodes, oldfull-diff)
+    return
+  raiseKeyError(key)
+
+proc delete*(tree: var JsonTree, n: JsonNode, key: string) =
+  ## Deletes ``x[key]``.
+  rawDelete(tree, n, key)
 
 proc getStr*(tree: JsonTree, n: JsonNode, default: string = ""): string =
   ## Retrieves the string value of a `JString`.
@@ -338,30 +369,6 @@ proc parseFile*(filename: string): JsonTree =
     raise newException(IOError, "cannot read from file: " & filename)
   result = parseJson(stream, filename)
 
-# Internal procs that don't raise, used in the traverse macro.
-proc tGet(tree: JsonTree, n: JsonNode, key: string): JsonNode =
-  if n.isNil or kind(tree, n) != JObject: return jNull
-  result = rawGet(tree, n, key)
-
-proc tGet(tree: JsonTree, n: JsonNode, index: int): JsonNode =
-  if n.isNil or kind(tree, n) != JArray: return jNull
-  var i = index
-  for x in items(tree, n):
-    if i == 0: return x
-    dec i
-  result = jNull
-
-proc tGet[T](tree: JsonTree, n: JsonNode, a: T): JsonNode
-    {.error("The tree can be traversed either by a string key or an int index").}
-
-macro traverse*(tree: JsonTree, n: JsonNode, keys: varargs[typed]): JsonNode =
-  ## Traverses the tree and gets the given value.
-  result = newNimNode(nnkStmtListExpr)
-  let res = genSym(nskVar, "tResult")
-  result.add newVarStmt(res, n)
-  for kk in keys:
-    result.add newAssignment(res, newCall(bindSym"tGet", tree, res, kk))
-  result.add(res)
 
 when isMainModule:
   include tests/internals
