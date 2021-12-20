@@ -1,3 +1,4 @@
+# To be included by main!
 block:
   let data = """{"a": [1, false, {"key": [4, 5]}, 4]}"""
   let x = parseJson(data)
@@ -5,6 +6,7 @@ block:
   assert x.atoms.len == 5
   assert kind(x, jRoot) == JObject
   assert get(x, jRoot, "a") == JsonNode 3
+  assert hasKey(x, jRoot, "a")
   assert x.nodes[1].kind == opcodeKeyValuePair
   assert x.nodes[1].operand == 12
   assert get(x, JsonNode 6, "key") == JsonNode 9
@@ -24,6 +26,7 @@ block:
   assert get(x, JsonNode 3, 2) == JsonNode 6
   assert get(x, jRoot, "b", "key") == jNull
   assert get(x, JsonNode 3, 2, 1) == jNull
+  assert $x == """{"a":[1,false,{"key":[4,5]},4]}"""
 
 block:
   let data = """{"a": {"key": [4, [1, 2, 3]]}}"""
@@ -36,6 +39,7 @@ block:
   for k, v in pairs(x, jRoot):
     assert k == "a"
     assert kind(x, v) == JObject
+  assert $x == """{"a":{"key":[4,[1,2,3]]}}"""
 
 block:
   let data = """{"a": 0, "key": [4, [1, 2, 3]]}"""

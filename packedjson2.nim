@@ -369,6 +369,148 @@ proc parseFile*(filename: string): JsonTree =
     raise newException(IOError, "cannot read from file: " & filename)
   result = parseJson(stream, filename)
 
+proc escapeJsonUnquoted*(s: string; result: var string) =
+  ## Converts a string `s` to its JSON representation without quotes.
+  ## Appends to `result`.
+  for c in s:
+    case c
+    of '\L': result.add("\\n")
+    of '\b': result.add("\\b")
+    of '\f': result.add("\\f")
+    of '\t': result.add("\\t")
+    of '\v': result.add("\\u000b")
+    of '\r': result.add("\\r")
+    of '"': result.add("\\\"")
+    of '\0'..'\7': result.add("\\u000" & $ord(c))
+    of '\14'..'\31': result.add("\\u00" & toHex(ord(c), 2))
+    of '\\': result.add("\\\\") #"
+    else: result.add(c)
+
+proc escapeJsonUnquoted*(s: string): string =
+  ## Converts a string `s` to its JSON representation without quotes.
+  result = newStringOfCap(s.len + s.len shr 3)
+  escapeJsonUnquoted(s, result)
+
+proc escapeJson*(s: string; result: var string) =
+  ## Converts a string `s` to its JSON representation with quotes.
+  ## Appends to `result`.
+  result.add("\"")
+  escapeJsonUnquoted(s, result)
+  result.add("\"")
+
+type
+  JsonIter = object
+    stack: seq[(JsonNode, int32)]
+    tos: JsonNode
+    tosEnd: int
+    pos: int
+
+template tosEnd(n: JsonNode): int = n.int + tree.nodes[n.int].operand
+
+proc initJsonIter(n: JsonNode, tree: JsonTree): JsonIter =
+  result = JsonIter(stack: @[], tos: n, tosEnd: n.tosEnd, pos: n.int+1)
+
+proc pushImpl(it: var JsonIter, n: JsonNode, tree: JsonTree) =
+  it.stack.add (it.tos, int32 it.pos)
+  it.tos = n
+  it.tosEnd = n.tosEnd
+  it.pos = n.int+1
+
+template push(it: JsonIter, n: JsonNode) = pushImpl(it, n, tree)
+template kind(n: JsonNode): JsonNodeKind = kind tree, n
+
+type
+  Action = enum
+    actionElem, actionKeyVal, actionPop, actionEnd
+
+proc currentAndNext(tree: JsonTree, it: var JsonIter): (JsonNode, string, Action) =
+  if it.pos < it.tosEnd:
+    if it.tos.kind == JArray:
+      result = (JsonNode it.pos, "", actionElem)
+    else:
+      let litId = NodePos(it.pos).firstSon.litId
+      assert hasLitId(tree.atoms, litId)
+      result = (JsonNode(it.pos+2), tree.atoms[litId], actionKeyVal)
+    nextChild tree, it.pos
+  elif it.stack.len > 0:
+    result = (it.tos, "", actionPop)
+    let tmp = it.stack.pop()
+    it.tos = tmp[0]
+    it.pos = tmp[1]
+    it.tosEnd = it.tos.tosEnd
+  else:
+    result = (jNull, "", actionEnd)
+
+template str(n: JsonNode): string = tree.atoms[NodePos(n).litId]
+template bval(n: JsonNode): bool = NodePos(n).operand == 1
+
+proc toUgly*(result: var string, tree: JsonTree, node: JsonNode) =
+  case node.kind
+  of JArray, JObject:
+    if node.kind == JArray:
+      result.add "["
+    else:
+      result.add "{"
+
+    var it = initJsonIter(node, tree)
+    var pendingComma = false
+    while true:
+      let (child, key, action) = currentAndNext(tree, it)
+      case action
+      of actionPop:
+        if child.kind == JArray:
+          result.add "]"
+        else:
+          result.add "}"
+        pendingComma = true
+      of actionEnd: break
+      of actionElem, actionKeyVal:
+        if pendingComma:
+          result.add ","
+          pendingComma = false
+        if action == actionKeyVal:
+          key.escapeJson(result)
+          result.add ":"
+        case child.kind
+        of JArray:
+          result.add "["
+          it.push child
+          pendingComma = false
+        of JObject:
+          result.add "{"
+          it.push child
+          pendingComma = false
+        of JInt, JFloat:
+          result.add child.str
+          pendingComma = true
+        of JString:
+          escapeJson(child.str, result)
+          pendingComma = true
+        of JBool:
+          result.add(if child.bval: "true" else: "false")
+          pendingComma = true
+        of JNull:
+          result.add "null"
+          pendingComma = true
+
+    if node.kind == JArray:
+      result.add "]"
+    else:
+      result.add "}"
+  of JString:
+    escapeJson(node.str, result)
+  of JInt, JFloat:
+    result.add node.str
+  of JBool:
+    result.add(if node.bval: "true" else: "false")
+  of JNull:
+    result.add "null"
+
+proc `$`*(tree: JsonTree): string =
+  ## Converts `tree` to its JSON Representation on one line.
+  result = newStringOfCap(tree.nodes.len shl 1)
+  toUgly(result, tree, jRoot)
+
 
 when isMainModule:
   include tests/internals
