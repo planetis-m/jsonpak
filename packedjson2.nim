@@ -106,7 +106,6 @@ iterator pairs*(tree: JsonTree, n: JsonNode): (lent string, JsonNode) =
   for ch0 in sonsReadonly(tree, NodePos n):
     assert ch0.kind == opcodeKeyValuePair
     let litId = ch0.firstSon.litId
-    assert hasLitId(tree.atoms, litId)
     yield (tree.atoms[litId], JsonNode(ch0.int+2))
 
 proc rawGet(tree: JsonTree, n: JsonNode, name: string): JsonNode =
@@ -429,7 +428,6 @@ proc currentAndNext(tree: JsonTree, it: var JsonIter): (JsonNode, string, Action
       result = (JsonNode it.pos, "", actionElem)
     else:
       let litId = NodePos(it.pos).firstSon.litId
-      assert hasLitId(tree.atoms, litId)
       result = (JsonNode(it.pos+2), tree.atoms[litId], actionKeyVal)
     nextChild tree, it.pos
   elif it.stack.len > 0:

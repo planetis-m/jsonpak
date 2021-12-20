@@ -90,12 +90,12 @@ proc getOrIncl*[T](t: var BiTable[T]; v: T): LitId =
 
 proc `[]`*[T](t: var BiTable[T]; LitId: LitId): var T {.inline.} =
   let idx = idToIdx LitId
-  assert idx < t.vals.len
+  assert idx >= 0 and idx < t.vals.len
   result = t.vals[idx]
 
 proc `[]`*[T](t: BiTable[T]; LitId: LitId): lent T {.inline.} =
   let idx = idToIdx LitId
-  assert idx < t.vals.len
+  assert idx >= 0 and idx < t.vals.len
   result = t.vals[idx]
 
 proc hash*[T](t: BiTable[T]): Hash =
