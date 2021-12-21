@@ -400,64 +400,64 @@ proc escapeJson*(s: string; result: var string) =
 type
   JsonIter = object
     stack: seq[(JsonNode, int32)]
-    tos: JsonNode
+    tos: NodePos
     tosEnd: int
     pos: int
 
-template tosEnd(n: JsonNode): int = n.int + tree.nodes[n.int].operand
+template tosEnd(n: NodePos): int = n.int + tree.nodes[n.int].operand
 
-proc initJsonIter(tree: JsonTree, n: JsonNode): JsonIter =
+proc initJsonIter(tree: JsonTree, n: NodePos): JsonIter =
   result = JsonIter(stack: @[], tos: n, tosEnd: n.tosEnd, pos: n.int+1)
 
-proc pushImpl(it: var JsonIter, tree: JsonTree, n: JsonNode) =
-  it.stack.add (it.tos, int32 it.pos)
+proc pushImpl(it: var JsonIter, tree: JsonTree, n: NodePos) =
+  it.stack.add (JsonNode it.tos, int32 it.pos)
   it.tos = n
   it.tosEnd = n.tosEnd
   it.pos = n.int+1
 
-template push(it: JsonIter, n: JsonNode) = pushImpl(it, tree, n)
-template kind(n: JsonNode): JsonNodeKind = kind tree, n
+template push(it: JsonIter, n: NodePos) = pushImpl(it, tree, n)
 
 type
   Action = enum
     actionElem, actionKeyVal, actionPop, actionEnd
 
-proc currentAndNext(it: var JsonIter, tree: JsonTree): (JsonNode, LitId, Action) =
+proc currentAndNext(it: var JsonIter, tree: JsonTree): (NodePos, LitId, Action) =
   if it.pos < it.tosEnd:
-    if it.tos.kind == JArray:
-      result = (JsonNode it.pos, LitId(0), actionElem)
+    if it.tos.kind == opcodeArray:
+      result = (NodePos it.pos, LitId(0), actionElem)
     else:
-      let litId = NodePos(it.pos).firstSon.litId
-      result = (JsonNode(it.pos+2), litId, actionKeyVal)
+      let litId = firstSon(NodePos it.pos).litId
+      result = (NodePos(it.pos+2), litId, actionKeyVal)
     nextChild tree, it.pos
   elif it.stack.len > 0:
     result = (it.tos, LitId(0), actionPop)
     let tmp = it.stack.pop()
-    it.tos = tmp[0]
+    it.tos = tmp[0].NodePos
     it.pos = tmp[1]
     it.tosEnd = it.tos.tosEnd
   else:
-    result = (jNull, LitId(0), actionEnd)
+    result = (NodePos(-1), LitId(0), actionEnd)
 
-template str(n: JsonNode): string = tree.atoms[NodePos(n).litId]
-template bval(n: JsonNode): bool = NodePos(n).operand == 1
+template str(n: NodePos): string = tree.atoms[n.litId]
+template bval(n: NodePos): bool = n.operand == 1
 template key: string = tree.atoms[keyId]
 
-proc toUgly*(result: var string, tree: JsonTree, node: JsonNode) =
-  case node.kind
-  of JArray, JObject:
-    if node.kind == JArray:
+proc toUgly*(result: var string, tree: JsonTree, n: JsonNode) =
+  let n = NodePos n
+  case n.kind
+  of opcodeArray, opcodeObject:
+    if n.kind == opcodeArray:
       result.add "["
     else:
       result.add "{"
 
-    var it = initJsonIter(tree, node)
+    var it = initJsonIter(tree, n)
     var pendingComma = false
     while true:
       let (child, keyId, action) = currentAndNext(it, tree)
       case action
       of actionPop:
-        if child.kind == JArray:
+        if child.kind == opcodeArray:
           result.add "]"
         else:
           result.add "}"
@@ -471,39 +471,41 @@ proc toUgly*(result: var string, tree: JsonTree, node: JsonNode) =
           key.escapeJson(result)
           result.add ":"
         case child.kind
-        of JArray:
+        of opcodeArray:
           result.add "["
           it.push child
           pendingComma = false
-        of JObject:
+        of opcodeObject:
           result.add "{"
           it.push child
           pendingComma = false
-        of JInt, JFloat:
+        of opcodeInt, opcodeFloat:
           result.add child.str
           pendingComma = true
-        of JString:
+        of opcodeString:
           escapeJson(child.str, result)
           pendingComma = true
-        of JBool:
+        of opcodeBool:
           result.add(if child.bval: "true" else: "false")
           pendingComma = true
-        of JNull:
+        of opcodeNull:
           result.add "null"
           pendingComma = true
+        else: assert false
 
-    if node.kind == JArray:
+    if n.kind == opcodeArray:
       result.add "]"
     else:
       result.add "}"
-  of JString:
-    escapeJson(node.str, result)
-  of JInt, JFloat:
-    result.add node.str
-  of JBool:
-    result.add(if node.bval: "true" else: "false")
-  of JNull:
+  of opcodeString:
+    escapeJson(n.str, result)
+  of opcodeInt, opcodeFloat:
+    result.add n.str
+  of opcodeBool:
+    result.add(if n.bval: "true" else: "false")
+  of opcodeNull:
     result.add "null"
+  else: assert false
 
 proc `$`*(tree: JsonTree): string =
   ## Converts `tree` to its JSON Representation on one line.
