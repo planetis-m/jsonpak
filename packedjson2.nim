@@ -406,23 +406,23 @@ type
 
 template tosEnd(n: JsonNode): int = n.int + tree.nodes[n.int].operand
 
-proc initJsonIter(n: JsonNode, tree: JsonTree): JsonIter =
+proc initJsonIter(tree: JsonTree, n: JsonNode): JsonIter =
   result = JsonIter(stack: @[], tos: n, tosEnd: n.tosEnd, pos: n.int+1)
 
-proc pushImpl(it: var JsonIter, n: JsonNode, tree: JsonTree) =
+proc pushImpl(it: var JsonIter, tree: JsonTree, n: JsonNode) =
   it.stack.add (it.tos, int32 it.pos)
   it.tos = n
   it.tosEnd = n.tosEnd
   it.pos = n.int+1
 
-template push(it: JsonIter, n: JsonNode) = pushImpl(it, n, tree)
+template push(it: JsonIter, n: JsonNode) = pushImpl(it, tree, n)
 template kind(n: JsonNode): JsonNodeKind = kind tree, n
 
 type
   Action = enum
     actionElem, actionKeyVal, actionPop, actionEnd
 
-proc currentAndNext(tree: JsonTree, it: var JsonIter): (JsonNode, LitId, Action) =
+proc currentAndNext(it: var JsonIter, tree: JsonTree): (JsonNode, LitId, Action) =
   if it.pos < it.tosEnd:
     if it.tos.kind == JArray:
       result = (JsonNode it.pos, LitId(0), actionElem)
@@ -451,10 +451,10 @@ proc toUgly*(result: var string, tree: JsonTree, node: JsonNode) =
     else:
       result.add "{"
 
-    var it = initJsonIter(node, tree)
+    var it = initJsonIter(tree, node)
     var pendingComma = false
     while true:
-      let (child, keyId, action) = currentAndNext(tree, it)
+      let (child, keyId, action) = currentAndNext(it, tree)
       case action
       of actionPop:
         if child.kind == JArray:
