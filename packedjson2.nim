@@ -422,25 +422,26 @@ type
   Action = enum
     actionElem, actionKeyVal, actionPop, actionEnd
 
-proc currentAndNext(tree: JsonTree, it: var JsonIter): (JsonNode, string, Action) =
+proc currentAndNext(tree: JsonTree, it: var JsonIter): (JsonNode, LitId, Action) =
   if it.pos < it.tosEnd:
     if it.tos.kind == JArray:
-      result = (JsonNode it.pos, "", actionElem)
+      result = (JsonNode it.pos, LitId(0), actionElem)
     else:
       let litId = NodePos(it.pos).firstSon.litId
-      result = (JsonNode(it.pos+2), tree.atoms[litId], actionKeyVal)
+      result = (JsonNode(it.pos+2), litId, actionKeyVal)
     nextChild tree, it.pos
   elif it.stack.len > 0:
-    result = (it.tos, "", actionPop)
+    result = (it.tos, LitId(0), actionPop)
     let tmp = it.stack.pop()
     it.tos = tmp[0]
     it.pos = tmp[1]
     it.tosEnd = it.tos.tosEnd
   else:
-    result = (jNull, "", actionEnd)
+    result = (jNull, LitId(0), actionEnd)
 
 template str(n: JsonNode): string = tree.atoms[NodePos(n).litId]
 template bval(n: JsonNode): bool = NodePos(n).operand == 1
+template key: string = tree.atoms[keyId]
 
 proc toUgly*(result: var string, tree: JsonTree, node: JsonNode) =
   case node.kind
@@ -453,7 +454,7 @@ proc toUgly*(result: var string, tree: JsonTree, node: JsonNode) =
     var it = initJsonIter(node, tree)
     var pendingComma = false
     while true:
-      let (child, key, action) = currentAndNext(tree, it)
+      let (child, keyId, action) = currentAndNext(tree, it)
       case action
       of actionPop:
         if child.kind == JArray:

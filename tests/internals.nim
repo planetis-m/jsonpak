@@ -1,6 +1,6 @@
 # To be included by main!
 block:
-  let data = """{"a": [1, false, {"key": [4, 5]}, 4]}"""
+  let data = """{"a":[1,false,{"key":[4,5]},4]}"""
   let x = parseJson(data)
   assert not x.isEmpty
   assert x.atoms.len == 5
@@ -26,10 +26,10 @@ block:
   assert get(x, JsonNode 3, 2) == JsonNode 6
   assert get(x, jRoot, "b", "key") == jNull
   assert get(x, JsonNode 3, 2, 1) == jNull
-  assert $x == """{"a":[1,false,{"key":[4,5]},4]}"""
+  assert $x == data
 
 block:
-  let data = """{"a": {"key": [4, [1, 2, 3]]}}"""
+  let data = """{"a":{"key":[4,[1,2,3]]}}"""
   let x = parseJson(data)
   assert not x.isEmpty
   assert x.atoms.len == 6
@@ -39,13 +39,14 @@ block:
   for k, v in pairs(x, jRoot):
     assert k == "a"
     assert kind(x, v) == JObject
-  assert $x == """{"a":{"key":[4,[1,2,3]]}}"""
+  assert $x == data
 
 block:
-  let data = """{"a": 0, "key": [4, [1, 2, 3]]}"""
+  let data = """{"a":0,"key":[4,[1,2,3]],"b":{"a":false}}"""
   var x = parseJson(data)
+  assert $x == data
   assert not x.isEmpty
-  assert x.atoms.len == 7
+  assert x.atoms.len == 8
   assert hasKey(x, jRoot, "a")
   assert hasKey(x, jRoot, "key")
   delete(x, jRoot, "a")
