@@ -210,26 +210,29 @@ proc delete*(tree: var JsonTree, n: JsonNode, key: string) =
   ## Deletes ``x[key]``.
   rawDelete(tree, n, key)
 
+template str(n: NodePos): string = tree.atoms[n.litId]
+template bval(n: NodePos): bool = n.operand == 1
+
 proc getStr*(tree: JsonTree, n: JsonNode, default: string = ""): string =
   ## Retrieves the string value of a `JString`.
   ##
   ## Returns `default` if `x` is not a `JString`.
   if n.isNil or kind(tree, n) != JString: result = default
-  else: result = tree.atoms[NodePos(n).litId]
+  else: result = NodePos(n).str
 
 proc getInt*(tree: JsonTree, n: JsonNode, default: int = 0): int =
   ## Retrieves the int value of a `JInt`.
   ##
   ## Returns `default` if `x` is not a `JInt`, or if `x` is nil.
   if n.isNil or kind(tree, n) != JInt: result = default
-  else: result = parseInt tree.atoms[NodePos(n).litId]
+  else: result = parseInt NodePos(n).str
 
 proc getBiggestInt*(tree: JsonTree, n: JsonNode, default: BiggestInt = 0): BiggestInt =
   ## Retrieves the BiggestInt value of a `JInt`.
   ##
   ## Returns `default` if `x` is not a `JInt`, or if `x` is nil.
   if n.isNil or kind(tree, n) != JInt: result = default
-  else: result = parseBiggestInt tree.atoms[NodePos(n).litId]
+  else: result = parseBiggestInt NodePos(n).str
 
 proc getFloat*(tree: JsonTree, n: JsonNode, default: float = 0.0): float =
   ## Retrieves the float value of a `JFloat`.
@@ -238,9 +241,9 @@ proc getFloat*(tree: JsonTree, n: JsonNode, default: float = 0.0): float =
   if n.isNil: return default
   case kind(tree, n)
   of JFloat:
-    result = parseFloat tree.atoms[NodePos(n).litId]
+    result = parseFloat NodePos(n).str
   of JInt:
-    result = float(parseBiggestInt tree.atoms[NodePos(n).litId])
+    result = float(parseBiggestInt NodePos(n).str)
   else:
     result = default
 
@@ -249,7 +252,7 @@ proc getBool*(tree: JsonTree, n: JsonNode, default: bool = false): bool =
   ##
   ## Returns `default` if `n` is not a `JBool`, or if `n` is nil.
   if n.isNil or kind(tree, n) != JBool: result = default
-  else: result = NodePos(n).operand == 1
+  else: result = NodePos(n).bval
 
 type
   PatchPos = distinct int32
@@ -438,12 +441,9 @@ proc currentAndNext(it: var JsonIter, tree: JsonTree): (NodePos, LitId, Action) 
   else:
     result = (NodePos(-1), LitId(0), actionEnd)
 
-template str(n: NodePos): string = tree.atoms[n.litId]
-template bval(n: NodePos): bool = n.operand == 1
 template key: string = tree.atoms[keyId]
 
-proc toUgly*(result: var string, tree: JsonTree, n: JsonNode) =
-  let n = NodePos n
+proc toUgly*(result: var string, tree: JsonTree, n: NodePos) =
   case n.kind
   of opcodeArray, opcodeObject:
     if n.kind == opcodeArray:
@@ -491,7 +491,7 @@ proc toUgly*(result: var string, tree: JsonTree, n: JsonNode) =
         of opcodeNull:
           result.add "null"
           pendingComma = true
-        else: assert false
+        else: discard
 
     if n.kind == opcodeArray:
       result.add "]"
@@ -505,12 +505,12 @@ proc toUgly*(result: var string, tree: JsonTree, n: JsonNode) =
     result.add(if n.bval: "true" else: "false")
   of opcodeNull:
     result.add "null"
-  else: assert false
+  else: discard
 
 proc `$`*(tree: JsonTree): string =
   ## Converts `tree` to its JSON Representation on one line.
   result = newStringOfCap(tree.nodes.len shl 1)
-  toUgly(result, tree, jRoot)
+  toUgly(result, tree, NodePos jRoot)
 
 
 when isMainModule:
