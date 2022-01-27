@@ -267,7 +267,7 @@ proc patch(tree: var JsonTree; pos: PatchPos) =
   let distance = int32(tree.nodes.len - pos)
   tree.nodes[pos] = toNode(tree.nodes[pos].int32, distance)
 
-template storeAtom(tree: JsonTree; kind: int32; data: string) =
+proc storeAtom(tree: var JsonTree; kind: int32; data: string) =
   tree.nodes.add toNode(kind, int32 getOrIncl(tree.atoms, data))
 
 proc parseJson(tree: var JsonTree; p: var JsonParser) =
@@ -514,6 +514,100 @@ proc `$`*(tree: JsonTree): string =
   result = newStringOfCap(tree.nodes.len shl 1)
   toUgly(result, tree, NodePos jRoot)
 
+proc toJson*(s: string; tree: var JsonTree) =
+  ## Generic constructor for JSON data. Creates a new `JString JsonNode`.
+  storeAtom(tree, opcodeString, s)
+
+proc toJson*(n: BiggestInt; tree: var JsonTree) =
+  ## Generic constructor for JSON data. Creates a new `JInt JsonNode`.
+  storeAtom(tree, opcodeInt, $n)
+
+proc toJson*(n: float; tree: var JsonTree) =
+  ## Generic constructor for JSON data. Creates a new `JFloat JsonNode`.
+  storeAtom(tree, opcodeFloat, formatFloat(n))
+
+proc toJson*(b: bool; tree: var JsonTree) =
+  ## Generic constructor for JSON data. Creates a new `JBool JsonNode`.
+  tree.nodes.add if b: Node opcodeTrue else: Node opcodeFalse
+
+proc toJson*[T](elements: openArray[T]; tree: var JsonTree) =
+  ## Generic constructor for JSON data. Creates a new `JArray JsonNode`
+  let patchPos = tree.prepare(opcodeArray)
+  for elem in elements:
+    toJson(elem, tree)
+  tree.patch patchPos
+
+proc toJson*(o: object; tree: var JsonTree) =
+  ## Generic constructor for JSON data. Creates a new `JObject JsonNode`
+  let patchPos1 = tree.prepare(opcodeObject)
+  for k, v in o.fieldPairs:
+    let patchPos2 = tree.prepare(opcodeKeyValuePair)
+    storeAtom(tree, opcodeString, k)
+    toJson(v, tree)
+    tree.patch patchPos2
+  tree.patch patchPos1
+
+proc toJson*(o: ref object; tree: var JsonTree) =
+  ## Generic constructor for JSON data. Creates a new `JObject JsonNode`
+  if o.isNil:
+    tree.nodes.add Node opcodeNull
+  else:
+    toJson(o[], tree)
+
+proc toJson*(o: enum; tree: var JsonTree): JsonNode =
+  ## Construct a JsonNode that represents the specified enum value as a
+  ## string. Creates a new ``JString JsonNode``.
+  toJson($o, tree)
+
+proc toJsonImpl(x, res: NimNode): NimNode =
+  template addEmpty(kind, tree) =
+    tree.nodes.add Node kind
+
+  template prepareVal(tmp, key, tree) =
+    let tmp = tree.prepare(opcodeKeyValuePair)
+    storeAtom(tree, opcodeString, key)
+
+  template prepareCompl(tmp, kind, tree) =
+    let tmp = tree.prepare(kind)
+  case x.kind
+  of nnkBracket: # array
+    if x.len == 0: return getAst(addEmpty(bindSym"opcodeArray", res))
+    let tmp = genSym(nskLet, "tmp")
+    result = newStmtList()
+    result.add getAst(prepareCompl(tmp, bindSym"opcodeArray", res))
+    for i in 0 ..< x.len:
+      result.add toJsonImpl(x[i], res)
+    result.add newCall(bindSym"patch", res, tmp)
+  of nnkTableConstr: # object
+    if x.len == 0: return getAst(addEmpty(bindSym"opcodeObject", res))
+    let tmp1 = genSym(nskLet, "tmp")
+    result = newStmtList()
+    result.add getAst(prepareCompl(tmp1, bindSym"opcodeObject", res))
+    for i in 0 ..< x.len:
+      x[i].expectKind nnkExprColonExpr
+      let tmp2 = genSym(nskLet, "tmp")
+      result.add getAst(prepareVal(tmp2, x[i][0], res))
+      result.add toJsonImpl(x[i][1], res)
+      result.add newCall(bindSym"patch", res, tmp2)
+    result.add newCall(bindSym"patch", res, tmp1)
+  of nnkCurly: # empty object
+    x.expectLen(0)
+    result = getAst(addEmpty(bindSym"opcodeObject", res))
+  of nnkNilLit:
+    result = getAst(addEmpty(bindSym"opcodeNull", res))
+  of nnkPar:
+    if x.len == 1: result = toJsonImpl(x[0], res)
+    else: result = newCall(bindSym("toJson", brOpen), x, res)
+  else:
+    result = newCall(bindSym("toJson", brOpen), x, res)
+
+macro `%*`*(x: untyped): untyped =
+  ## Convert an expression to a JsonNode directly, without having to specify
+  ## `%` for every element.
+  let res = genSym(nskVar, "toJsonResult")
+  let v = newTree(nnkVarSection,
+    newTree(nnkIdentDefs, res, bindSym"JsonTree", newEmptyNode()))
+  result = newTree(nnkStmtListExpr, v, toJsonImpl(x, res), res)
 
 when isMainModule:
   include tests/internals

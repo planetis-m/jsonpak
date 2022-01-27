@@ -54,3 +54,13 @@ block:
   assert hasKey(x, jRoot, "key")
   assert kind(x, jRoot) == JObject
   assert kind(x, JsonNode 3) == JArray
+
+block:
+  let x = %*{
+    "a": [1, 2, 3],
+    "b": 4,
+    "c": [5, 6],
+    "d": {"e": [7, 8], "f": 9}
+  }
+  assert not x.isEmpty
+  assert $x == """{"a":[1,2,3],"b":4,"c":[5,6],"d":{"e":[7,8],"f":9}}"""
