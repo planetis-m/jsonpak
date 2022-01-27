@@ -554,7 +554,7 @@ proc toJson*(o: ref object; tree: var JsonTree) =
   else:
     toJson(o[], tree)
 
-proc toJson*(o: enum; tree: var JsonTree): JsonNode =
+proc toJson*(o: enum; tree: var JsonTree) =
   ## Construct a JsonNode that represents the specified enum value as a
   ## string. Creates a new ``JString JsonNode``.
   toJson($o, tree)
@@ -573,16 +573,16 @@ proc toJsonImpl(x, res: NimNode): NimNode =
   of nnkBracket: # array
     if x.len == 0: return getAst(addEmpty(bindSym"opcodeArray", res))
     let tmp = genSym(nskLet, "tmp")
-    result = newStmtList()
-    result.add getAst(prepareCompl(tmp, bindSym"opcodeArray", res))
+    result = newStmtList(
+        getAst(prepareCompl(tmp, bindSym"opcodeArray", res)))
     for i in 0 ..< x.len:
       result.add toJsonImpl(x[i], res)
     result.add newCall(bindSym"patch", res, tmp)
   of nnkTableConstr: # object
     if x.len == 0: return getAst(addEmpty(bindSym"opcodeObject", res))
     let tmp1 = genSym(nskLet, "tmp")
-    result = newStmtList()
-    result.add getAst(prepareCompl(tmp1, bindSym"opcodeObject", res))
+    result = newStmtList(
+        getAst(prepareCompl(tmp1, bindSym"opcodeObject", res)))
     for i in 0 ..< x.len:
       x[i].expectKind nnkExprColonExpr
       let tmp2 = genSym(nskLet, "tmp")

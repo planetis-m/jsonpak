@@ -63,4 +63,22 @@ block:
     "d": {"e": [7, 8], "f": 9}
   }
   assert not x.isEmpty
+  assert x.atoms.len == 15
   assert $x == """{"a":[1,2,3],"b":4,"c":[5,6],"d":{"e":[7,8],"f":9}}"""
+
+block:
+  type
+    Foo = ref object
+      a: array[1, Vec3]
+      b: bool
+      c: string
+      d: Bar
+    Bar = enum
+      foo, bar, baz
+    Vec3 = object
+      x, y, z: int
+  var x: JsonTree
+  toJson(Foo(a: [Vec3(x: 1, y: 2, z: 3)], b: true, c: "hi", d: foo), x)
+  assert not x.isEmpty
+  assert x.atoms.len == 8
+  assert $x == """{"a":[{"x":1,"y":2,"z":3}],"b":true,"c":"hi","d":"foo"}"""
