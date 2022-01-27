@@ -267,16 +267,19 @@ proc patch(tree: var JsonTree; pos: PatchPos) =
   let distance = int32(tree.nodes.len - pos)
   tree.nodes[pos] = toNode(tree.nodes[pos].int32, distance)
 
+template storeAtom(tree: JsonTree; kind: int32; data: string) =
+  tree.nodes.add toNode(kind, int32 getOrIncl(tree.atoms, data))
+
 proc parseJson(tree: var JsonTree; p: var JsonParser) =
   case p.tok
   of tkString:
-    tree.nodes.add toNode(opcodeString, int32 getOrIncl(tree.atoms, p.a))
+    storeAtom(tree, opcodeString, p.a)
     discard getTok(p)
   of tkInt:
-    tree.nodes.add toNode(opcodeInt, int32 getOrIncl(tree.atoms, p.a))
+    storeAtom(tree, opcodeInt, p.a)
     discard getTok(p)
   of tkFloat:
-    tree.nodes.add toNode(opcodeFloat, int32 getOrIncl(tree.atoms, p.a))
+    storeAtom(tree, opcodeFloat, p.a)
     discard getTok(p)
   of tkTrue:
     tree.nodes.add Node opcodeTrue
@@ -296,7 +299,7 @@ proc parseJson(tree: var JsonTree; p: var JsonParser) =
           raiseParseErr(p, "string literal as key")
         else:
           let patchPos = tree.prepare(opcodeKeyValuePair)
-          tree.nodes.add toNode(opcodeString, int32 getOrIncl(tree.atoms, p.a))
+          storeAtom(tree, opcodeString, p.a)
           insertPos.add patchPos
           discard getTok(p)
           eat(p, tkColon)
