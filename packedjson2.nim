@@ -305,9 +305,8 @@ proc parseJson(tree: var JsonTree; p: var JsonParser) =
           eat(p, tkColon)
 
       template putVal() =
-        if insertPos.len > 0:
-          if kind(NodePos insertPos[^1]) == opcodeKeyValuePair:
-            tree.patch insertPos.pop()
+        if insertPos.len > 0 and kind(NodePos insertPos[^1]) == opcodeKeyValuePair:
+          tree.patch insertPos.pop()
 
       case p.tok
       of tkString, tkInt, tkFloat, tkTrue, tkFalse, tkNull:
