@@ -560,41 +560,42 @@ proc toJson*(o: enum; tree: var JsonTree) =
   toJson($o, tree)
 
 proc toJsonImpl(x, res: NimNode): NimNode =
-  template addEmpty(kind, tree) =
-    tree.nodes.add Node kind
+  template addEmpty(kind, tree): untyped =
+    newCall(bindSym"add", newDotExpr(tree, ident"nodes"), newCall(bindSym"Node", kind))
 
-  template prepareVal(tmp, key, tree) =
-    let tmp = tree.prepare(opcodeKeyValuePair)
-    storeAtom(tree, opcodeString, key)
+  template prepareCompl(tmp, kind, tree): untyped =
+    newLetStmt(tmp, newCall(bindSym"prepare", tree, kind))
 
-  template prepareCompl(tmp, kind, tree) =
-    let tmp = tree.prepare(kind)
+  template storeKey(tmp, key, tree): untyped =
+    newCall(bindSym"storeAtom", tree, bindSym"opcodeString", key)
+
   case x.kind
   of nnkBracket: # array
-    if x.len == 0: return getAst(addEmpty(bindSym"opcodeArray", res))
+    if x.len == 0: return addEmpty(bindSym"opcodeArray", res)
     let tmp = genSym(nskLet, "tmp")
     result = newStmtList(
-        getAst(prepareCompl(tmp, bindSym"opcodeArray", res)))
+        prepareCompl(tmp, bindSym"opcodeArray", res))
     for i in 0 ..< x.len:
       result.add toJsonImpl(x[i], res)
     result.add newCall(bindSym"patch", res, tmp)
   of nnkTableConstr: # object
-    if x.len == 0: return getAst(addEmpty(bindSym"opcodeObject", res))
+    if x.len == 0: return addEmpty(bindSym"opcodeObject", res)
     let tmp1 = genSym(nskLet, "tmp")
     result = newStmtList(
-        getAst(prepareCompl(tmp1, bindSym"opcodeObject", res)))
+        prepareCompl(tmp1, bindSym"opcodeObject", res))
     for i in 0 ..< x.len:
       x[i].expectKind nnkExprColonExpr
       let tmp2 = genSym(nskLet, "tmp")
-      result.add getAst(prepareVal(tmp2, x[i][0], res))
+      result.add prepareCompl(tmp2, bindSym"opcodeKeyValuePair", res)
+      result.add storeKey(tmp2, x[i][0], res)
       result.add toJsonImpl(x[i][1], res)
       result.add newCall(bindSym"patch", res, tmp2)
     result.add newCall(bindSym"patch", res, tmp1)
   of nnkCurly: # empty object
     x.expectLen(0)
-    result = getAst(addEmpty(bindSym"opcodeObject", res))
+    result = addEmpty(bindSym"opcodeObject", res)
   of nnkNilLit:
-    result = getAst(addEmpty(bindSym"opcodeNull", res))
+    result = addEmpty(bindSym"opcodeNull", res)
   of nnkPar:
     if x.len == 1: result = toJsonImpl(x[0], res)
     else: result = newCall(bindSym("toJson", brOpen), x, res)
