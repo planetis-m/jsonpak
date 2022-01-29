@@ -56,7 +56,7 @@ block:
   assert kind(x, JsonNode 3) == JArray
 
 block:
-  let x = %*{
+  const x = %*{
     "a": [1, 2, 3],
     "b": 4,
     "c": [5, 6],
@@ -77,8 +77,7 @@ block:
       foo, bar, baz
     Vec3 = object
       x, y, z: int
-  var x: JsonTree
-  toJson(Foo(a: [Vec3(x: 1, y: 2, z: 3)], b: true, c: "hi", d: foo), x)
+  let x = %*Foo(a: [Vec3(x: 1, y: 2, z: 3)], b: true, c: "hi", d: foo)
   assert not x.isEmpty
-  assert x.atoms.len == 8
+  assert x.atoms.len == 12
   assert $x == """{"a":[{"x":1,"y":2,"z":3}],"b":true,"c":"hi","d":"foo"}"""

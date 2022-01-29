@@ -267,7 +267,7 @@ proc patch(tree: var JsonTree; pos: PatchPos) =
   let distance = int32(tree.nodes.len - pos)
   tree.nodes[pos] = toNode(tree.nodes[pos].int32, distance)
 
-proc storeAtom(tree: var JsonTree; kind: int32; data: string) =
+proc storeAtom(tree: var JsonTree; kind: int32; data: string) {.inline.} =
   tree.nodes.add toNode(kind, int32 getOrIncl(tree.atoms, data))
 
 proc parseJson(tree: var JsonTree; p: var JsonParser) =
@@ -524,7 +524,7 @@ proc toJson*(n: BiggestInt; tree: var JsonTree) =
 
 proc toJson*(n: float; tree: var JsonTree) =
   ## Generic constructor for JSON data. Creates a new `JFloat JsonNode`.
-  storeAtom(tree, opcodeFloat, formatFloat(n))
+  storeAtom(tree, opcodeFloat, $n)
 
 proc toJson*(b: bool; tree: var JsonTree) =
   ## Generic constructor for JSON data. Creates a new `JBool JsonNode`.
