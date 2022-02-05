@@ -1,7 +1,11 @@
 ## A BiTable is a table that can be seen as an optimized pair
 ## of (Table[LitId, Val], Table[Val, LitId]).
 
-import hashes
+import std/[hashes, math]
+
+const
+  defaultInitialSize = 32
+  growthFactor = 2
 
 type
   LitId* = distinct uint32
@@ -29,6 +33,10 @@ proc mustRehash(length, counter: int): bool {.inline.} =
   assert(length > counter)
   result = (length * 2 < counter * 3) or (length - counter < 4)
 
+proc slotsNeeded(count: Natural): int {.inline.} =
+  # Make sure to synchronize with `mustRehash` above
+  result = nextPowerOfTwo(count * 3 div 2 + 4)
+
 const
   idStart = 1
 
@@ -40,7 +48,7 @@ proc hasLitId*[T](t: BiTable[T]; x: LitId): bool =
 
 proc enlarge[T](t: var BiTable[T]) =
   var n: seq[LitId]
-  newSeq(n, len(t.keys) * 2)
+  newSeq(n, len(t.keys) * growthFactor)
   swap(t.keys, n)
   for i in 0..high(n):
     let eh = n[i]
@@ -80,13 +88,13 @@ proc getOrIncl*[T](t: var BiTable[T]; v: T): LitId =
         if not isFilled(litId): break
         h = nextTry(h, maxHash(t))
   else:
-    setLen(t.keys, 16)
+    let correctSize = slotsNeeded(defaultInitialSize)
+    setLen(t.keys, correctSize)
     h = origH and maxHash(t)
 
   result = LitId(t.vals.len + idStart)
   t.keys[h] = result
   t.vals.add v
-
 
 proc `[]`*[T](t: var BiTable[T]; LitId: LitId): var T {.inline.} =
   let idx = idToIdx LitId
@@ -97,13 +105,6 @@ proc `[]`*[T](t: BiTable[T]; LitId: LitId): lent T {.inline.} =
   let idx = idToIdx LitId
   assert idx >= 0 and idx < t.vals.len
   result = t.vals[idx]
-
-proc hash*[T](t: BiTable[T]): Hash =
-  ## as the keys are hashes of the values, we simply use them instead
-  var h: Hash = 0
-  for i, n in pairs t.keys:
-    h = h !& hash((i, n))
-  result = !$h
 
 when isMainModule:
 
