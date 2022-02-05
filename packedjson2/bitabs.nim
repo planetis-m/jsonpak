@@ -1,10 +1,10 @@
 ## A BiTable is a table that can be seen as an optimized pair
 ## of (Table[LitId, Val], Table[Val, LitId]).
 
-import std/[hashes, math]
+import std/hashes
 
 const
-  defaultInitialSize = 32
+  defaultInitialSize = 64
   growthFactor = 2
 
 type
@@ -32,10 +32,6 @@ proc len*[T](t: BiTable[T]): int = t.vals.len
 proc mustRehash(length, counter: int): bool {.inline.} =
   assert(length > counter)
   result = (length * 2 < counter * 3) or (length - counter < 4)
-
-proc slotsNeeded(count: Natural): int {.inline.} =
-  # Make sure to synchronize with `mustRehash` above
-  result = nextPowerOfTwo(count * 3 div 2 + 4)
 
 const
   idStart = 1
@@ -88,8 +84,7 @@ proc getOrIncl*[T](t: var BiTable[T]; v: T): LitId =
         if not isFilled(litId): break
         h = nextTry(h, maxHash(t))
   else:
-    let correctSize = slotsNeeded(defaultInitialSize)
-    setLen(t.keys, correctSize)
+    setLen(t.keys, defaultInitialSize)
     h = origH and maxHash(t)
 
   result = LitId(t.vals.len + idStart)
