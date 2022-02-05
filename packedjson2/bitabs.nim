@@ -11,7 +11,7 @@ type
   LitId* = distinct uint32
 
   BiTable*[T] = object
-    vals: seq[T] # indexed by LitId
+    vals: seq[tuple[hcode: Hash, val: T]] # indexed by LitId
     keys: seq[LitId] # indexed by hash(val)
 
 proc nextTry(h, maxHash: Hash): Hash {.inline.} =
@@ -49,7 +49,7 @@ proc enlarge[T](t: var BiTable[T]) =
   for i in 0..high(n):
     let eh = n[i]
     if isFilled(eh):
-      var j = hash(t.vals[idToIdx eh]) and maxHash(t)
+      var j = t.vals[idToIdx eh].hcode and maxHash(t)
       while isFilled(t.keys[j]):
         j = nextTry(j, maxHash(t))
       t.keys[j] = move n[i]
@@ -61,7 +61,9 @@ proc getKeyId*[T](t: BiTable[T]; v: T): LitId =
     while true:
       let litId = t.keys[h]
       if not isFilled(litId): break
-      if t.vals[idToIdx t.keys[h]] == v: return litId
+      let idx = idToIdx t.keys[h]
+      if t.vals[idx].hcode == origH and
+        t.vals[idx].val == v: return litId
       h = nextTry(h, maxHash(t))
   return LitId(0)
 
@@ -72,7 +74,9 @@ proc getOrIncl*[T](t: var BiTable[T]; v: T): LitId =
     while true:
       let litId = t.keys[h]
       if not isFilled(litId): break
-      if t.vals[idToIdx t.keys[h]] == v: return litId
+      let idx = idToIdx t.keys[h]
+      if t.vals[idx].hcode == origH and
+        t.vals[idx].val == v: return litId
       h = nextTry(h, maxHash(t))
     # not found, we need to insert it:
     if mustRehash(t.keys.len, t.vals.len):
@@ -89,17 +93,17 @@ proc getOrIncl*[T](t: var BiTable[T]; v: T): LitId =
 
   result = LitId(t.vals.len + idStart)
   t.keys[h] = result
-  t.vals.add v
+  t.vals.add (hcode: origH, val: v)
 
 proc `[]`*[T](t: var BiTable[T]; LitId: LitId): var T {.inline.} =
   let idx = idToIdx LitId
   assert idx >= 0 and idx < t.vals.len
-  result = t.vals[idx]
+  result = t.vals[idx].val
 
 proc `[]`*[T](t: BiTable[T]; LitId: LitId): lent T {.inline.} =
   let idx = idToIdx LitId
   assert idx >= 0 and idx < t.vals.len
-  result = t.vals[idx]
+  result = t.vals[idx].val
 
 when isMainModule:
 
