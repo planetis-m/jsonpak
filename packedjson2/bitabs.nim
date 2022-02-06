@@ -92,7 +92,7 @@ proc getOrIncl*[T](t: var BiTable[T]; v: T): LitId =
 
   result = LitId(t.vals.len + idStart)
   t.keys[h].key = result
-  t.keys[h].hcode = cast[int32](origH) # downcast Hash inorder to save space
+  t.keys[h].hcode = cast[int32](origH) # downcast Hash in order to save space
   t.vals.add v
 
 proc `[]`*[T](t: var BiTable[T]; LitId: LitId): var T {.inline.} =
