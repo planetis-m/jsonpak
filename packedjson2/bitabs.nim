@@ -61,7 +61,7 @@ proc getKeyId*[T](t: BiTable[T]; v: T): LitId =
     while true:
       let litId = t.keys[h]
       if not isFilled(litId): break
-      let idx = idToIdx t.keys[h]
+      let idx = idToIdx litId
       if t.vals[idx].hcode == origH and
         t.vals[idx].val == v: return litId
       h = nextTry(h, maxHash(t))
@@ -74,7 +74,7 @@ proc getOrIncl*[T](t: var BiTable[T]; v: T): LitId =
     while true:
       let litId = t.keys[h]
       if not isFilled(litId): break
-      let idx = idToIdx t.keys[h]
+      let idx = idToIdx litId
       if t.vals[idx].hcode == origH and
         t.vals[idx].val == v: return litId
       h = nextTry(h, maxHash(t))
