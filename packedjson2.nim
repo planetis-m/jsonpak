@@ -42,7 +42,7 @@ const
   opcodeMask = 0b111
 
 template kind(n: Node): int32 = n.int32 and opcodeMask
-template operand(n: Node): int32 = n.int32 shr opcodeBits.int32
+template operand(n: Node): int32 = int32(n.uint32 shr opcodeBits.int32)
 template toNode(kind, operand: int32): Node = Node(operand shl opcodeBits.int32 or kind)
 
 type
@@ -196,7 +196,7 @@ proc rawDelete(tree: var JsonTree, n: JsonNode, key: string) =
     let diff = NodePos(start).operand
     var pos = n.int
     while true:
-      let distance = int32(tree.nodes[pos].operand - diff)
+      let distance = tree.nodes[pos].operand - diff
       tree.nodes[pos] = toNode(tree.nodes[pos].kind, distance)
       if pos <= 0: break
       pos = NodePos(pos).parent.int
