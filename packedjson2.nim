@@ -445,7 +445,8 @@ proc currentAndNext(it: var JsonIter, tree: JsonTree): (NodePos, LitId, Action) 
 
 template key: string = tree.atoms[keyId]
 
-proc toUgly*(result: var string, tree: JsonTree, n: NodePos) =
+proc toUgly*(result: var string, tree: JsonTree, n: JsonNode) =
+  let n = NodePos n
   case n.kind
   of opcodeArray, opcodeObject:
     if n.kind == opcodeArray:
@@ -512,7 +513,7 @@ proc toUgly*(result: var string, tree: JsonTree, n: NodePos) =
 proc `$`*(tree: JsonTree): string =
   ## Converts `tree` to its JSON Representation on one line.
   result = newStringOfCap(tree.nodes.len shl 1)
-  toUgly(result, tree, NodePos jRoot)
+  toUgly(result, tree, jRoot)
 
 proc toJson*(s: string; tree: var JsonTree) =
   ## Generic constructor for JSON data. Creates a new `JString JsonNode`.
