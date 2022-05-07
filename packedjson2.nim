@@ -92,6 +92,11 @@ template operand(n: NodePos): int32 = tree.nodes[n.int].operand
 
 proc isNil*(n: JsonNode): bool {.inline.} = n < jRoot
 
+proc len*(tree: JsonTree; n: JsonNode): int =
+  result = 0
+  if tree.nodes[n.int].kind > opcodeNull:
+    for child in sonsReadonly(tree, NodePos n): inc result
+
 iterator items*(tree: JsonTree, n: JsonNode): JsonNode =
   ## Iterator for the items of `x`. `x` has to be a JArray.
   assert not n.isNil

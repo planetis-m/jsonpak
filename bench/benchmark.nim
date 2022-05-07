@@ -4,13 +4,14 @@ proc main =
   template `[]`(n, name): untyped = get(jobj, n, name)
   template items(n): untyped = items(jobj, n)
   template getFloat(n): untyped = getFloat(jobj, n)
+  template len(n): untyped = len(jobj, n)
 
   let start = cpuTime()
   let jobj = parseFile("1.json")
 
   let coordinates = jRoot["coordinates"]
-  let len = 1000000.float #float(coordinates.len)
-  #doAssert coordinates.len == 1000000
+  let L = float(coordinates.len)
+  doAssert L == 1000000
   var x = 0.0
   var y = 0.0
   var z = 0.0
@@ -20,9 +21,9 @@ proc main =
     y += coord["y"].getFloat
     z += coord["z"].getFloat
 
-  echo x / len
-  echo y / len
-  echo z / len
+  echo x / L
+  echo y / L
+  echo z / L
   echo "used Mem: ", formatSize getOccupiedMem(), " time: ", cpuTime() - start, "s"
 
 main()
