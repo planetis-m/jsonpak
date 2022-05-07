@@ -5,9 +5,9 @@ proc hash(x: JsonNode): Hash =
   result = hash(x.int32)
 
 proc breadthFirstSearch(tree: JsonTree; source: JsonNode; name: string): JsonNode =
-  template `[]`(n: JsonNode, name: string): untyped = get(tree, n, name)
-  template items(n: JsonNode): untyped = items(tree, n)
-  template getStr(n: JsonNode): untyped = getStr(tree, n)
+  template `[]`(n, name): untyped = get(tree, n, name)
+  template items(n): untyped = items(tree, n)
+  template getStr(n): untyped = getStr(tree, n)
 
   var queue: Deque[JsonNode]
   queue.addLast(source)
@@ -27,7 +27,7 @@ proc breadthFirstSearch(tree: JsonTree; source: JsonNode; name: string): JsonNod
   result = jNull
 
 proc main =
-  template `$`(n: JsonNode): untyped =
+  template `$`(n): untyped =
     (var result = ""; toUgly(result, jobj, n); result)
 
   let start = cpuTime()

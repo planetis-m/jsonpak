@@ -1,20 +1,24 @@
 import packedjson2, strutils, times
 
 proc main =
+  template `[]`(n, name): untyped = get(jobj, n, name)
+  template items(n): untyped = items(jobj, n)
+  template getFloat(n): untyped = getFloat(jobj, n)
+
   let start = cpuTime()
   let jobj = parseFile("1.json")
 
-  let coordinates = get(jobj, jRoot, "coordinates")
+  let coordinates = jRoot["coordinates"]
   let len = 1000000.float #float(coordinates.len)
   #doAssert coordinates.len == 1000000
   var x = 0.0
   var y = 0.0
   var z = 0.0
 
-  for coord in items(jobj, coordinates):
-    x += getFloat(jobj, get(jobj, coord, "x"))
-    y += getFloat(jobj, get(jobj, coord, "y"))
-    z += getFloat(jobj, get(jobj, coord, "z"))
+  for coord in items(coordinates):
+    x += coord["x"].getFloat
+    y += coord["y"].getFloat
+    z += coord["z"].getFloat
 
   echo x / len
   echo y / len
