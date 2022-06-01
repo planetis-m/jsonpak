@@ -2,9 +2,9 @@
 type
   JsonPtr* = distinct string
 
-proc add*(x: var JsonTree; path: JsonPtr; value: sink JsonTree)
+proc add*(x: var JsonTree; path: JsonPtr; value: JsonTree)
 proc remove*(x: var JsonTree; path: JsonPtr)
-proc replace*(x: var JsonTree; path: JsonPtr, value: sink JsonTree)
+proc replace*(x: var JsonTree; path: JsonPtr, value: JsonTree)
 proc copy*(x: var JsonTree; `from`, path: JsonPtr)
 proc move*(x: var JsonTree; `from`, path: JsonPtr)
 proc test*(x: JsonTree; path: JsonPtr, value: JsonTree): bool
@@ -15,6 +15,8 @@ var x = %*{
   "c": [5, 6],
   "d": {"e": [7, 8], "f": 9}
 }
+
+#template `$*`*(s: string): JsonPtr = JsonPtr(s)
 
 add x, JsonPtr"/a/-", %*[5, 6]
 # """{"a":[1,2,3,[5,6]],"b":4,"c":[5,6],"d":{"e":[7,8],"f":9}}"""
@@ -43,13 +45,13 @@ iterator pairs*(x: JsonTree; path: JsonPtr; t: typedesc[T]): (lent string, T)
 # Extra
 proc len*(x: JsonTree; path: JsonPtr): int
 proc kind*(x: JsonTree; path: JsonPtr): JsonNodeKind
-proc hasKey*(tree: JsonTree; path: JsonPtr; key: string): bool
+proc hasKey*(x: JsonTree; path: JsonPtr): bool
 proc extract*(x: JsonTree; path: JsonPtr): JsonTree
 #proc hash*(x: JsonTree): Hash
 
 assert len(x, JsonPtr"/b") == 2
 assert kind(x, JsonPtr"/d/e") == JArray
-assert hasKey(x, JsonPtr"", "d")
+assert hasKey(x, JsonPtr"/d")
 assert $extract(x, JsonPtr"/d") == """{"e":[7],"f":"foo"}"""
 
 # recursive iterators
@@ -58,7 +60,7 @@ iterator pairsRec*(x: JsonTree; path: JsonPtr; t: typedesc[T]): (lent string, T)
 
 # Examples
 type
-  Coordinate = tuple[x: float, y: float, z: float]
+  Coordinate = tuple[x, y, z: float]
 
 let jobj = parseFile("1.json")
 
@@ -72,7 +74,5 @@ for coord in items(jobj, JsonPtr"/coordinates", Coordinate):
   y += coord.y
   z += coord.z
 
-const left = %*{
-  "coordinates":[{"x":2.0,"y":0.5,"z":0.25}]
-}
+let left = %*{"coordinates":[{"x":2.0,"y":0.5,"z":0.25}]}
 assert test(left, JsonPtr"", %*{"coordinates":[{"y":0.5,"x":2.0,"z":0.25}]})
