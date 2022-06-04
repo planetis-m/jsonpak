@@ -44,6 +44,7 @@ block:
   assert get(x, jRoot, "a", "key") == JsonNode 6
   assert getJsonNode(x, jRoot, JsonPtr"/a/key") == JsonNode 6
   assert get(x, JsonNode 6, 1, 2) == JsonNode 11
+  assert getJsonNode(x, JsonNode 6, JsonPtr"/-/-") == JsonNode 11
   assert getJsonNode(x, JsonNode 6, JsonPtr"/1/2") == JsonNode 11
   for k, v in pairs(x, jRoot):
     assert k == "a"

@@ -715,15 +715,17 @@ proc getJsonNode*(tree: JsonTree; n: JsonNode; path: JsonPtr): JsonNode =
       unescape(cur)
       result = rawGet(tree, result, cur)
     of JArray:
-      let j = getArrayIndex(cur)
       block searchLoop:
-        var i = if j == -1: len(tree, result)-1 else: j
+        var i = getArrayIndex(cur)
+        var last = jNull
         for x in items(tree, result):
+          last = x
           if i == 0:
             result = x
             break searchLoop
           dec i
-        return jNull
+        if i < 0: result = last
+        else: return jNull
     else: return jNull
     if result.isNil: return
     inc(last)
