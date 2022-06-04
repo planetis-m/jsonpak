@@ -704,12 +704,16 @@ proc getJsonNode*(tree: JsonTree; n: JsonNode; path: JsonPtr): JsonNode =
   result = n
   if result.isNil: return
   let path = string(path)
+  var cur = ""
   var last = 1
   while last <= len(path):
     var first = last
     while last < len(path) and path[last] != '/':
       inc(last)
-    var cur = substr(path, first, last-1)
+    cur.setLen(last-first)
+    #for i in 0..high(cur):
+      #cur[i] = path[i+first]
+    copyMem(cur.cstring, addr path[first], cur.len)
     case kind(tree, result)
     of JObject:
       unescape(cur)
