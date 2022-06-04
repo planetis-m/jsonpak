@@ -30,6 +30,7 @@ block:
   assert get(x, jRoot, "a", "key") == jNull
   assert get(x, JsonNode 3, 2) == JsonNode 6
   assert getJsonNode(x, JsonNode 3, JsonPtr"/2") == JsonNode 6
+  assert getJsonNode(x, JsonNode 3, JsonPtr"/-") == JsonNode 12
   assert get(x, jRoot, "b", "key") == jNull
   assert get(x, JsonNode 3, 2, 1) == jNull
   assert $x == data
