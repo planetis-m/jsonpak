@@ -616,5 +616,117 @@ macro `%*`*(x: untyped): untyped =
     newTree(nnkIdentDefs, res, bindSym"JsonTree", newEmptyNode()))
   result = newTree(nnkStmtListExpr, v, toJsonImpl(x, res), res)
 
+func addEscaped*(result: var string, s: string) =
+  ## The same as `result.add(escape(s)) <#escape,string>`_, but more efficient.
+  for c in items(s):
+    case c
+    of '~': result.add("~0")
+    of '/': result.add("~1")
+    else: result.add(c)
+
+func escape*(s: string): string =
+  ## Escaped `s` for inclusion into a JSON Pointer.
+  ##
+  ## '~' => `~0`
+  ## '/' => `~1`
+  ##
+  ## You can also use `addEscaped proc <#addEscaped,string,string>`_.
+  result = newStringOfCap(s.len)
+  addEscaped(result, s)
+
+type
+  JsonPtrError* = object of CatchableError
+  UsageError* = object of JsonPtrError
+  SyntaxError* = object of JsonPtrError
+
+proc raiseSyntaxError() {.noinline.} =
+  raise newException(SyntaxError, "invalid JSON pointer")
+
+proc raiseUsageError() {.noinline.} =
+  raise newException(UsageError, "invalid use of jsonptr.unescape on string with '/'")
+
+func unescape*(token: var string) =
+  ## Unescapes a string `s`.
+  ##
+  ## This complements `escape func<#escape,string>`_
+  ## as it performs the opposite operations.
+  var p = -1
+  block outer:
+    for q in 0 ..< len(token):
+      case token[q]
+      of '~':
+        p = q
+        break outer
+      of '/':
+        raiseUsageError()
+      else: discard
+  # Nothing to replace
+  if p == -1:
+    return
+  if token[len(token)-1] == '~':
+    raiseSyntaxError()
+  var q = p
+  while q < len(token):
+    case token[q]
+    of '~':
+      inc(q)
+      case token[q]
+      of '0':
+        token[p] = '~'
+      of '1':
+        token[p] = '/'
+      else:
+        raiseSyntaxError()
+    of '/':
+      raiseUsageError()
+    else:
+      token[p] = token[q] # Move byte
+    inc(p)
+    inc(q)
+  token.setLen(p)
+
+func getArrayIndex(token: string): int {.inline.} =
+  if len(token) == 0:
+    raiseSyntaxError()
+  if len(token) == 1:
+    if token[0] == '0':
+      return 0
+    if token[0] == '-':
+      return -1
+  if token[0] < '1':
+    raiseSyntaxError()
+  result = parseInt(token)
+
+type
+  JsonPtr* = distinct string
+
+proc getJsonNode*(tree: JsonTree; n: JsonNode; path: JsonPtr): JsonNode =
+  result = n
+  if result.isNil: return
+  let path = string(path)
+  var last = 1 # skip leading /
+  while last <= len(path):
+    var first = last
+    while last < len(path) and path[last] != '/':
+      inc(last)
+    var cur = substr(path, first, last-1)
+    case kind(tree, result)
+    of JObject:
+      unescape(cur)
+      result = rawGet(tree, result, cur)
+    of JArray:
+      block searchLoop:
+        var i = getArrayIndex(cur)
+        for x in items(tree, result):
+          if i == 0:
+            result = x
+            break searchLoop
+          dec i
+        return jNull
+    else: return jNull
+    if result.isNil: return
+    inc(last)
+
+
 when isMainModule:
   include tests/internals

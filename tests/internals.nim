@@ -5,6 +5,7 @@ block:
   assert not x.isEmpty
   assert x.atoms.len == 5
   assert kind(x, jRoot) == JObject
+  assert getJsonNode(x, jRoot, JsonPtr"/a") == JsonNode 3
   assert get(x, jRoot, "a") == JsonNode 3
   assert hasKey(x, jRoot, "a")
   assert x.nodes[1].kind == opcodeKeyValuePair
@@ -14,16 +15,21 @@ block:
   assert not hasKey(x, JsonNode 6, "a")
   assert x.nodes[7].kind == opcodeKeyValuePair
   assert x.nodes[7].operand == 5
+  assert getJsonNode(x, jRoot, JsonPtr"/a/2/key") == JsonNode 9
   assert kind(x, JsonNode 9) == JArray
   assert get(x, JsonNode 9, 1) == JsonNode 11
+  assert getJsonNode(x, jRoot, JsonPtr"/a/1") == JsonNode 5
   assert kind(x, JsonNode 5) == JBool
   assert getBool(x, JsonNode 5) == false
+  assert getJsonNode(x, jRoot, JsonPtr"/a/0") == JsonNode 4
   assert kind(x, JsonNode 4) == JInt
   assert getInt(x, JsonNode 4) == 1
+  assert getJsonNode(x, jRoot, JsonPtr"/a/2/key/1") == JsonNode 11
   assert kind(x, JsonNode 11) == JInt
   assert getInt(x, JsonNode 11) == 5
   assert get(x, jRoot, "a", "key") == jNull
   assert get(x, JsonNode 3, 2) == JsonNode 6
+  assert getJsonNode(x, JsonNode 3, JsonPtr"/2") == JsonNode 6
   assert get(x, jRoot, "b", "key") == jNull
   assert get(x, JsonNode 3, 2, 1) == jNull
   assert $x == data
@@ -35,7 +41,9 @@ block:
   assert x.atoms.len == 6
   assert kind(x, jRoot) == JObject
   assert get(x, jRoot, "a", "key") == JsonNode 6
+  assert getJsonNode(x, jRoot, JsonPtr"/a/key") == JsonNode 6
   assert get(x, JsonNode 6, 1, 2) == JsonNode 11
+  assert getJsonNode(x, JsonNode 6, JsonPtr"/1/2") == JsonNode 11
   for k, v in pairs(x, jRoot):
     assert k == "a"
     assert kind(x, v) == JObject

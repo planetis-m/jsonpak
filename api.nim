@@ -45,13 +45,13 @@ iterator pairs*(x: JsonTree; path: JsonPtr; t: typedesc[T]): (lent string, T)
 # Extra
 proc len*(x: JsonTree; path: JsonPtr): int
 proc kind*(x: JsonTree; path: JsonPtr): JsonNodeKind
-proc hasKey*(x: JsonTree; path: JsonPtr): bool
+proc contains*(x: JsonTree; path: JsonPtr): bool
 proc extract*(x: JsonTree; path: JsonPtr): JsonTree
 #proc hash*(x: JsonTree): Hash
 
 assert len(x, JsonPtr"/b") == 2
 assert kind(x, JsonPtr"/d/e") == JArray
-assert hasKey(x, JsonPtr"/d")
+assert contains(x, JsonPtr"/d")
 assert $extract(x, JsonPtr"/d") == """{"e":[7],"f":"foo"}"""
 
 # recursive iterators
