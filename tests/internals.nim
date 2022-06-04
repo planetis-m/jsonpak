@@ -5,6 +5,7 @@ block:
   assert not x.isEmpty
   assert x.atoms.len == 5
   assert kind(x, jRoot) == JObject
+  assert getJsonNode(x, jRoot, JsonPtr"") == jRoot
   assert getJsonNode(x, jRoot, JsonPtr"/a") == JsonNode 3
   assert get(x, jRoot, "a") == JsonNode 3
   assert hasKey(x, jRoot, "a")
@@ -29,6 +30,7 @@ block:
   assert getInt(x, JsonNode 11) == 5
   assert get(x, jRoot, "a", "key") == jNull
   assert get(x, JsonNode 3, 2) == JsonNode 6
+  assert getJsonNode(x, JsonNode 3, JsonPtr"") == JsonNode 3
   assert getJsonNode(x, JsonNode 3, JsonPtr"/2") == JsonNode 6
   assert getJsonNode(x, JsonNode 3, JsonPtr"/-") == JsonNode 12
   assert get(x, jRoot, "b", "key") == jNull

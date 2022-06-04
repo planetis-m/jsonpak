@@ -704,7 +704,7 @@ proc getJsonNode*(tree: JsonTree; n: JsonNode; path: JsonPtr): JsonNode =
   result = n
   if result.isNil: return
   let path = string(path)
-  var last = 1 # skip leading /
+  var last = 1
   while last <= len(path):
     var first = last
     while last < len(path) and path[last] != '/':
@@ -714,6 +714,7 @@ proc getJsonNode*(tree: JsonTree; n: JsonNode; path: JsonPtr): JsonNode =
     of JObject:
       unescape(cur)
       result = rawGet(tree, result, cur)
+      if result.isNil: return
     of JArray:
       block searchLoop:
         var i = getArrayIndex(cur)
@@ -727,7 +728,6 @@ proc getJsonNode*(tree: JsonTree; n: JsonNode; path: JsonPtr): JsonNode =
         if i < 0: result = last
         else: return jNull
     else: return jNull
-    if result.isNil: return
     inc(last)
 
 
