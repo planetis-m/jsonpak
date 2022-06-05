@@ -5,8 +5,8 @@ block:
   assert not x.isEmpty
   assert x.atoms.len == 5
   assert kind(x, JsonPtr"") == JObject
-  assert toNodePos(x, jRoot, JsonPtr"") == jRoot
-  assert toNodePos(x, jRoot, JsonPtr"/a") == NodePos 3
+  assert toNodePos(x, rootNodeId, JsonPtr"") == rootNodeId
+  assert toNodePos(x, rootNodeId, JsonPtr"/a") == NodePos 3
   assert contains(x, JsonPtr"/a")
   assert x.nodes[1].kind == opcodeKeyValuePair
   assert x.nodes[1].operand == 12
@@ -14,15 +14,15 @@ block:
   assert not contains(x, JsonPtr"/a/2/a")
   assert x.nodes[7].kind == opcodeKeyValuePair
   assert x.nodes[7].operand == 5
-  assert toNodePos(x, jRoot, JsonPtr"/a/2/key") == NodePos 9
+  assert toNodePos(x, rootNodeId, JsonPtr"/a/2/key") == NodePos 9
   assert kind(x, JsonPtr"/a/2/key") == JArray
-  assert toNodePos(x, jRoot, JsonPtr"/a/1") == NodePos 5
+  assert toNodePos(x, rootNodeId, JsonPtr"/a/1") == NodePos 5
   assert kind(x, JsonPtr"/a/1") == JBool
   assert getBool(x, JsonPtr"/a/1") == false
-  assert toNodePos(x, jRoot, JsonPtr"/a/0") == NodePos 4
+  assert toNodePos(x, rootNodeId, JsonPtr"/a/0") == NodePos 4
   assert kind(x, JsonPtr"/a/0") == JInt
   assert getInt(x, JsonPtr"/a/0") == 1
-  assert toNodePos(x, jRoot, JsonPtr"/a/2/key/1") == NodePos 11
+  assert toNodePos(x, rootNodeId, JsonPtr"/a/2/key/1") == NodePos 11
   assert kind(x, JsonPtr"/a/2/key/1") == JInt
   assert getInt(x, JsonPtr"/a/2/key/1") == 5
   assert toNodePos(x, NodePos 3, JsonPtr"") == NodePos 3
@@ -36,10 +36,10 @@ block:
   assert not x.isEmpty
   assert x.atoms.len == 6
   assert kind(x, JsonPtr"") == JObject
-  assert toNodePos(x, jRoot, JsonPtr"/a/key") == NodePos 6
+  assert toNodePos(x, rootNodeId, JsonPtr"/a/key") == NodePos 6
   assert toNodePos(x, NodePos 6, JsonPtr"/-/-") == NodePos 11
   assert toNodePos(x, NodePos 6, JsonPtr"/1/2") == NodePos 11
-  for k, v in pairs(x, jRoot):
+  for k, v in pairs(x, rootNodeId):
     assert k == "a"
     assert v == NodePos 3
   assert $x == data
@@ -52,7 +52,7 @@ block:
   assert x.atoms.len == 8
   assert contains(x, JsonPtr"/a")
   assert contains(x, JsonPtr"/key")
-  delete(x, jRoot, "a")
+  delete(x, rootNodeId, "a")
   assert not contains(x, JsonPtr"/a")
   assert contains(x, JsonPtr"/key")
   assert kind(x, JsonPtr"") == JObject
