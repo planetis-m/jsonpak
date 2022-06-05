@@ -39,9 +39,6 @@ block:
   assert toNodePos(x, rootNodeId, JsonPtr"/a/key") == NodePos 6
   assert toNodePos(x, NodePos 6, JsonPtr"/-/-") == NodePos 11
   assert toNodePos(x, NodePos 6, JsonPtr"/1/2") == NodePos 11
-  for k, v in pairs(x, rootNodeId):
-    assert k == "a"
-    assert v == NodePos 3
   assert $x == data
 
 block:

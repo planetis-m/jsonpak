@@ -16,14 +16,12 @@ type
     JArray
 
 const
-  rootNodeId = NodePos(0)   ## Each `JsonTree` starts from this index.
-  emptyNodeId = NodePos(-1) ## Empty `NodePos`
+  rootNodeId = NodePos(0) ## Each `JsonTree` starts from this index.
+  nilNodeId = NodePos(-1) ## Empty `NodePos`
 
 proc `<`(a, b: NodePos): bool {.borrow.}
 proc `<=`(a, b: NodePos): bool {.borrow.}
 proc `==`(a, b: NodePos): bool {.borrow.}
-
-proc isNil(n: NodePos): bool {.inline.} = n < rootNodeId
 
 const
   opcodeBits = 3
@@ -82,36 +80,21 @@ proc parentImpl(tree: JsonTree; n: NodePos): NodePos =
 template parent(n: NodePos): NodePos = parentImpl(tree, n)
 
 proc firstSon(n: NodePos): NodePos {.inline.} = NodePos(n.int+1)
+proc isNil(n: NodePos): bool {.inline.} = n == nilNodeId
 
 template kind(n: NodePos): int32 = tree.nodes[n.int].kind
 template litId(n: NodePos): LitId = LitId tree.nodes[n.int].operand
 template operand(n: NodePos): int32 = tree.nodes[n.int].operand
 
-iterator items(tree: JsonTree, n: NodePos): NodePos =
-  assert not n.isNil
-  assert n.kind == opcodeArray
-  for ch0 in sonsReadonly(tree, n):
-    yield ch0
-
-iterator pairs(tree: JsonTree, n: NodePos): (lent string, NodePos) =
-  assert not n.isNil
-  assert n.kind == opcodeObject
-  for ch0 in sonsReadonly(tree, n):
-    assert ch0.kind == opcodeKeyValuePair
-    let litId = ch0.firstSon.litId
-    yield (tree.atoms[litId], NodePos(ch0.int+2))
-
 proc rawGet(tree: JsonTree, n: NodePos, name: string): NodePos =
-  assert not n.isNil
-  assert n.kind == opcodeObject
   let litId = tree.atoms.getKeyId(name)
   if litId == LitId(0):
-    return emptyNodeId
+    return nilNodeId
   for ch0 in sonsReadonly(tree, n):
     assert ch0.kind == opcodeKeyValuePair
     if ch0.firstSon.litId == litId:
       return NodePos(ch0.int+2) # guaranteed that firstSon isAtom
-  return emptyNodeId
+  return nilNodeId
 
 func addEscaped*(result: var string, s: string) =
   ## The same as `result.add(escape(s)) <#escape,string>`_, but more efficient.
@@ -219,16 +202,16 @@ proc toNodePos*(tree: JsonTree; n: NodePos; path: JsonPtr): NodePos =
     of opcodeArray:
       block searchLoop:
         var i = getArrayIndex(cur)
-        var last = emptyNodeId
-        for x in items(tree, result):
-          last = x
+        var last = nilNodeId
+        for ch0 in sonsReadonly(tree, result):
+          last = ch0
           if i == 0:
-            result = x
+            result = ch0
             break searchLoop
           dec i
         if i < 0: result = last
-        else: return emptyNodeId
-    else: return emptyNodeId
+        else: return nilNodeId
+    else: return nilNodeId
     inc(last)
 
 proc kind*(tree: JsonTree; path: JsonPtr): JsonNodeKind {.inline.} =
@@ -253,8 +236,6 @@ proc contains*(tree: JsonTree, path: JsonPtr): bool =
   result = n >= rootNodeId
 
 proc rawDelete(tree: var JsonTree, n: NodePos, key: string) =
-  assert not n.isNil
-  assert n.kind == opcodeObject
   let litId = tree.atoms.getKeyId(key)
   if litId == LitId(0):
     raiseKeyError(key)
@@ -518,7 +499,7 @@ proc currentAndNext(it: var JsonIter, tree: JsonTree): (NodePos, LitId, Action) 
     it.pos = tmp[1]
     it.tosEnd = it.tos.tosEnd
   else:
-    result = (emptyNodeId, LitId(0), actionEnd)
+    result = (nilNodeId, LitId(0), actionEnd)
 
 template key: string = tree.atoms[keyId]
 
@@ -668,7 +649,7 @@ proc toJsonImpl(x, res: NimNode): NimNode =
       result.add toJsonImpl(x[i][1], res)
       result.add newCall(bindSym"patch", res, tmp2)
     result.add newCall(bindSym"patch", res, tmp1)
-  of nnkCurly: # empty object
+  of nnkCurly: # nil object
     x.expectLen(0)
     result = addEmpty(bindSym"opcodeObject", res)
   of nnkNilLit:
@@ -693,25 +674,25 @@ template ast(n: NodePos): string =
   dump
 
 template verifyJsonKind(tree: JsonTree; n: NodePos, kind: JsonNodeKind, kinds: set[JsonNodeKind]) =
-  if n == emptyNodeId:
+  if n == nilNodeId:
     raiseKeyError("key not found: " & n.ast)
   elif kind notin kinds:
     let msg = format("Incorrect JSON kind. Wanted '$1' in '$2' but got '$3'.", kinds, n.ast, kind)
     raise newException(JsonKindError, msg)
 
 proc initFromJson(dst: var string; tree: JsonTree; n: NodePos) =
-  verifyJsonKind(tree, n, JsonNodeKind n.kind, {JString, JNull})
+  verifyJsonKind(tree, n, JsonNodeKind(n.kind), {JString, JNull})
   if n.kind == opcodeNull:
     dst = ""
   else:
     dst = n.str
 
 proc initFromJson(dst: var bool; tree: JsonTree; n: NodePos) =
-  verifyJsonKind(tree, n, JsonNodeKind n.kind, {JBool})
+  verifyJsonKind(tree, n, JsonNodeKind(n.kind), {JBool})
   dst = n.bval
 
 proc initFromJson[T: SomeInteger](dst: var T; tree: JsonTree; n: NodePos) =
-  verifyJsonKind(tree, n, JsonNodeKind n.kind, {JInt})
+  verifyJsonKind(tree, n, JsonNodeKind(n.kind), {JInt})
   when T is BiggestUInt:
     dst = parseBiggestUInt n.str
   elif T is BiggestInt:
