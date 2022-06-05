@@ -27,7 +27,6 @@ proc `<=`*(x, y: LitId): bool {.borrow.}
 proc `==`*(x, y: LitId): bool {.borrow.}
 proc hash*(x: LitId): Hash {.borrow.}
 
-
 proc len*[T](t: BiTable[T]): int = t.vals.len
 
 proc mustRehash(length, counter: int): bool {.inline.} =

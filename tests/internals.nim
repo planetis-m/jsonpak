@@ -49,7 +49,7 @@ block:
   assert x.atoms.len == 8
   assert contains(x, JsonPtr"/a")
   assert contains(x, JsonPtr"/key")
-  delete(x, rootNodeId, "a")
+  remove(x, JsonPtr"/a")
   assert not contains(x, JsonPtr"/a")
   assert contains(x, JsonPtr"/key")
   assert kind(x, JsonPtr"") == JObject

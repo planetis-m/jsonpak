@@ -79,8 +79,8 @@ proc parentImpl(tree: JsonTree; n: NodePos): NodePos =
 
 template parent(n: NodePos): NodePos = parentImpl(tree, n)
 
-proc firstSon(n: NodePos): NodePos {.inline.} = NodePos(n.int+1)
 proc isNil(n: NodePos): bool {.inline.} = n == nilNodeId
+proc firstSon(n: NodePos): NodePos {.inline.} = NodePos(n.int+1)
 
 template kind(n: NodePos): int32 = tree.nodes[n.int].kind
 template litId(n: NodePos): LitId = LitId tree.nodes[n.int].operand
@@ -224,8 +224,8 @@ proc len*(tree: JsonTree; path: JsonPtr): int =
   if tree.nodes[n.int].kind > opcodeNull:
     for child in sonsReadonly(tree, n): inc result
 
-proc raiseKeyError(key: string) {.noinline, noreturn.} =
-  raise newException(KeyError, "key not in object: " & key)
+proc raiseKeyError(path: string) {.noinline, noreturn.} =
+  raise newException(KeyError, "path not in object: " & path)
 
 proc raiseIndexDefect() {.noinline, noreturn.} =
   raise newException(IndexDefect, "index out of bounds")
@@ -235,33 +235,24 @@ proc contains*(tree: JsonTree, path: JsonPtr): bool =
   let n = toNodePos(tree, rootNodeId, path)
   result = n >= rootNodeId
 
-proc rawDelete(tree: var JsonTree, n: NodePos, key: string) =
-  let litId = tree.atoms.getKeyId(key)
-  if litId == LitId(0):
-    raiseKeyError(key)
-  var start = -1
-  for ch0 in sonsReadonly(tree, n):
-    assert ch0.kind == opcodeKeyValuePair
-    if ch0.firstSon.litId == litId:
-      start = ch0.int
-      break
-  if start >= 0:
-    let diff = NodePos(start).operand
-    var pos = n.int
-    while true:
-      let distance = tree.nodes[pos].operand - diff
-      tree.nodes[pos] = toNode(tree.nodes[pos].kind, distance)
-      if pos <= 0: break
-      pos = NodePos(pos).parent.int
-    let oldfull = tree.nodes.len
-    for i in countup(start, oldfull-diff-1): tree.nodes[i] = tree.nodes[i+diff]
-    setLen(tree.nodes, oldfull-diff)
-    return
-  raiseKeyError(key)
+proc rawRemove(tree: var JsonTree, n: NodePos) =
+  let diff = NodePos(n.int-2).operand
+  let start = n.parent.int
+  var pos = start.int
+  while true:
+    let distance = tree.nodes[pos].operand - diff
+    tree.nodes[pos] = toNode(tree.nodes[pos].kind, distance)
+    if pos <= 0: break
+    pos = NodePos(pos).parent.int
+  let oldFull = tree.nodes.len
+  for i in countup(start, oldFull-diff-1): tree.nodes[i] = tree.nodes[i+diff]
+  setLen(tree.nodes, oldFull-diff)
 
-proc delete*(tree: var JsonTree, n: NodePos, key: string) =
-  ## Deletes ``x[key]``.
-  rawDelete(tree, n, key)
+proc remove*(tree: var JsonTree, path: JsonPtr) =
+  ## Removes `path`.
+  let n = toNodePos(tree, rootNodeId, path)
+  if n.isNil: raiseKeyError(path.string)
+  rawRemove(tree, n)
 
 template str(n: NodePos): string = tree.atoms[n.litId]
 template bval(n: NodePos): bool = n.operand == 1
@@ -501,16 +492,15 @@ proc currentAndNext(it: var JsonIter, tree: JsonTree): (NodePos, LitId, Action) 
   else:
     result = (nilNodeId, LitId(0), actionEnd)
 
-template key: string = tree.atoms[keyId]
-
 proc toUgly(result: var string, tree: JsonTree, n: NodePos) =
+  template key: string = tree.atoms[keyId]
+
   case n.kind
   of opcodeArray, opcodeObject:
     if n.kind == opcodeArray:
       result.add "["
     else:
       result.add "{"
-
     var it = initJsonIter(tree, n)
     var pendingComma = false
     while true:
@@ -552,7 +542,6 @@ proc toUgly(result: var string, tree: JsonTree, n: NodePos) =
           result.add "null"
           pendingComma = true
         else: discard
-
     if n.kind == opcodeArray:
       result.add "]"
     else:
