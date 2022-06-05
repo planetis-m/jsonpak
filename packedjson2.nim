@@ -4,8 +4,6 @@ import
 export JsonParsingError, JsonKindError
 
 type
-  JsonNode* = distinct int32
-
   Node = distinct int32
   NodePos = distinct int
   JsonNodeKind* = enum ## possible JSON node types
@@ -18,12 +16,14 @@ type
     JArray
 
 const
-  jRoot* = JsonNode(0)  ## Each `JsonTree` starts from this index.
-  jNull* = JsonNode(-1) ## Null `JsonNode`
+  rootNodePos = NodePos(0)  ## Each `JsonTree` starts from this index.
+  emptyNodePos = NodePos(-1) ## Empty `NodePos`
 
-proc `<`*(a, b: JsonNode): bool {.borrow.}
-proc `<=`*(a, b: JsonNode): bool {.borrow.}
-proc `==`*(a, b: JsonNode): bool {.borrow.}
+proc `<`(a, b: NodePos): bool {.borrow.}
+proc `<=`(a, b: NodePos): bool {.borrow.}
+proc `==`(a, b: NodePos): bool {.borrow.}
+
+proc isNil(n: NodePos): bool {.inline.} = n < rootNodePos
 
 const
   opcodeBits = 3
@@ -62,9 +62,6 @@ proc nextChild(tree: JsonTree; pos: var int) {.inline.} =
   else:
     inc pos
 
-proc kind*(tree: JsonTree; n: JsonNode): JsonNodeKind {.inline.} =
-  JsonNodeKind tree.nodes[n.int].kind
-
 iterator sonsReadonly(tree: JsonTree; n: NodePos): NodePos =
   var pos = n.int
   assert tree.nodes[pos].kind > opcodeString
@@ -90,109 +87,179 @@ template kind(n: NodePos): int32 = tree.nodes[n.int].kind
 template litId(n: NodePos): LitId = LitId tree.nodes[n.int].operand
 template operand(n: NodePos): int32 = tree.nodes[n.int].operand
 
-proc isNil*(n: JsonNode): bool {.inline.} = n < jRoot
-
-proc len*(tree: JsonTree; n: JsonNode): int =
-  result = 0
-  if tree.nodes[n.int].kind > opcodeNull:
-    for child in sonsReadonly(tree, NodePos n): inc result
-
-iterator items*(tree: JsonTree, n: JsonNode): JsonNode =
-  ## Iterator for the items of `x`. `x` has to be a JArray.
+iterator items(tree: JsonTree, n: NodePos): NodePos =
   assert not n.isNil
-  assert kind(tree, n) == JArray
-  for ch0 in sonsReadonly(tree, NodePos n):
-    yield JsonNode ch0
+  assert n.kind == opcodeArray
+  for ch0 in sonsReadonly(tree, n):
+    yield ch0
 
-iterator pairs*(tree: JsonTree, n: JsonNode): (lent string, JsonNode) =
-  ## Iterator for the pairs of `x`. `x` has to be a JObject.
+iterator pairs(tree: JsonTree, n: NodePos): (lent string, NodePos) =
   assert not n.isNil
-  assert kind(tree, n) == JObject
-  for ch0 in sonsReadonly(tree, NodePos n):
+  assert n.kind == opcodeObject
+  for ch0 in sonsReadonly(tree, n):
     assert ch0.kind == opcodeKeyValuePair
     let litId = ch0.firstSon.litId
-    yield (tree.atoms[litId], JsonNode(ch0.int+2))
+    yield (tree.atoms[litId], NodePos(ch0.int+2))
 
-proc rawGet(tree: JsonTree, n: JsonNode, name: string): JsonNode =
+proc rawGet(tree: JsonTree, n: NodePos, name: string): NodePos =
   assert not n.isNil
-  assert kind(tree, n) == JObject
+  assert n.kind == opcodeObject
   let litId = tree.atoms.getKeyId(name)
   if litId == LitId(0):
-    return jNull
-  for ch0 in sonsReadonly(tree, NodePos n):
+    return emptyNodePos
+  for ch0 in sonsReadonly(tree, n):
     assert ch0.kind == opcodeKeyValuePair
     if ch0.firstSon.litId == litId:
-      return JsonNode(ch0.int+2) # guaranteed that firstSon isAtom
-  return jNull
+      return NodePos(ch0.int+2) # guaranteed that firstSon isAtom
+  return emptyNodePos
+
+func addEscaped*(result: var string, s: string) =
+  ## The same as `result.add(escape(s)) <#escape,string>`_, but more efficient.
+  for c in items(s):
+    case c
+    of '~': result.add("~0")
+    of '/': result.add("~1")
+    else: result.add(c)
+
+func escape*(s: string): string =
+  ## Escaped `s` for inclusion into a JSON Pointer.
+  ##
+  ## '~' => `~0`
+  ## '/' => `~1`
+  ##
+  ## You can also use `addEscaped proc <#addEscaped,string,string>`_.
+  result = newStringOfCap(s.len)
+  addEscaped(result, s)
+
+type
+  JsonPtrError* = object of CatchableError
+  UsageError* = object of JsonPtrError
+  SyntaxError* = object of JsonPtrError
+
+proc raiseSyntaxError*(token: string) {.noinline.} =
+  raise newException(SyntaxError, "invalid JSON pointer: " & token)
+
+proc raiseUsageError*(token: string) {.noinline.} =
+  raise newException(UsageError, "invalid use of jsonptr.unescape on string with '/': " & token)
+
+func unescape*(token: var string) =
+  ## Unescapes a string `s`.
+  ##
+  ## This complements `escape func<#escape,string>`_
+  ## as it performs the opposite operations.
+  var p = -1
+  block outer:
+    for q in 0 ..< len(token):
+      case token[q]
+      of '~':
+        p = q
+        break outer
+      of '/':
+        raiseUsageError(token)
+      else: discard
+  # Nothing to replace
+  if p == -1:
+    return
+  if token[^1] == '~':
+    raiseSyntaxError(token)
+  var q = p
+  while q < len(token):
+    case token[q]
+    of '~':
+      inc(q)
+      case token[q]
+      of '0':
+        token[p] = '~'
+      of '1':
+        token[p] = '/'
+      else:
+        raiseSyntaxError(token)
+    of '/':
+      raiseUsageError(token)
+    else:
+      token[p] = token[q] # Move byte
+    inc(p)
+    inc(q)
+  token.setLen(p)
+
+type
+  JsonPtr* = distinct string
+
+func getArrayIndex(token: string): int {.inline.} =
+  if len(token) == 0:
+    raiseSyntaxError(token)
+  if len(token) == 1:
+    if token[0] == '0':
+      return 0
+    if token[0] == '-':
+      return -1
+  if token[0] < '1':
+    raiseSyntaxError(token)
+  result = parseInt(token)
+
+proc toNodePos*(tree: JsonTree; n: NodePos; path: JsonPtr): NodePos =
+  result = n
+  if result.isNil: return
+  let path = string(path)
+  var cur = ""
+  var last = 1
+  while last <= len(path):
+    var first = last
+    while last < len(path) and path[last] != '/':
+      inc(last)
+    cur.setLen(last-first)
+    #for i in 0..high(cur):
+      #cur[i] = path[i+first]
+    copyMem(cur.cstring, addr path[first], cur.len)
+    case result.kind
+    of opcodeObject:
+      unescape(cur)
+      result = rawGet(tree, result, cur)
+      if result.isNil: return
+    of opcodeArray:
+      block searchLoop:
+        var i = getArrayIndex(cur)
+        var last = emptyNodePos
+        for x in items(tree, result):
+          last = x
+          if i == 0:
+            result = x
+            break searchLoop
+          dec i
+        if i < 0: result = last
+        else: return emptyNodePos
+    else: return emptyNodePos
+    inc(last)
+
+proc kind*(tree: JsonTree; path: JsonPtr): JsonNodeKind {.inline.} =
+  let n = toNodePos(tree, rootNodePos, path)
+  JsonNodeKind tree.nodes[n.int].kind
+
+proc len*(tree: JsonTree; path: JsonPtr): int =
+  result = 0
+  let n = toNodePos(tree, rootNodePos, path)
+  if tree.nodes[n.int].kind > opcodeNull:
+    for child in sonsReadonly(tree, n): inc result
 
 proc raiseKeyError(key: string) {.noinline, noreturn.} =
   raise newException(KeyError, "key not in object: " & key)
 
-proc get*(tree: JsonTree, n: JsonNode, name: string): JsonNode =
-  ## Gets a field from a `JObject`.
-  ## If the value at `name` does not exist, raises KeyError.
-  result = rawGet(tree, n, name)
-  if result.isNil:
-    raiseKeyError(name)
-
 proc raiseIndexDefect() {.noinline, noreturn.} =
   raise newException(IndexDefect, "index out of bounds")
 
-proc get*(tree: JsonTree, n: JsonNode, index: int): JsonNode =
-  ## Gets the node at `index` in an Array. Result is undefined if `index`
-  ## is out of bounds, but as long as array bound checks are enabled it will
-  ## result in an exception.
-  var i = index
-  for x in items(tree, n):
-    if i == 0: return x
-    dec i
-  raiseIndexDefect()
-
-proc contains*(tree: JsonTree, n: JsonNode, key: string): bool =
+proc contains*(tree: JsonTree, path: JsonPtr): bool =
   ## Checks if `key` exists in `n`.
-  let x = rawGet(tree, n, key)
-  result = x >= jRoot
+  let n = toNodePos(tree, rootNodePos, path)
+  result = n >= rootNodePos
 
-proc hasKey*(tree: JsonTree, n: JsonNode, key: string): bool =
-  ## Checks if `key` exists in `n`.
-  result = contains(tree, n, key)
-
-proc get*(tree: JsonTree, n: JsonNode, keys: varargs[string]): JsonNode =
-  ## Traverses the tree and gets the given value. If any of the
-  ## keys do not exist, returns ``JNull``. Also returns ``JNull`` if one of the
-  ## intermediate data structures is not an object.
-  result = n
-  if result.isNil: return
-  for kk in keys:
-    if kind(tree, result) != JObject: return jNull
-    result = rawGet(tree, result, kk)
-    if result.isNil: return
-
-proc get*(tree: JsonTree, n: JsonNode, indexes: varargs[int]): JsonNode =
-  ## Traverses the tree and gets the given value. If any of the
-  ## indexes do not exist, returns ``JNull``. Also returns ``JNull`` if one of the
-  ## intermediate data structures is not an array.
-  result = n
-  if result.isNil: return
-  for j in indexes:
-    if kind(tree, result) != JArray: return jNull
-    block searchLoop:
-      var i = j
-      for x in items(tree, result):
-        if i == 0:
-          result = x
-          break searchLoop
-        dec i
-      return jNull
-
-proc rawDelete(tree: var JsonTree, n: JsonNode, key: string) =
+proc rawDelete(tree: var JsonTree, n: NodePos, key: string) =
   assert not n.isNil
-  assert kind(tree, n) == JObject
+  assert n.kind == opcodeObject
   let litId = tree.atoms.getKeyId(key)
   if litId == LitId(0):
     raiseKeyError(key)
   var start = -1
-  for ch0 in sonsReadonly(tree, NodePos n):
+  for ch0 in sonsReadonly(tree, n):
     assert ch0.kind == opcodeKeyValuePair
     if ch0.firstSon.litId == litId:
       start = ch0.int
@@ -211,53 +278,58 @@ proc rawDelete(tree: var JsonTree, n: JsonNode, key: string) =
     return
   raiseKeyError(key)
 
-proc delete*(tree: var JsonTree, n: JsonNode, key: string) =
+proc delete*(tree: var JsonTree, n: NodePos, key: string) =
   ## Deletes ``x[key]``.
   rawDelete(tree, n, key)
 
 template str(n: NodePos): string = tree.atoms[n.litId]
 template bval(n: NodePos): bool = n.operand == 1
 
-proc getStr*(tree: JsonTree, n: JsonNode, default: string = ""): string =
+proc getStr*(tree: JsonTree, path: JsonPtr, default: string = ""): string =
   ## Retrieves the string value of a `JString`.
   ##
   ## Returns `default` if `x` is not a `JString`.
-  if n.isNil or kind(tree, n) != JString: result = default
-  else: result = NodePos(n).str
+  let n = toNodePos(tree, rootNodePos, path)
+  if n.isNil or n.kind != opcodeString: result = default
+  else: result = n.str
 
-proc getInt*(tree: JsonTree, n: JsonNode, default: int = 0): int =
+proc getInt*(tree: JsonTree, path: JsonPtr, default: int = 0): int =
   ## Retrieves the int value of a `JInt`.
   ##
   ## Returns `default` if `x` is not a `JInt`, or if `x` is nil.
-  if n.isNil or kind(tree, n) != JInt: result = default
-  else: result = parseInt NodePos(n).str
+  let n = toNodePos(tree, rootNodePos, path)
+  if n.isNil or n.kind != opcodeInt: result = default
+  else: result = parseInt n.str
 
-proc getBiggestInt*(tree: JsonTree, n: JsonNode, default: BiggestInt = 0): BiggestInt =
+proc getBiggestInt*(tree: JsonTree, path: JsonPtr, default: BiggestInt = 0): BiggestInt =
   ## Retrieves the BiggestInt value of a `JInt`.
   ##
   ## Returns `default` if `x` is not a `JInt`, or if `x` is nil.
-  if n.isNil or kind(tree, n) != JInt: result = default
-  else: result = parseBiggestInt NodePos(n).str
+  let n = toNodePos(tree, rootNodePos, path)
+  if n.isNil or n.kind != opcodeInt: result = default
+  else: result = parseBiggestInt n.str
 
-proc getFloat*(tree: JsonTree, n: JsonNode, default: float = 0.0): float =
+proc getFloat*(tree: JsonTree, path: JsonPtr, default: float = 0.0): float =
   ## Retrieves the float value of a `JFloat`.
   ##
   ## Returns `default` if `x` is not a `JFloat` or `JInt`, or if `x` is nil.
+  let n = toNodePos(tree, rootNodePos, path)
   if n.isNil: return default
-  case kind(tree, n)
-  of JFloat:
-    result = parseFloat NodePos(n).str
-  of JInt:
-    result = float(parseBiggestInt NodePos(n).str)
+  case n.kind
+  of opcodeFloat:
+    result = parseFloat n.str
+  of opcodeInt:
+    result = float(parseBiggestInt n.str)
   else:
     result = default
 
-proc getBool*(tree: JsonTree, n: JsonNode, default: bool = false): bool =
+proc getBool*(tree: JsonTree, path: JsonPtr, default: bool = false): bool =
   ## Retrieves the bool value of a `JBool`.
   ##
   ## Returns `default` if `n` is not a `JBool`, or if `n` is nil.
-  if n.isNil or kind(tree, n) != JBool: result = default
-  else: result = NodePos(n).bval
+  let n = toNodePos(tree, rootNodePos, path)
+  if n.isNil or n.kind != opcodeBool: result = default
+  else: result = n.bval
 
 type
   PatchPos = distinct int32
@@ -409,7 +481,7 @@ proc escapeJson*(s: string; result: var string) =
 
 type
   JsonIter = object
-    stack: seq[(JsonNode, int32)]
+    stack: seq[(int32, int32)]
     tos: NodePos
     tosEnd: int
     pos: int
@@ -420,7 +492,7 @@ proc initJsonIter(tree: JsonTree, n: NodePos): JsonIter =
   result = JsonIter(stack: @[], tos: n, tosEnd: n.tosEnd, pos: n.int+1)
 
 proc pushImpl(it: var JsonIter, tree: JsonTree, n: NodePos) =
-  it.stack.add (JsonNode it.tos, int32 it.pos)
+  it.stack.add (int32 it.tos, int32 it.pos)
   it.tos = n
   it.tosEnd = n.tosEnd
   it.pos = n.int+1
@@ -446,12 +518,11 @@ proc currentAndNext(it: var JsonIter, tree: JsonTree): (NodePos, LitId, Action) 
     it.pos = tmp[1]
     it.tosEnd = it.tos.tosEnd
   else:
-    result = (NodePos(-1), LitId(0), actionEnd)
+    result = (emptyNodePos, LitId(0), actionEnd)
 
 template key: string = tree.atoms[keyId]
 
-proc toUgly*(result: var string, tree: JsonTree, n: JsonNode) =
-  let n = NodePos n
+proc toUgly(result: var string, tree: JsonTree, n: NodePos) =
   case n.kind
   of opcodeArray, opcodeObject:
     if n.kind == opcodeArray:
@@ -518,7 +589,7 @@ proc toUgly*(result: var string, tree: JsonTree, n: JsonNode) =
 proc `$`*(tree: JsonTree): string =
   ## Converts `tree` to its JSON Representation on one line.
   result = newStringOfCap(tree.nodes.len shl 1)
-  toUgly(result, tree, jRoot)
+  toUgly(result, tree, rootNodePos)
 
 proc toJson*(s: string; tree: var JsonTree) =
   ## Generic constructor for JSON data. Creates a new `JString JsonNode`.
@@ -609,131 +680,44 @@ proc toJsonImpl(x, res: NimNode): NimNode =
     result = newCall(bindSym("toJson", brOpen), x, res)
 
 macro `%*`*(x: untyped): untyped =
-  ## Convert an expression to a JsonNode directly, without having to specify
+  ## Convert an expression to a JsonTree directly, without having to specify
   ## `%` for every element.
   let res = genSym(nskVar, "toJsonResult")
   let v = newTree(nnkVarSection,
     newTree(nnkIdentDefs, res, bindSym"JsonTree", newEmptyNode()))
   result = newTree(nnkStmtListExpr, v, toJsonImpl(x, res), res)
 
-func addEscaped*(result: var string, s: string) =
-  ## The same as `result.add(escape(s)) <#escape,string>`_, but more efficient.
-  for c in items(s):
-    case c
-    of '~': result.add("~0")
-    of '/': result.add("~1")
-    else: result.add(c)
+template ast(n: NodePos): string =
+  (var dump = ""; toUgly(dump, tree, n); dump)
 
-func escape*(s: string): string =
-  ## Escaped `s` for inclusion into a JSON Pointer.
-  ##
-  ## '~' => `~0`
-  ## '/' => `~1`
-  ##
-  ## You can also use `addEscaped proc <#addEscaped,string,string>`_.
-  result = newStringOfCap(s.len)
-  addEscaped(result, s)
+template verifyJsonKind(tree: JsonTree; n: NodePos, kind: JsonNodeKind, kinds: set[JsonNodeKind]) =
+  if n == emptyNodePos:
+    raiseKeyError("key not found: " & n.ast)
+  elif kind notin kinds:
+    let msg = format("Incorrect JSON kind. Wanted '$1' in '$2' but got '$3'.", kinds, n.ast, kind)
+    raise newException(JsonKindError, msg)
 
-type
-  JsonPtrError* = object of CatchableError
-  UsageError* = object of JsonPtrError
-  SyntaxError* = object of JsonPtrError
+proc initFromJson(dst: var string; tree: JsonTree; n: NodePos) =
+  verifyJsonKind(tree, n, JsonNodeKind n.kind, {JString, JNull})
+  if n.kind == opcodeNull:
+    dst = ""
+  else:
+    dst = n.str
 
-proc raiseSyntaxError() {.noinline.} =
-  raise newException(SyntaxError, "invalid JSON pointer")
+proc initFromJson(dst: var bool; tree: JsonTree; n: NodePos) =
+  verifyJsonKind(tree, n, JsonNodeKind n.kind, {JBool})
+  dst = n.bval
 
-proc raiseUsageError() {.noinline.} =
-  raise newException(UsageError, "invalid use of jsonptr.unescape on string with '/'")
-
-func unescape*(token: var string) =
-  ## Unescapes a string `s`.
-  ##
-  ## This complements `escape func<#escape,string>`_
-  ## as it performs the opposite operations.
-  var p = -1
-  block outer:
-    for q in 0 ..< len(token):
-      case token[q]
-      of '~':
-        p = q
-        break outer
-      of '/':
-        raiseUsageError()
-      else: discard
-  # Nothing to replace
-  if p == -1:
-    return
-  if token[len(token)-1] == '~':
-    raiseSyntaxError()
-  var q = p
-  while q < len(token):
-    case token[q]
-    of '~':
-      inc(q)
-      case token[q]
-      of '0':
-        token[p] = '~'
-      of '1':
-        token[p] = '/'
-      else:
-        raiseSyntaxError()
-    of '/':
-      raiseUsageError()
-    else:
-      token[p] = token[q] # Move byte
-    inc(p)
-    inc(q)
-  token.setLen(p)
-
-func getArrayIndex(token: string): int {.inline.} =
-  if len(token) == 0:
-    raiseSyntaxError()
-  if len(token) == 1:
-    if token[0] == '0':
-      return 0
-    if token[0] == '-':
-      return -1
-  if token[0] < '1':
-    raiseSyntaxError()
-  result = parseInt(token)
-
-type
-  JsonPtr* = distinct string
-
-proc getJsonNode*(tree: JsonTree; n: JsonNode; path: JsonPtr): JsonNode =
-  result = n
-  if result.isNil: return
-  let path = string(path)
-  var cur = ""
-  var last = 1
-  while last <= len(path):
-    var first = last
-    while last < len(path) and path[last] != '/':
-      inc(last)
-    cur.setLen(last-first)
-    #for i in 0..high(cur):
-      #cur[i] = path[i+first]
-    copyMem(cur.cstring, addr path[first], cur.len)
-    case kind(tree, result)
-    of JObject:
-      unescape(cur)
-      result = rawGet(tree, result, cur)
-      if result.isNil: return
-    of JArray:
-      block searchLoop:
-        var i = getArrayIndex(cur)
-        var last = jNull
-        for x in items(tree, result):
-          last = x
-          if i == 0:
-            result = x
-            break searchLoop
-          dec i
-        if i < 0: result = last
-        else: return jNull
-    else: return jNull
-    inc(last)
-
+proc initFromJson[T: SomeInteger](dst: var T; tree: JsonTree; n: NodePos) =
+  verifyJsonKind(tree, n, JsonNodeKind n.kind, {JInt})
+  when T is BiggestUInt:
+    dst = parseBiggestUInt n.str
+  elif T is BiggestInt:
+    dst = parseBiggestInt n.str
+  elif T is SomeSignedInt:
+    dst = T(parseInt n.str)
+  else:
+    dst = T(parseUInt n.str)
 
 when isMainModule:
   include tests/internals
