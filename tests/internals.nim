@@ -49,6 +49,10 @@ block:
   assert x.atoms.len == 8
   assert contains(x, JsonPtr"/a")
   assert contains(x, JsonPtr"/key")
+  remove(x, JsonPtr"/b/a")
+  assert contains(x, JsonPtr"/b")
+  assert not contains(x, JsonPtr"/b/a")
+  assert kind(x, JsonPtr"/b") == JObject
   remove(x, JsonPtr"/b")
   assert not contains(x, JsonPtr"/b")
   assert contains(x, JsonPtr"/key")
