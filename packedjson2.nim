@@ -96,23 +96,23 @@ proc rawGet(tree: JsonTree, n: NodePos, name: string): NodePos =
       return NodePos(ch0.int+2) # guaranteed that firstSon isAtom
   return nilNodeId
 
-func addEscaped*(result: var string, s: string) =
-  ## The same as `result.add(escape(s)) <#escape,string>`_, but more efficient.
+func addEscapedJsonPtr*(result: var string, s: string) =
+  ## The same as `result.add(escapeJsonPtr(s)) <#escape,string>`_, but more efficient.
   for c in items(s):
     case c
     of '~': result.add("~0")
     of '/': result.add("~1")
     else: result.add(c)
 
-func escape*(s: string): string =
+func escapeJsonPtr*(s: string): string =
   ## Escaped `s` for inclusion into a JSON Pointer.
   ##
   ## '~' => `~0`
   ## '/' => `~1`
   ##
-  ## You can also use `addEscaped proc <#addEscaped,string,string>`_.
+  ## You can also use `addEscapedJsonPtr proc <#addEscaped,string,string>`_.
   result = newStringOfCap(s.len)
-  addEscaped(result, s)
+  addEscapedJsonPtr(result, s)
 
 type
   JsonPtrError* = object of CatchableError
@@ -125,7 +125,7 @@ proc raiseSyntaxError*(token: string) {.noinline.} =
 proc raiseUsageError*(token: string) {.noinline.} =
   raise newException(UsageError, "invalid use of jsonptr.unescape on string with '/': " & token)
 
-func unescape*(token: var string) =
+func unescapeJsonPtr*(token: var string) =
   ## Unescapes a string `s`.
   ##
   ## This complements `escape func<#escape,string>`_
@@ -196,7 +196,7 @@ proc toNodePos*(tree: JsonTree; n: NodePos; path: JsonPtr): NodePos =
     copyMem(cur.cstring, addr path[first], cur.len)
     case result.kind
     of opcodeObject:
-      unescape(cur)
+      unescapeJsonPtr(cur)
       result = rawGet(tree, result, cur)
       if result.isNil: return
     of opcodeArray:
