@@ -49,10 +49,12 @@ block:
   assert x.atoms.len == 8
   assert contains(x, JsonPtr"/a")
   assert contains(x, JsonPtr"/key")
-  remove(x, JsonPtr"/a")
-  assert not contains(x, JsonPtr"/a")
+  remove(x, JsonPtr"/b")
+  assert not contains(x, JsonPtr"/b")
   assert contains(x, JsonPtr"/key")
+  assert contains(x, JsonPtr"/a")
   assert kind(x, JsonPtr"") == JObject
+  assert kind(x, JsonPtr"/a") == JInt
   assert kind(x, JsonPtr"/key") == JArray
 
 block:

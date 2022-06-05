@@ -236,23 +236,22 @@ proc contains*(tree: JsonTree, path: JsonPtr): bool =
   result = n >= rootNodeId
 
 proc rawRemove(tree: var JsonTree, n: NodePos) =
-  let diff = NodePos(n.int-2).operand
-  let start = n.parent.int
-  var pos = start.int
+  let diff = n.operand
+  var pos = n.int
   while true:
     let distance = tree.nodes[pos].operand - diff
     tree.nodes[pos] = toNode(tree.nodes[pos].kind, distance)
     if pos <= 0: break
     pos = NodePos(pos).parent.int
   let oldFull = tree.nodes.len
-  for i in countup(start, oldFull-diff-1): tree.nodes[i] = tree.nodes[i+diff]
+  for i in countup(n.int, oldFull-diff-1): tree.nodes[i] = tree.nodes[i+diff]
   setLen(tree.nodes, oldFull-diff)
 
 proc remove*(tree: var JsonTree, path: JsonPtr) =
   ## Removes `path`.
   let n = toNodePos(tree, rootNodeId, path)
   if n.isNil: raiseKeyError(path.string)
-  rawRemove(tree, n)
+  rawRemove(tree, NodePos(n.int-2))
 
 template str(n: NodePos): string = tree.atoms[n.litId]
 template bval(n: NodePos): bool = n.operand == 1
