@@ -203,7 +203,7 @@ proc posFromPtr(tree: JsonTree; parent: var NodePos; path: JsonPtr; noDash = tru
     while last < len(path) and path[last] != '/':
       inc(last)
     cur.setLen(last-first)
-    var last1 = last == len(path)
+    let last1 = last == len(path)
     when nimvm:
       for i in 0..high(cur):
         cur[i] = path[i+first]
@@ -251,7 +251,7 @@ proc len*(tree: JsonTree; path: JsonPtr): int =
     for child in sonsReadonly(tree, n): inc result
 
 proc rawRemove(tree: var JsonTree, parent, n: NodePos) =
-  let diff = n.operand
+  let diff = span(tree, n.int).int32
   var pos = parent.int
   while true:
     let distance = tree.nodes[pos].operand - diff
@@ -267,7 +267,7 @@ proc remove*(tree: var JsonTree, path: JsonPtr) =
   var parent = rootNodeId
   let n = posFromPtr(tree, parent, path)
   if n.isNil: raisePathError(path.string)
-  rawRemove(tree, parent, NodePos(n.int-2))
+  rawRemove(tree, parent, if parent.kind == opcodeObject: NodePos(n.int-2) else: n)
 
 template str(n: NodePos): string = tree.atoms[n.litId]
 template bval(n: NodePos): bool = n.operand == 1

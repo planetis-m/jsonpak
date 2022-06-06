@@ -91,6 +91,10 @@ block:
   assert not contains(x, JsonPtr"/a")
   assert contains(x, JsonPtr"/key")
   assert $x == """{"key":[4,[1,2,3]]}"""
+  remove(x, JsonPtr"/key/0")
+  assert $x == """{"key":[[1,2,3]]}"""
+  remove(x, JsonPtr"/key/0/1")
+  assert $x == """{"key":[[1,3]]}"""
   #assert kind(x, JsonPtr"/a") == JInt
   assert kind(x, JsonPtr"/key") == JArray
 
