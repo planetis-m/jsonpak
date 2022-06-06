@@ -215,7 +215,7 @@ proc posFromPtr(tree: JsonTree; parent: var NodePos; path: JsonPtr): NodePos =
       parent = result
       if i == -1:
         if last1: return NodePos(result.int+result.operand)
-        returnEarly
+        else: raiseSyntaxError(path)
       block searchLoop:
         for x in sonsReadonly(tree, result):
           if i == 0:
