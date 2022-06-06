@@ -5,8 +5,18 @@ block:
   assert not x.isEmpty
   assert x.atoms.len == 5
   assert kind(x, JsonPtr"") == JObject
-  assert nodePosFromPath(x, rootNodeId, JsonPtr"") == rootNodeId
-  assert nodePosFromPath(x, rootNodeId, JsonPtr"/a") == NodePos 3
+  var parent = rootNodeId
+  assert fromPath(x, parent, JsonPtr"") == rootNodeId
+  assert parent == nilNodeId
+  parent = rootNodeId
+  assert fromPath(x, parent, JsonPtr"/a") == NodePos 3
+  assert parent == rootNodeId
+  parent = rootNodeId
+  assert fromPath(x, parent, JsonPtr"/a/4") == nilNodeId
+  assert parent == NodePos 3
+  parent = rootNodeId
+  assert fromPath(x, parent, JsonPtr"/a/4/key") == nilNodeId
+  assert parent == nilNodeId
   assert contains(x, JsonPtr"/a")
   assert x.nodes[1].kind == opcodeKeyValuePair
   assert x.nodes[1].operand == 12
@@ -14,20 +24,34 @@ block:
   assert not contains(x, JsonPtr"/a/2/a")
   assert x.nodes[7].kind == opcodeKeyValuePair
   assert x.nodes[7].operand == 5
-  assert nodePosFromPath(x, rootNodeId, JsonPtr"/a/2/key") == NodePos 9
+  parent = rootNodeId
+  assert fromPath(x, parent, JsonPtr"/a/2/key") == NodePos 9
+  assert parent == NodePos 6
   assert kind(x, JsonPtr"/a/2/key") == JArray
-  assert nodePosFromPath(x, rootNodeId, JsonPtr"/a/1") == NodePos 5
+  parent = rootNodeId
+  assert fromPath(x, parent, JsonPtr"/a/1") == NodePos 5
+  assert parent == NodePos 3
   assert kind(x, JsonPtr"/a/1") == JBool
   assert getBool(x, JsonPtr"/a/1") == false
-  assert nodePosFromPath(x, rootNodeId, JsonPtr"/a/0") == NodePos 4
+  parent = rootNodeId
+  assert fromPath(x, parent, JsonPtr"/a/0") == NodePos 4
+  assert parent == NodePos 3
   assert kind(x, JsonPtr"/a/0") == JInt
   assert getInt(x, JsonPtr"/a/0") == 1
-  assert nodePosFromPath(x, rootNodeId, JsonPtr"/a/2/key/1") == NodePos 11
+  parent = rootNodeId
+  assert fromPath(x, parent, JsonPtr"/a/2/key/1") == NodePos 11
+  assert parent == NodePos 9
   assert kind(x, JsonPtr"/a/2/key/1") == JInt
   assert getInt(x, JsonPtr"/a/2/key/1") == 5
-  assert nodePosFromPath(x, NodePos 3, JsonPtr"") == NodePos 3
-  assert nodePosFromPath(x, NodePos 3, JsonPtr"/2") == NodePos 6
-  assert nodePosFromPath(x, NodePos 3, JsonPtr"/-") == NodePos 12
+  parent = NodePos 3
+  assert fromPath(x, parent, JsonPtr"") == NodePos 3
+  assert parent == nilNodeId
+  parent = NodePos 3
+  assert fromPath(x, parent, JsonPtr"/2") == NodePos 6
+  assert parent == NodePos 3
+  parent = NodePos 3
+  assert fromPath(x, parent, JsonPtr"/-") == NodePos 12
+  assert parent == NodePos 3
   assert $x == data
 
 block:
@@ -36,9 +60,12 @@ block:
   assert not x.isEmpty
   assert x.atoms.len == 6
   assert kind(x, JsonPtr"") == JObject
-  assert nodePosFromPath(x, rootNodeId, JsonPtr"/a/key") == NodePos 6
-  assert nodePosFromPath(x, NodePos 6, JsonPtr"/-/-") == NodePos 11
-  assert nodePosFromPath(x, NodePos 6, JsonPtr"/1/2") == NodePos 11
+  var parent = rootNodeId
+  assert fromPath(x, parent, JsonPtr"/a/key") == NodePos 6
+  parent = NodePos 6
+  assert fromPath(x, parent, JsonPtr"/-/-") == NodePos 11
+  parent = NodePos 6
+  assert fromPath(x, parent, JsonPtr"/1/2") == NodePos 11
   assert $x == data
 
 block:
@@ -53,11 +80,17 @@ block:
   assert contains(x, JsonPtr"/b")
   assert not contains(x, JsonPtr"/b/a")
   assert kind(x, JsonPtr"/b") == JObject
+  assert $x == """{"a":0,"key":[4,[1,2,3]],"b":{}}"""
   remove(x, JsonPtr"/b")
   assert not contains(x, JsonPtr"/b")
   assert contains(x, JsonPtr"/key")
   assert contains(x, JsonPtr"/a")
   assert kind(x, JsonPtr"") == JObject
+  assert $x == """{"a":0,"key":[4,[1,2,3]]}"""
+  remove(x, JsonPtr"/a")
+  assert not contains(x, JsonPtr"/a")
+  assert contains(x, JsonPtr"/key")
+  assert $x == """{"key":[4,[1,2,3]]}"""
   #assert kind(x, JsonPtr"/a") == JInt
   assert kind(x, JsonPtr"/key") == JArray
 

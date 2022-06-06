@@ -183,8 +183,13 @@ func getArrayIndex(token: string): int {.inline.} =
     raiseSyntaxError(token)
   result = parseInt(token)
 
-proc nodePosFromPath*(tree: JsonTree; n: NodePos; path: JsonPtr): NodePos =
+proc fromPath*(tree: JsonTree; n: var NodePos; path: JsonPtr): NodePos =
+  template returnEarly =
+    if not last1: n = nilNodeId
+    return nilNodeId
+
   result = n
+  n = nilNodeId
   if result.isNil: return
   let path = string(path)
   var cur = ""
@@ -194,6 +199,7 @@ proc nodePosFromPath*(tree: JsonTree; n: NodePos; path: JsonPtr): NodePos =
     while last < len(path) and path[last] != '/':
       inc(last)
     cur.setLen(last-first)
+    var last1 = last == len(path)
     when nimvm:
       for i in 0..high(cur):
         cur[i] = path[i+first]
@@ -201,12 +207,14 @@ proc nodePosFromPath*(tree: JsonTree; n: NodePos; path: JsonPtr): NodePos =
     case result.kind
     of opcodeObject:
       unescapeJsonPtr(cur)
+      n = result
       result = rawGet(tree, result, cur)
-      if result.isNil: return
+      if result.isNil: returnEarly()
     of opcodeArray:
       block searchLoop:
         var i = getArrayIndex(cur)
         var last = nilNodeId
+        n = result
         for ch0 in sonsReadonly(tree, result):
           last = ch0
           if i == 0:
@@ -214,8 +222,8 @@ proc nodePosFromPath*(tree: JsonTree; n: NodePos; path: JsonPtr): NodePos =
             break searchLoop
           dec i
         if i < 0: result = last
-        else: return nilNodeId
-    else: return nilNodeId
+        else: returnEarly()
+    else: returnEarly()
     inc(last)
 
 proc raiseKeyError(path: string) {.noinline, noreturn.} =
@@ -226,27 +234,31 @@ proc raiseIndexDefect() {.noinline, noreturn.} =
 
 proc contains*(tree: JsonTree, path: JsonPtr): bool =
   ## Checks if `key` exists in `n`.
-  let n = nodePosFromPath(tree, rootNodeId, path)
+  var tmp = rootNodeId
+  let n = fromPath(tree, tmp, path)
   result = n >= rootNodeId
 
 proc kind*(tree: JsonTree; path: JsonPtr): JsonNodeKind {.inline.} =
-  let n = nodePosFromPath(tree, rootNodeId, path)
+  var tmp = rootNodeId
+  let n = fromPath(tree, tmp, path)
   if n.isNil: raiseKeyError(path.string)
   JsonNodeKind tree.nodes[n.int].kind
 
 proc len*(tree: JsonTree; path: JsonPtr): int =
   result = 0
-  let n = nodePosFromPath(tree, rootNodeId, path)
+  var tmp = rootNodeId
+  let n = fromPath(tree, tmp, path)
   if n.isNil: raiseKeyError(path.string)
   if tree.nodes[n.int].kind > opcodeString:
     for child in sonsReadonly(tree, n): inc result
 
-proc rawRemove(tree: var JsonTree, n: NodePos) =
+proc rawRemove(tree: var JsonTree, parent, n: NodePos) =
   let diff = n.operand
-  var pos = n.parent.int
-  while pos >= 0:
+  var pos = parent.int
+  while true:
     let distance = tree.nodes[pos].operand - diff
     tree.nodes[pos] = toNode(tree.nodes[pos].kind, distance)
+    if pos <= 0: break
     pos = NodePos(pos).parent.int
   let oldfull = tree.nodes.len
   for i in countup(n.int, oldfull-diff-1): tree.nodes[i] = tree.nodes[i+diff]
@@ -254,9 +266,10 @@ proc rawRemove(tree: var JsonTree, n: NodePos) =
 
 proc remove*(tree: var JsonTree, path: JsonPtr) =
   ## Removes `path`.
-  let n = nodePosFromPath(tree, rootNodeId, path)
+  var parent = rootNodeId
+  let n = fromPath(tree, parent, path)
   if n.isNil: raiseKeyError(path.string)
-  rawRemove(tree, NodePos(n.int-2))
+  rawRemove(tree, parent, NodePos(n.int-2))
 
 template str(n: NodePos): string = tree.atoms[n.litId]
 template bval(n: NodePos): bool = n.operand == 1
@@ -265,7 +278,8 @@ proc getStr*(tree: JsonTree, path: JsonPtr, default: string = ""): string =
   ## Retrieves the string value of a `JString`.
   ##
   ## Returns `default` if `x` is not a `JString`.
-  let n = nodePosFromPath(tree, rootNodeId, path)
+  var tmp = rootNodeId
+  let n = fromPath(tree, tmp, path)
   if n.isNil or n.kind != opcodeString: result = default
   else: result = n.str
 
@@ -273,7 +287,8 @@ proc getInt*(tree: JsonTree, path: JsonPtr, default: int = 0): int =
   ## Retrieves the int value of a `JInt`.
   ##
   ## Returns `default` if `x` is not a `JInt`, or if `x` is nil.
-  let n = nodePosFromPath(tree, rootNodeId, path)
+  var tmp = rootNodeId
+  let n = fromPath(tree, tmp, path)
   if n.isNil or n.kind != opcodeInt: result = default
   else: result = parseInt n.str
 
@@ -281,7 +296,8 @@ proc getBiggestInt*(tree: JsonTree, path: JsonPtr, default: BiggestInt = 0): Big
   ## Retrieves the BiggestInt value of a `JInt`.
   ##
   ## Returns `default` if `x` is not a `JInt`, or if `x` is nil.
-  let n = nodePosFromPath(tree, rootNodeId, path)
+  var tmp = rootNodeId
+  let n = fromPath(tree, tmp, path)
   if n.isNil or n.kind != opcodeInt: result = default
   else: result = parseBiggestInt n.str
 
@@ -289,7 +305,8 @@ proc getFloat*(tree: JsonTree, path: JsonPtr, default: float = 0.0): float =
   ## Retrieves the float value of a `JFloat`.
   ##
   ## Returns `default` if `x` is not a `JFloat` or `JInt`, or if `x` is nil.
-  let n = nodePosFromPath(tree, rootNodeId, path)
+  var tmp = rootNodeId
+  let n = fromPath(tree, tmp, path)
   if n.isNil: return default
   case n.kind
   of opcodeFloat:
@@ -303,7 +320,8 @@ proc getBool*(tree: JsonTree, path: JsonPtr, default: bool = false): bool =
   ## Retrieves the bool value of a `JBool`.
   ##
   ## Returns `default` if `n` is not a `JBool`, or if `n` is nil.
-  let n = nodePosFromPath(tree, rootNodeId, path)
+  var tmp = rootNodeId
+  let n = fromPath(tree, tmp, path)
   if n.isNil or n.kind != opcodeBool: result = default
   else: result = n.bval
 
@@ -562,7 +580,9 @@ proc toUgly(result: var string, tree: JsonTree, n: NodePos) =
 
 proc dump*(tree: JsonTree, path: JsonPtr): string =
   result = ""
-  let n = nodePosFromPath(tree, rootNodeId, path)
+  var tmp = rootNodeId
+  let n = fromPath(tree, tmp, path)
+  if n.isNil: raiseKeyError(path.string)
   toUgly(result, tree, n)
 
 proc `$`*(tree: JsonTree): string =
@@ -678,7 +698,8 @@ proc rawExtract(result: var JsonTree, tree: JsonTree, n: NodePos) =
       result.nodes[i] = tree.nodes[n.int]
 
 proc extract*(tree: JsonTree; path: JsonPtr): JsonTree =
-  let n = nodePosFromPath(tree, rootNodeId, path)
+  var tmp = rootNodeId
+  let n = fromPath(tree, tmp, path)
   if n.isNil: raiseKeyError(path.string)
   rawExtract(result, tree, n)
 
