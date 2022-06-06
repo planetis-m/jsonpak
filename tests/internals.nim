@@ -61,8 +61,6 @@ block:
   assert kind(x, JsonPtr"/a") == JInt
   assert kind(x, JsonPtr"/key") == JArray
 
-proc `$`(n: Node): string = $(n.kind, n.operand)
-
 block:
   const x = %*{
     "a": [1, 2, 3],

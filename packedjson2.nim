@@ -191,9 +191,10 @@ proc toNodePos*(tree: JsonTree; n: NodePos; path: JsonPtr): NodePos =
     while last < len(path) and path[last] != '/':
       inc(last)
     cur.setLen(last-first)
-    #for i in 0..high(cur):
-      #cur[i] = path[i+first]
-    copyMem(cur.cstring, addr path[first], cur.len)
+    when nimvm:
+      for i in 0..high(cur):
+        cur[i] = path[i+first]
+    else: copyMem(cur.cstring, addr path[first], cur.len)
     case result.kind
     of opcodeObject:
       unescapeJsonPtr(cur)
