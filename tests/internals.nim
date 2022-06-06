@@ -6,16 +6,16 @@ block:
   assert x.atoms.len == 5
   assert kind(x, JsonPtr"") == JObject
   var parent = rootNodeId
-  assert idxFromPath(x, parent, JsonPtr"") == rootNodeId
+  assert posFromPtr(x, parent, JsonPtr"") == rootNodeId
   assert parent == nilNodeId
   parent = rootNodeId
-  assert idxFromPath(x, parent, JsonPtr"/a") == NodePos 3
+  assert posFromPtr(x, parent, JsonPtr"/a") == NodePos 3
   assert parent == rootNodeId
   parent = rootNodeId
-  assert idxFromPath(x, parent, JsonPtr"/a/4") == nilNodeId
+  assert posFromPtr(x, parent, JsonPtr"/a/4") == nilNodeId
   assert parent == NodePos 3
   parent = rootNodeId
-  assert idxFromPath(x, parent, JsonPtr"/a/4/key") == nilNodeId
+  assert posFromPtr(x, parent, JsonPtr"/a/4/key") == nilNodeId
   assert parent == nilNodeId
   assert contains(x, JsonPtr"/a")
   assert x.nodes[1].kind == opcodeKeyValuePair
@@ -25,32 +25,32 @@ block:
   assert x.nodes[7].kind == opcodeKeyValuePair
   assert x.nodes[7].operand == 5
   parent = rootNodeId
-  assert idxFromPath(x, parent, JsonPtr"/a/2/key") == NodePos 9
+  assert posFromPtr(x, parent, JsonPtr"/a/2/key") == NodePos 9
   assert parent == NodePos 6
   assert kind(x, JsonPtr"/a/2/key") == JArray
   parent = rootNodeId
-  assert idxFromPath(x, parent, JsonPtr"/a/1") == NodePos 5
+  assert posFromPtr(x, parent, JsonPtr"/a/1") == NodePos 5
   assert parent == NodePos 3
   assert kind(x, JsonPtr"/a/1") == JBool
   assert getBool(x, JsonPtr"/a/1") == false
   parent = rootNodeId
-  assert idxFromPath(x, parent, JsonPtr"/a/0") == NodePos 4
+  assert posFromPtr(x, parent, JsonPtr"/a/0") == NodePos 4
   assert parent == NodePos 3
   assert kind(x, JsonPtr"/a/0") == JInt
   assert getInt(x, JsonPtr"/a/0") == 1
   parent = rootNodeId
-  assert idxFromPath(x, parent, JsonPtr"/a/2/key/1") == NodePos 11
+  assert posFromPtr(x, parent, JsonPtr"/a/2/key/1") == NodePos 11
   assert parent == NodePos 9
   assert kind(x, JsonPtr"/a/2/key/1") == JInt
   assert getInt(x, JsonPtr"/a/2/key/1") == 5
   parent = NodePos 3
-  assert idxFromPath(x, parent, JsonPtr"") == NodePos 3
+  assert posFromPtr(x, parent, JsonPtr"") == NodePos 3
   assert parent == nilNodeId
   parent = NodePos 3
-  assert idxFromPath(x, parent, JsonPtr"/2") == NodePos 6
+  assert posFromPtr(x, parent, JsonPtr"/2") == NodePos 6
   assert parent == NodePos 3
   parent = NodePos 3
-  assert idxFromPath(x, parent, JsonPtr"/-") == NodePos 12
+  assert posFromPtr(x, parent, JsonPtr"/-") == NodePos 12
   assert parent == NodePos 3
   assert $x == data
 
@@ -61,11 +61,11 @@ block:
   assert x.atoms.len == 6
   assert kind(x, JsonPtr"") == JObject
   var parent = rootNodeId
-  assert idxFromPath(x, parent, JsonPtr"/a/key") == NodePos 6
+  assert posFromPtr(x, parent, JsonPtr"/a/key") == NodePos 6
   parent = NodePos 6
-  assert idxFromPath(x, parent, JsonPtr"/-/-") == NodePos 11
+  assert posFromPtr(x, parent, JsonPtr"/-/-") == NodePos 11
   parent = NodePos 6
-  assert idxFromPath(x, parent, JsonPtr"/1/2") == NodePos 11
+  assert posFromPtr(x, parent, JsonPtr"/1/2") == NodePos 11
   assert $x == data
 
 block:
