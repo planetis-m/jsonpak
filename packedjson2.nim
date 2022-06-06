@@ -215,16 +215,6 @@ proc toNodePos*(tree: JsonTree; n: NodePos; path: JsonPtr): NodePos =
     else: return nilNodeId
     inc(last)
 
-proc kind*(tree: JsonTree; path: JsonPtr): JsonNodeKind {.inline.} =
-  let n = toNodePos(tree, rootNodeId, path)
-  JsonNodeKind tree.nodes[n.int].kind
-
-proc len*(tree: JsonTree; path: JsonPtr): int =
-  result = 0
-  let n = toNodePos(tree, rootNodeId, path)
-  if tree.nodes[n.int].kind > opcodeNull:
-    for child in sonsReadonly(tree, n): inc result
-
 proc raiseKeyError(path: string) {.noinline, noreturn.} =
   raise newException(KeyError, "path not in object: " & path)
 
@@ -235,6 +225,18 @@ proc contains*(tree: JsonTree, path: JsonPtr): bool =
   ## Checks if `key` exists in `n`.
   let n = toNodePos(tree, rootNodeId, path)
   result = n >= rootNodeId
+
+proc kind*(tree: JsonTree; path: JsonPtr): JsonNodeKind {.inline.} =
+  let n = toNodePos(tree, rootNodeId, path)
+  if n.isNil: raiseKeyError(path.string)
+  JsonNodeKind tree.nodes[n.int].kind
+
+proc len*(tree: JsonTree; path: JsonPtr): int =
+  result = 0
+  let n = toNodePos(tree, rootNodeId, path)
+  if n.isNil: raiseKeyError(path.string)
+  if tree.nodes[n.int].kind > opcodeString:
+    for child in sonsReadonly(tree, n): inc result
 
 proc rawRemove(tree: var JsonTree, n: NodePos) =
   let diff = n.operand
