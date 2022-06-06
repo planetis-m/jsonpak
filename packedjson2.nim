@@ -183,7 +183,7 @@ func getArrayIndex(token: string): int {.inline.} =
     raiseSyntaxError(token)
   result = parseInt(token)
 
-proc posFromPtr*(tree: JsonTree; n: var NodePos; path: JsonPtr): NodePos =
+proc posFromPtr(tree: JsonTree; n: var NodePos; path: JsonPtr): NodePos =
   template returnEarly =
     if not last1: n = nilNodeId
     return nilNodeId
