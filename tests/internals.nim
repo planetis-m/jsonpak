@@ -41,8 +41,6 @@ block:
   assert toNodePos(x, NodePos 6, JsonPtr"/1/2") == NodePos 11
   assert $x == data
 
-proc `$`(n: Node): string = $(n.kind, n.operand)
-
 block:
   let data = """{"a":0,"key":[4,[1,2,3]],"b":{"a":false}}"""
   var x = parseJson(data)
@@ -72,9 +70,9 @@ block:
   }
   assert not x.isEmpty
   assert x.atoms.len == 15
-  #assert $extract(x, JsonPtr"/a") == "[1,2,3]"
-  #assert $extract(x, JsonPtr"/b") == "4"
-  #assert $extract(x, JsonPtr"/d") == """{"e":[7,8],"f":9}"""
+  assert $extract(x, JsonPtr"/a") == "[1,2,3]"
+  assert $extract(x, JsonPtr"/b") == "4"
+  assert $extract(x, JsonPtr"/d") == """{"e":[7,8],"f":9}"""
   assert $x == """{"a":[1,2,3],"b":4,"c":[5,6],"d":{"e":[7,8],"f":9}}"""
 
 block:

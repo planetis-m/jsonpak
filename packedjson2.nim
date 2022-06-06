@@ -53,6 +53,9 @@ proc isEmpty*(tree: JsonTree): bool {.inline.} = tree.nodes.len == 0
 proc isAtom(tree: JsonTree; pos: int): bool {.inline.} =
   tree.nodes[pos].kind <= opcodeString
 
+proc span(tree: JsonTree; pos: int): int {.inline.} =
+  if isAtom(tree, pos): 1 else: tree.nodes[pos].operand
+
 proc nextChild(tree: JsonTree; pos: var int) {.inline.} =
   if tree.nodes[pos].kind > opcodeString:
     assert tree.nodes[pos].operand > 0
@@ -241,7 +244,6 @@ proc len*(tree: JsonTree; path: JsonPtr): int =
 proc rawRemove(tree: var JsonTree, n: NodePos) =
   let diff = n.operand
   var pos = n.parent.int
-  let start = pos
   while pos >= 0:
     let distance = tree.nodes[pos].operand - diff
     tree.nodes[pos] = toNode(tree.nodes[pos].kind, distance)
@@ -664,7 +666,16 @@ macro `%*`*(x: untyped): untyped =
     newTree(nnkIdentDefs, res, bindSym"JsonTree", newEmptyNode()))
   result = newTree(nnkStmtListExpr, v, toJsonImpl(x, res), res)
 
-proc rawExtract(result: var JsonTree, tree: JsonTree, n: NodePos) = discard
+proc rawExtract(result: var JsonTree, tree: JsonTree, n: NodePos) =
+  let L = span(tree, n.int)
+  newSeq(result.nodes, L)
+  for i in 0..<L:
+    let n = NodePos(i+n.int) # careful
+    case n.kind
+    of opcodeInt, opcodeFloat, opcodeString:
+      result.nodes[i] = toNode(n.kind, int32 getOrIncl(result.atoms, n.str))
+    else:
+      result.nodes[i] = tree.nodes[n.int]
 
 proc extract*(tree: JsonTree; path: JsonPtr): JsonTree =
   let n = toNodePos(tree, rootNodeId, path)
