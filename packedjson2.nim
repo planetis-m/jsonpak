@@ -4,6 +4,8 @@ import
 export JsonParsingError, JsonKindError
 
 type
+  JsonPtr* = distinct string
+
   Node = distinct int32
   NodePos = distinct int
   JsonNodeKind* = enum ## possible JSON node types
@@ -172,9 +174,6 @@ func unescapeJsonPtr*(token: var string) =
     inc(q)
   token.setLen(p)
 
-type
-  JsonPtr* = distinct string
-
 func getArrayIndex(token: string): int {.inline.} =
   if len(token) == 0:
     raiseSyntaxError(token)
@@ -185,7 +184,8 @@ func getArrayIndex(token: string): int {.inline.} =
       return -1
   if token[0] < '1':
     raiseSyntaxError(token)
-  result = parseInt(token)
+  try: result = parseInt(token)
+  except: raiseSyntaxError(token)
 
 proc posFromPtr(tree: JsonTree; parent: var NodePos; path: JsonPtr): NodePos =
   template returnEarly =
