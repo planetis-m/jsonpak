@@ -61,6 +61,8 @@ block:
   assert kind(x, JsonPtr"/a") == JInt
   assert kind(x, JsonPtr"/key") == JArray
 
+proc `$`(n: Node): string = $(n.kind, n.operand)
+
 block:
   const x = %*{
     "a": [1, 2, 3],
@@ -70,6 +72,9 @@ block:
   }
   assert not x.isEmpty
   assert x.atoms.len == 15
+  assert $extract(x, JsonPtr"/a") == "[1,2,3]"
+  assert $extract(x, JsonPtr"/b") == "4"
+  assert $extract(x, JsonPtr"/d") == """{"e":[7,8],"f":9}"""
   assert $x == """{"a":[1,2,3],"b":4,"c":[5,6],"d":{"e":[7,8],"f":9}}"""
 
 block:

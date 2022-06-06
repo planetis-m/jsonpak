@@ -123,12 +123,12 @@ proc raiseSyntaxError*(token: string) {.noinline.} =
   raise newException(SyntaxError, "invalid JSON pointer: " & token)
 
 proc raiseUsageError*(token: string) {.noinline.} =
-  raise newException(UsageError, "invalid use of jsonptr.unescape on string with '/': " & token)
+  raise newException(UsageError, "invalid use of unescapeJsonPtr on string with '/': " & token)
 
 func unescapeJsonPtr*(token: var string) =
   ## Unescapes a string `s`.
   ##
-  ## This complements `escape func<#escape,string>`_
+  ## This complements `escapeJsonPtr func<#escape,string>`_
   ## as it performs the opposite operations.
   var p = -1
   block outer:
@@ -491,9 +491,9 @@ proc currentAndNext(it: var JsonIter, tree: JsonTree): (NodePos, LitId, Action) 
   else:
     result = (nilNodeId, LitId(0), actionEnd)
 
-proc toUgly(result: var string, tree: JsonTree, n: NodePos) =
-  template key: string = tree.atoms[keyId]
+template key: string = tree.atoms[keyId]
 
+proc toUgly(result: var string, tree: JsonTree, n: NodePos) =
   case n.kind
   of opcodeArray, opcodeObject:
     if n.kind == opcodeArray:
@@ -554,6 +554,11 @@ proc toUgly(result: var string, tree: JsonTree, n: NodePos) =
   of opcodeNull:
     result.add "null"
   else: discard
+
+proc dump*(tree: JsonTree, path: JsonPtr): string =
+  result = ""
+  let n = toNodePos(tree, rootNodeId, path)
+  toUgly(result, tree, n)
 
 proc `$`*(tree: JsonTree): string =
   ## Converts `tree` to its JSON Representation on one line.
@@ -655,6 +660,41 @@ macro `%*`*(x: untyped): untyped =
   let v = newTree(nnkVarSection,
     newTree(nnkIdentDefs, res, bindSym"JsonTree", newEmptyNode()))
   result = newTree(nnkStmtListExpr, v, toJsonImpl(x, res), res)
+
+proc rawExtract(result: var JsonTree, tree: JsonTree, n: NodePos) =
+  case n.kind
+  of opcodeBool, opcodeNull:
+    result.nodes.add tree.nodes[n.int]
+  of opcodeString, opcodeInt, opcodeFloat:
+    storeAtom(result, n.kind, n.str)
+  of opcodeArray, opcodeObject:
+    result.nodes = newSeqOfCap[Node](n.operand)
+    result.nodes.add tree.nodes[n.int]
+    var it = initJsonIter(tree, n)
+    while true:
+      let (child, keyId, action) = currentAndNext(it, tree)
+      case action
+      of actionPop: discard
+      of actionEnd: break
+      of actionElem, actionKeyVal:
+        if action == actionKeyVal:
+          result.nodes.add toNode(opcodeKeyValuePair, NodePos(child.int-2).operand)
+          storeAtom(result, opcodeString, key)
+        case child.kind
+        of opcodeBool, opcodeNull:
+          result.nodes.add tree.nodes[child.int]
+        of opcodeString, opcodeInt, opcodeFloat:
+          storeAtom(result, child.kind, child.str)
+        of opcodeArray, opcodeObject:
+          result.nodes.add tree.nodes[child.int]
+          it.push child
+        else: discard
+  else: discard
+
+proc extract*(tree: JsonTree; path: JsonPtr): JsonTree =
+  let n = toNodePos(tree, rootNodeId, path)
+  if n.isNil: raiseKeyError(path.string)
+  rawExtract(result, tree, n)
 
 template ast(n: NodePos): string =
   var dump = ""
