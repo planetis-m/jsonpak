@@ -238,15 +238,15 @@ proc contains*(tree: JsonTree, path: JsonPtr): bool =
 
 proc rawRemove(tree: var JsonTree, n: NodePos) =
   let diff = n.operand
-  var pos = n.int
-  while true:
+  var pos = n.parent.int
+  let start = pos
+  while pos >= 0:
     let distance = tree.nodes[pos].operand - diff
     tree.nodes[pos] = toNode(tree.nodes[pos].kind, distance)
-    if pos <= 0: break
     pos = NodePos(pos).parent.int
-  let oldFull = tree.nodes.len
-  for i in countup(n.int, oldFull-diff-1): tree.nodes[i] = tree.nodes[i+diff]
-  setLen(tree.nodes, oldFull-diff)
+  let oldfull = tree.nodes.len
+  for i in countup(n.int, oldfull-diff-1): tree.nodes[i] = tree.nodes[i+diff]
+  setLen(tree.nodes, oldfull-diff)
 
 proc remove*(tree: var JsonTree, path: JsonPtr) =
   ## Removes `path`.
@@ -492,9 +492,9 @@ proc currentAndNext(it: var JsonIter, tree: JsonTree): (NodePos, LitId, Action) 
   else:
     result = (nilNodeId, LitId(0), actionEnd)
 
-template key: string = tree.atoms[keyId]
-
 proc toUgly(result: var string, tree: JsonTree, n: NodePos) =
+  template key: string = tree.atoms[keyId]
+
   case n.kind
   of opcodeArray, opcodeObject:
     if n.kind == opcodeArray:
@@ -662,35 +662,7 @@ macro `%*`*(x: untyped): untyped =
     newTree(nnkIdentDefs, res, bindSym"JsonTree", newEmptyNode()))
   result = newTree(nnkStmtListExpr, v, toJsonImpl(x, res), res)
 
-proc rawExtract(result: var JsonTree, tree: JsonTree, n: NodePos) =
-  case n.kind
-  of opcodeBool, opcodeNull:
-    result.nodes.add tree.nodes[n.int]
-  of opcodeString, opcodeInt, opcodeFloat:
-    storeAtom(result, n.kind, n.str)
-  of opcodeArray, opcodeObject:
-    result.nodes = newSeqOfCap[Node](n.operand)
-    result.nodes.add tree.nodes[n.int]
-    var it = initJsonIter(tree, n)
-    while true:
-      let (child, keyId, action) = currentAndNext(it, tree)
-      case action
-      of actionPop: discard
-      of actionEnd: break
-      of actionElem, actionKeyVal:
-        if action == actionKeyVal:
-          result.nodes.add toNode(opcodeKeyValuePair, NodePos(child.int-2).operand)
-          storeAtom(result, opcodeString, key)
-        case child.kind
-        of opcodeBool, opcodeNull:
-          result.nodes.add tree.nodes[child.int]
-        of opcodeString, opcodeInt, opcodeFloat:
-          storeAtom(result, child.kind, child.str)
-        of opcodeArray, opcodeObject:
-          result.nodes.add tree.nodes[child.int]
-          it.push child
-        else: discard
-  else: discard
+proc rawExtract(result: var JsonTree, tree: JsonTree, n: NodePos) = discard
 
 proc extract*(tree: JsonTree; path: JsonPtr): JsonTree =
   let n = toNodePos(tree, rootNodeId, path)
