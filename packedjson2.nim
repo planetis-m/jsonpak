@@ -187,7 +187,7 @@ func getArrayIndex(token: string): int {.inline.} =
   try: result = parseInt(token)
   except: raiseSyntaxError(token)
 
-proc posFromPtr(tree: JsonTree; parent: var NodePos; path: JsonPtr): NodePos =
+proc posFromPtr(tree: JsonTree; parent: var NodePos; path: JsonPtr; noDash = true): NodePos =
   template returnEarly =
     if not last1: parent = nilNodeId
     return nilNodeId
@@ -218,7 +218,7 @@ proc posFromPtr(tree: JsonTree; parent: var NodePos; path: JsonPtr): NodePos =
       var i = getArrayIndex(cur)
       parent = result
       if i == -1:
-        if last1: return NodePos(result.int+result.operand)
+        if not noDash and last1: return NodePos(result.int+result.operand)
         else: raiseSyntaxError(path)
       block searchLoop:
         for x in sonsReadonly(tree, result):

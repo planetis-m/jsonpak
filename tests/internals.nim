@@ -50,7 +50,7 @@ block:
   assert posFromPtr(x, parent, JsonPtr"/2") == NodePos 6
   assert parent == NodePos 3
   parent = NodePos 3
-  assert posFromPtr(x, parent, JsonPtr"/-") == NodePos 13
+  assert posFromPtr(x, parent, JsonPtr"/-", noDash = false) == NodePos 13
   assert parent == NodePos 3
   assert $x == data
 
