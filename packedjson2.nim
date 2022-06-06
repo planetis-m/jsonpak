@@ -119,8 +119,12 @@ func escapeJsonPtr*(s: string): string =
 
 type
   JsonPtrError* = object of CatchableError
+  PathError* = object of JsonPtrError
   UsageError* = object of JsonPtrError
   SyntaxError* = object of JsonPtrError
+
+proc raisePathError(path: string) {.noinline.} =
+  raise newException(PathError, "path not found: " & path)
 
 proc raiseSyntaxError*(token: string) {.noinline.} =
   raise newException(SyntaxError, "invalid JSON pointer: " & token)
@@ -226,12 +230,6 @@ proc posFromPtr(tree: JsonTree; parent: var NodePos; path: JsonPtr): NodePos =
     else: returnEarly
     inc(last)
 
-proc raiseKeyError(path: string) {.noinline, noreturn.} =
-  raise newException(KeyError, "path not in object: " & path)
-
-proc raiseIndexDefect() {.noinline, noreturn.} =
-  raise newException(IndexDefect, "index out of bounds")
-
 proc contains*(tree: JsonTree, path: JsonPtr): bool =
   ## Checks if `key` exists in `n`.
   var tmp = rootNodeId
@@ -241,14 +239,14 @@ proc contains*(tree: JsonTree, path: JsonPtr): bool =
 proc kind*(tree: JsonTree; path: JsonPtr): JsonNodeKind {.inline.} =
   var tmp = rootNodeId
   let n = posFromPtr(tree, tmp, path)
-  if n.isNil: raiseKeyError(path.string)
+  if n.isNil: raisePathError(path.string)
   JsonNodeKind tree.nodes[n.int].kind
 
 proc len*(tree: JsonTree; path: JsonPtr): int =
   result = 0
   var tmp = rootNodeId
   let n = posFromPtr(tree, tmp, path)
-  if n.isNil: raiseKeyError(path.string)
+  if n.isNil: raisePathError(path.string)
   if tree.nodes[n.int].kind > opcodeString:
     for child in sonsReadonly(tree, n): inc result
 
@@ -268,7 +266,7 @@ proc remove*(tree: var JsonTree, path: JsonPtr) =
   ## Removes `path`.
   var parent = rootNodeId
   let n = posFromPtr(tree, parent, path)
-  if n.isNil: raiseKeyError(path.string)
+  if n.isNil: raisePathError(path.string)
   rawRemove(tree, parent, NodePos(n.int-2))
 
 template str(n: NodePos): string = tree.atoms[n.litId]
@@ -582,7 +580,7 @@ proc dump*(tree: JsonTree, path: JsonPtr): string =
   result = ""
   var tmp = rootNodeId
   let n = posFromPtr(tree, tmp, path)
-  if n.isNil: raiseKeyError(path.string)
+  if n.isNil: raisePathError(path.string)
   toUgly(result, tree, n)
 
 proc `$`*(tree: JsonTree): string =
@@ -700,7 +698,7 @@ proc rawExtract(result: var JsonTree, tree: JsonTree, n: NodePos) =
 proc extract*(tree: JsonTree; path: JsonPtr): JsonTree =
   var tmp = rootNodeId
   let n = posFromPtr(tree, tmp, path)
-  if n.isNil: raiseKeyError(path.string)
+  if n.isNil: raisePathError(path.string)
   rawExtract(result, tree, n)
 
 template ast(n: NodePos): string =
@@ -710,7 +708,7 @@ template ast(n: NodePos): string =
 
 template verifyJsonKind(tree: JsonTree; n: NodePos, kind: JsonNodeKind, kinds: set[JsonNodeKind]) =
   if n == nilNodeId:
-    raiseKeyError("key not found: " & n.ast)
+    raisePathError(n.ast)
   elif kind notin kinds:
     let msg = format("Incorrect JSON kind. Wanted '$1' in '$2' but got '$3'.", kinds, n.ast, kind)
     raise newException(JsonKindError, msg)
