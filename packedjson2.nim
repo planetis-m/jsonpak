@@ -211,18 +211,18 @@ proc posFromPtr(tree: JsonTree; parent: var NodePos; path: JsonPtr): NodePos =
       result = rawGet(tree, result, cur)
       if result.isNil: returnEarly
     of opcodeArray:
+      var i = getArrayIndex(cur)
+      parent = result
+      if i == -1:
+        if last1: return NodePos(result.int+result.operand)
+        returnEarly
       block searchLoop:
-        var i = getArrayIndex(cur)
-        var last = nilNodeId
-        parent = result
-        for ch0 in sonsReadonly(tree, result):
-          last = ch0
+        for x in sonsReadonly(tree, result):
           if i == 0:
-            result = ch0
+            result = x
             break searchLoop
           dec i
-        if i < 0: result = last
-        else: returnEarly
+        returnEarly
     else: returnEarly
     inc(last)
 

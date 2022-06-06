@@ -50,7 +50,7 @@ block:
   assert posFromPtr(x, parent, JsonPtr"/2") == NodePos 6
   assert parent == NodePos 3
   parent = NodePos 3
-  assert posFromPtr(x, parent, JsonPtr"/-") == NodePos 12
+  assert posFromPtr(x, parent, JsonPtr"/-") == NodePos 13
   assert parent == NodePos 3
   assert $x == data
 
@@ -64,8 +64,8 @@ block:
   assert posFromPtr(x, parent, JsonPtr"/a/key") == NodePos 6
   assert parent == NodePos 3
   parent = NodePos 6
-  assert posFromPtr(x, parent, JsonPtr"/-/-") == NodePos 11
-  assert parent == NodePos 8
+  assert posFromPtr(x, parent, JsonPtr"/-/-") == nilNodeId
+  assert parent == nilNodeId
   parent = NodePos 6
   assert posFromPtr(x, parent, JsonPtr"/1/2") == NodePos 11
   assert parent == NodePos 8
