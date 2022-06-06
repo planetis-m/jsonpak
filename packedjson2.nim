@@ -183,13 +183,13 @@ func getArrayIndex(token: string): int {.inline.} =
     raiseSyntaxError(token)
   result = parseInt(token)
 
-proc posFromPtr(tree: JsonTree; n: var NodePos; path: JsonPtr): NodePos =
+proc posFromPtr(tree: JsonTree; parent: var NodePos; path: JsonPtr): NodePos =
   template returnEarly =
-    if not last1: n = nilNodeId
+    if not last1: parent = nilNodeId
     return nilNodeId
 
-  result = n
-  n = nilNodeId
+  result = parent
+  parent = nilNodeId
   if result.isNil: return
   let path = string(path)
   var cur = ""
@@ -207,14 +207,14 @@ proc posFromPtr(tree: JsonTree; n: var NodePos; path: JsonPtr): NodePos =
     case result.kind
     of opcodeObject:
       unescapeJsonPtr(cur)
-      n = result
+      parent = result
       result = rawGet(tree, result, cur)
       if result.isNil: returnEarly
     of opcodeArray:
       block searchLoop:
         var i = getArrayIndex(cur)
         var last = nilNodeId
-        n = result
+        parent = result
         for ch0 in sonsReadonly(tree, result):
           last = ch0
           if i == 0:

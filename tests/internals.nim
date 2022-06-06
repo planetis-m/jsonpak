@@ -62,10 +62,13 @@ block:
   assert kind(x, JsonPtr"") == JObject
   var parent = rootNodeId
   assert posFromPtr(x, parent, JsonPtr"/a/key") == NodePos 6
+  assert parent == NodePos 3
   parent = NodePos 6
   assert posFromPtr(x, parent, JsonPtr"/-/-") == NodePos 11
+  assert parent == NodePos 8
   parent = NodePos 6
   assert posFromPtr(x, parent, JsonPtr"/1/2") == NodePos 11
+  assert parent == NodePos 8
   assert $x == data
 
 block:
@@ -106,6 +109,7 @@ block:
   assert $extract(x, JsonPtr"/a") == "[1,2,3]"
   assert $extract(x, JsonPtr"/b") == "4"
   assert $extract(x, JsonPtr"/d") == """{"e":[7,8],"f":9}"""
+  assert $extract(x, JsonPtr"/d/e") == "[7,8]"
   assert $x == """{"a":[1,2,3],"b":4,"c":[5,6],"d":{"e":[7,8],"f":9}}"""
 
 block:
