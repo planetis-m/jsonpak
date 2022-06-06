@@ -183,7 +183,7 @@ func getArrayIndex(token: string): int {.inline.} =
     raiseSyntaxError(token)
   result = parseInt(token)
 
-proc toNodePos*(tree: JsonTree; n: NodePos; path: JsonPtr): NodePos =
+proc nodePosFromPath*(tree: JsonTree; n: NodePos; path: JsonPtr): NodePos =
   result = n
   if result.isNil: return
   let path = string(path)
@@ -226,17 +226,17 @@ proc raiseIndexDefect() {.noinline, noreturn.} =
 
 proc contains*(tree: JsonTree, path: JsonPtr): bool =
   ## Checks if `key` exists in `n`.
-  let n = toNodePos(tree, rootNodeId, path)
+  let n = nodePosFromPath(tree, rootNodeId, path)
   result = n >= rootNodeId
 
 proc kind*(tree: JsonTree; path: JsonPtr): JsonNodeKind {.inline.} =
-  let n = toNodePos(tree, rootNodeId, path)
+  let n = nodePosFromPath(tree, rootNodeId, path)
   if n.isNil: raiseKeyError(path.string)
   JsonNodeKind tree.nodes[n.int].kind
 
 proc len*(tree: JsonTree; path: JsonPtr): int =
   result = 0
-  let n = toNodePos(tree, rootNodeId, path)
+  let n = nodePosFromPath(tree, rootNodeId, path)
   if n.isNil: raiseKeyError(path.string)
   if tree.nodes[n.int].kind > opcodeString:
     for child in sonsReadonly(tree, n): inc result
@@ -254,7 +254,7 @@ proc rawRemove(tree: var JsonTree, n: NodePos) =
 
 proc remove*(tree: var JsonTree, path: JsonPtr) =
   ## Removes `path`.
-  let n = toNodePos(tree, rootNodeId, path)
+  let n = nodePosFromPath(tree, rootNodeId, path)
   if n.isNil: raiseKeyError(path.string)
   rawRemove(tree, NodePos(n.int-2))
 
@@ -265,7 +265,7 @@ proc getStr*(tree: JsonTree, path: JsonPtr, default: string = ""): string =
   ## Retrieves the string value of a `JString`.
   ##
   ## Returns `default` if `x` is not a `JString`.
-  let n = toNodePos(tree, rootNodeId, path)
+  let n = nodePosFromPath(tree, rootNodeId, path)
   if n.isNil or n.kind != opcodeString: result = default
   else: result = n.str
 
@@ -273,7 +273,7 @@ proc getInt*(tree: JsonTree, path: JsonPtr, default: int = 0): int =
   ## Retrieves the int value of a `JInt`.
   ##
   ## Returns `default` if `x` is not a `JInt`, or if `x` is nil.
-  let n = toNodePos(tree, rootNodeId, path)
+  let n = nodePosFromPath(tree, rootNodeId, path)
   if n.isNil or n.kind != opcodeInt: result = default
   else: result = parseInt n.str
 
@@ -281,7 +281,7 @@ proc getBiggestInt*(tree: JsonTree, path: JsonPtr, default: BiggestInt = 0): Big
   ## Retrieves the BiggestInt value of a `JInt`.
   ##
   ## Returns `default` if `x` is not a `JInt`, or if `x` is nil.
-  let n = toNodePos(tree, rootNodeId, path)
+  let n = nodePosFromPath(tree, rootNodeId, path)
   if n.isNil or n.kind != opcodeInt: result = default
   else: result = parseBiggestInt n.str
 
@@ -289,7 +289,7 @@ proc getFloat*(tree: JsonTree, path: JsonPtr, default: float = 0.0): float =
   ## Retrieves the float value of a `JFloat`.
   ##
   ## Returns `default` if `x` is not a `JFloat` or `JInt`, or if `x` is nil.
-  let n = toNodePos(tree, rootNodeId, path)
+  let n = nodePosFromPath(tree, rootNodeId, path)
   if n.isNil: return default
   case n.kind
   of opcodeFloat:
@@ -303,7 +303,7 @@ proc getBool*(tree: JsonTree, path: JsonPtr, default: bool = false): bool =
   ## Retrieves the bool value of a `JBool`.
   ##
   ## Returns `default` if `n` is not a `JBool`, or if `n` is nil.
-  let n = toNodePos(tree, rootNodeId, path)
+  let n = nodePosFromPath(tree, rootNodeId, path)
   if n.isNil or n.kind != opcodeBool: result = default
   else: result = n.bval
 
@@ -562,7 +562,7 @@ proc toUgly(result: var string, tree: JsonTree, n: NodePos) =
 
 proc dump*(tree: JsonTree, path: JsonPtr): string =
   result = ""
-  let n = toNodePos(tree, rootNodeId, path)
+  let n = nodePosFromPath(tree, rootNodeId, path)
   toUgly(result, tree, n)
 
 proc `$`*(tree: JsonTree): string =
@@ -678,7 +678,7 @@ proc rawExtract(result: var JsonTree, tree: JsonTree, n: NodePos) =
       result.nodes[i] = tree.nodes[n.int]
 
 proc extract*(tree: JsonTree; path: JsonPtr): JsonTree =
-  let n = toNodePos(tree, rootNodeId, path)
+  let n = nodePosFromPath(tree, rootNodeId, path)
   if n.isNil: raiseKeyError(path.string)
   rawExtract(result, tree, n)
 
