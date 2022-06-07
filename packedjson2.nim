@@ -44,7 +44,7 @@ const
   opcodeMask = 0b111
 
 template kind(n: Node): int32 = n.int32 and opcodeMask
-template operand(n: Node): int32 = int32(n.uint32 shr opcodeBits.int32)
+template operand*(n: Node): int32 = int32(n.uint32 shr opcodeBits.int32)
 template toNode(kind, operand: int32): Node = Node(operand shl opcodeBits.int32 or kind)
 
 type
@@ -95,7 +95,7 @@ proc isNil(n: NodePos): bool {.inline.} = n == nilNodeId
 proc firstSon(n: NodePos): NodePos {.inline.} = NodePos(n.int+1)
 
 template kind(n: NodePos): int32 = tree.nodes[n.int].kind
-template litId(n: NodePos): LitId = LitId tree.nodes[n.int].operand
+template litId*(n: NodePos): LitId = LitId tree.nodes[n.int].operand
 template operand(n: NodePos): int32 = tree.nodes[n.int].operand
 
 proc rawGet(tree: JsonTree, n: NodePos, name: string): NodePos =
@@ -237,6 +237,11 @@ proc posFromPtr(tree: JsonTree; path: JsonPtr; parent: var NodePos; noDash = tru
     else: returnEarly
     inc(last)
 
+template preamble(n, parent) =
+  var parent = rootNodeId
+  let n = posFromPtr(tree, path, parent)
+  if n.isNil: raisePathError(path.string)
+
 proc contains*(tree: JsonTree, path: JsonPtr): bool =
   ## Checks if `key` exists in `n`.
   var tmp = rootNodeId
@@ -244,15 +249,11 @@ proc contains*(tree: JsonTree, path: JsonPtr): bool =
   result = n >= rootNodeId
 
 proc kind*(tree: JsonTree; path: JsonPtr): JsonNodeKind {.inline.} =
-  var tmp = rootNodeId
-  let n = posFromPtr(tree, path, tmp)
-  if n.isNil: raisePathError(path.string)
+  preamble(n, tmp)
   JsonNodeKind tree.nodes[n.int].kind
 
 proc len*(tree: JsonTree; path: JsonPtr): int =
-  var tmp = rootNodeId
-  let n = posFromPtr(tree, path, tmp)
-  if n.isNil: raisePathError(path.string)
+  preamble(n, tmp)
   len(tree, n)
 
 proc rawRemove(tree: var JsonTree, parent, n: NodePos) =
@@ -269,9 +270,7 @@ proc rawRemove(tree: var JsonTree, parent, n: NodePos) =
 
 proc remove*(tree: var JsonTree, path: JsonPtr) =
   ## Removes `path`.
-  var parent = rootNodeId
-  let n = posFromPtr(tree, path, parent)
-  if n.isNil: raisePathError(path.string)
+  preamble(n, parent)
   rawRemove(tree, parent, if parent.kind == opcodeObject: NodePos(n.int-2) else: n)
 
 template str(n: NodePos): string = tree.atoms[n.litId]
@@ -583,9 +582,7 @@ proc toUgly(result: var string, tree: JsonTree, n: NodePos) =
 
 proc dump*(tree: JsonTree, path: JsonPtr): string =
   result = ""
-  var tmp = rootNodeId
-  let n = posFromPtr(tree, path, tmp)
-  if n.isNil: raisePathError(path.string)
+  preamble(n, tmp)
   toUgly(result, tree, n)
 
 proc `$`*(tree: JsonTree): string =
@@ -701,15 +698,11 @@ proc rawExtract(result: var JsonTree, tree: JsonTree, n: NodePos) =
       result.nodes[i] = tree.nodes[n.int]
 
 proc extract*(tree: JsonTree; path: JsonPtr): JsonTree =
-  var tmp = rootNodeId
-  let n = posFromPtr(tree, path, tmp)
-  if n.isNil: raisePathError(path.string)
+  preamble(n, tmp)
   rawExtract(result, tree, n)
 
 proc test*(tree: JsonTree; path: JsonPtr, value: JsonTree): bool =
-  var tmp = rootNodeId
-  let n = posFromPtr(tree, path, tmp)
-  if n.isNil: raisePathError(path.string)
+  preamble(n, tmp)
   if n.kind != value.nodes[rootNodeId.int].kind: return false
   if n.kind == opcodeNull: return true
   let L = span(tree, n.int)
@@ -723,10 +716,13 @@ proc test*(tree: JsonTree; path: JsonPtr, value: JsonTree): bool =
       if value.nodes[i] != tree.nodes[n.int]: return false
   return true
 
+proc raiseJsonKindError(kind: JsonNodeKind, kinds: set[JsonNodeKind]) {.noreturn.} =
+  let msg = format("Incorrect JSON kind. Wanted '$1' but got '$2'.", kinds, kind)
+  raise newException(JsonKindError, msg)
+
 template verifyJsonKind(tree: JsonTree; n: NodePos, kinds: set[JsonNodeKind]) =
   if (let kind = JsonNodeKind(n.kind); kind notin kinds):
-    let msg = format("Incorrect JSON kind. Wanted '$1' but got '$3'.", kinds, kind)
-    raise newException(JsonKindError, msg)
+    raiseJsonKindError(kind, kinds)
 
 proc initFromJson(dst: var string; tree: JsonTree; n: NodePos) =
   verifyJsonKind(tree, n, {JString, JNull})
@@ -776,7 +772,7 @@ proc initFromJson[S, T](dst: var array[S, T]; tree: JsonTree; n: NodePos) =
   verifyJsonKind(tree, n, {JArray})
   var i = int(low(dst))
   for x in sonsReadonly(tree, n):
-    initFromJson(dst[S(i)], tree, n)
+    initFromJson(dst[S(i)], tree, x)
     inc i
 
 proc initFromJson[T](dst: var (Table[string, T]|OrderedTable[string, T]); tree: JsonTree; n: NodePos) =
@@ -801,7 +797,32 @@ proc initFromJson[T](dst: var Option[T]; tree: JsonTree; n: NodePos) =
       dst = some(default(T))
     initFromJson(dst.get, tree, n)
 
+#proc initFromJson[T: object|tuple](dst: var T; tree: JsonTree; n: NodePos) =
+  #assignObjectImpl(dst, tree, n)
 
+proc fromJson*[T](tree: JsonTree; path: JsonPtr; t: typedesc[T]): T =
+  preamble(n, tmp)
+  initFromJson(result, tree, n)
+
+iterator items*[T](tree: JsonTree; path: JsonPtr; t: typedesc[T]): T =
+  ## Iterator for the items of `x`. `x` has to be a JArray.
+  preamble(n, tmp)
+  assert n.kind == opcodeArray
+  var item: T
+  for x in sonsReadonly(tree, n):
+    initFromJson(item, tree, x)
+    yield item
+
+iterator pairs*[T](tree: JsonTree; path: JsonPtr; t: typedesc[T]): (lent string, T) =
+  ## Iterator for the pairs of `x`. `x` has to be a JObject.
+  preamble(n, tmp)
+  assert n.kind == opcodeObject
+  var item: T
+  for x in sonsReadonly(tree, n):
+    assert x.kind == opcodeKeyValuePair
+    let litId = x.firstSon.litId
+    initFromJson(item, tree, NodePos(x.int+2))
+    yield (tree.atoms[litId], item)
 
 when isMainModule:
   include tests/internals
