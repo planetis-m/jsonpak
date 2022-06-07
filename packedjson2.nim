@@ -797,8 +797,15 @@ proc initFromJson[T](dst: var Option[T]; tree: JsonTree; n: NodePos) =
       dst = some(default(T))
     initFromJson(dst.get, tree, n)
 
-#proc initFromJson[T: object|tuple](dst: var T; tree: JsonTree; n: NodePos) =
-  #assignObjectImpl(dst, tree, n)
+proc initFromJson[T: object|tuple](dst: var T; tree: JsonTree; n: NodePos) =
+  verifyJsonKind(tree, n, {JObject})
+  for x in sonsReadonly(tree, n):
+    assert x.kind == opcodeKeyValuePair
+    block outer:
+      for k, v in dst.fieldPairs:
+        if x.firstSon.str == k:
+          initFromJson(v, tree, NodePos(x.int+2))
+          break outer
 
 proc fromJson*[T](tree: JsonTree; path: JsonPtr; t: typedesc[T]): T =
   preamble(n, tmp)
