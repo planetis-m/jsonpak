@@ -6,16 +6,16 @@ block:
   assert x.atoms.len == 5
   assert kind(x, JsonPtr"") == JObject
   var parent = rootNodeId
-  assert posFromPtr(x, parent, JsonPtr"") == rootNodeId
+  assert posFromPtr(x, JsonPtr"", parent) == rootNodeId
   assert parent == nilNodeId
   parent = rootNodeId
-  assert posFromPtr(x, parent, JsonPtr"/a") == NodePos 3
+  assert posFromPtr(x, JsonPtr"/a", parent) == NodePos 3
   assert parent == rootNodeId
   parent = rootNodeId
-  assert posFromPtr(x, parent, JsonPtr"/a/4") == nilNodeId
+  assert posFromPtr(x, JsonPtr"/a/4", parent) == nilNodeId
   assert parent == NodePos 3
   parent = rootNodeId
-  assert posFromPtr(x, parent, JsonPtr"/a/4/key") == nilNodeId
+  assert posFromPtr(x, JsonPtr"/a/4/key", parent) == nilNodeId
   assert parent == nilNodeId
   assert contains(x, JsonPtr"/a")
   assert x.nodes[1].kind == opcodeKeyValuePair
@@ -25,32 +25,32 @@ block:
   assert x.nodes[7].kind == opcodeKeyValuePair
   assert x.nodes[7].operand == 5
   parent = rootNodeId
-  assert posFromPtr(x, parent, JsonPtr"/a/2/key") == NodePos 9
+  assert posFromPtr(x, JsonPtr"/a/2/key", parent) == NodePos 9
   assert parent == NodePos 6
   assert kind(x, JsonPtr"/a/2/key") == JArray
   parent = rootNodeId
-  assert posFromPtr(x, parent, JsonPtr"/a/1") == NodePos 5
+  assert posFromPtr(x, JsonPtr"/a/1", parent) == NodePos 5
   assert parent == NodePos 3
   assert kind(x, JsonPtr"/a/1") == JBool
   assert getBool(x, JsonPtr"/a/1") == false
   parent = rootNodeId
-  assert posFromPtr(x, parent, JsonPtr"/a/0") == NodePos 4
+  assert posFromPtr(x, JsonPtr"/a/0", parent) == NodePos 4
   assert parent == NodePos 3
   assert kind(x, JsonPtr"/a/0") == JInt
   assert getInt(x, JsonPtr"/a/0") == 1
   parent = rootNodeId
-  assert posFromPtr(x, parent, JsonPtr"/a/2/key/1") == NodePos 11
+  assert posFromPtr(x, JsonPtr"/a/2/key/1", parent) == NodePos 11
   assert parent == NodePos 9
   assert kind(x, JsonPtr"/a/2/key/1") == JInt
   assert getInt(x, JsonPtr"/a/2/key/1") == 5
   parent = NodePos 3
-  assert posFromPtr(x, parent, JsonPtr"") == NodePos 3
+  assert posFromPtr(x, JsonPtr"", parent) == NodePos 3
   assert parent == nilNodeId
   parent = NodePos 3
-  assert posFromPtr(x, parent, JsonPtr"/2") == NodePos 6
+  assert posFromPtr(x, JsonPtr"/2", parent) == NodePos 6
   assert parent == NodePos 3
   parent = NodePos 3
-  assert posFromPtr(x, parent, JsonPtr"/-", noDash = false) == NodePos 13
+  assert posFromPtr(x, JsonPtr"/-", parent, noDash = false) == NodePos 13
   assert parent == NodePos 3
   assert $x == data
 
@@ -61,10 +61,10 @@ block:
   assert x.atoms.len == 6
   assert kind(x, JsonPtr"") == JObject
   var parent = rootNodeId
-  assert posFromPtr(x, parent, JsonPtr"/a/key") == NodePos 6
+  assert posFromPtr(x, JsonPtr"/a/key", parent) == NodePos 6
   assert parent == NodePos 3
   parent = NodePos 6
-  assert posFromPtr(x, parent, JsonPtr"/1/2") == NodePos 11
+  assert posFromPtr(x, JsonPtr"/1/2", parent) == NodePos 11
   assert parent == NodePos 8
   assert $x == data
 
@@ -113,6 +113,8 @@ block:
   assert $extract(x, JsonPtr"/d/e") == "[7,8]"
   assert test(x, JsonPtr"/d", %*{"e": [7, 8], "f": 9})
   assert test(x, JsonPtr"/d/e", %*[7, 8])
+  assert not test(x, JsonPtr"/d/e", %*[7, 8, 9])
+  assert test(extract(x, JsonPtr"/d/e"), JsonPtr"", %*[7, 8])
   assert $x == """{"a":[1,2,3],"b":4,"c":[5,6],"d":{"e":[7,8],"f":9}}"""
 
 block:

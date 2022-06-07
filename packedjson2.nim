@@ -189,7 +189,7 @@ func getArrayIndex(token: string): int {.inline.} =
   try: result = parseInt(token)
   except: raiseSyntaxError(token)
 
-proc posFromPtr(tree: JsonTree; parent: var NodePos; path: JsonPtr; noDash = true): NodePos =
+proc posFromPtr(tree: JsonTree; path: JsonPtr; parent: var NodePos; noDash = true): NodePos =
   template returnEarly =
     if not last1: parent = nilNodeId
     return nilNodeId
@@ -235,19 +235,19 @@ proc posFromPtr(tree: JsonTree; parent: var NodePos; path: JsonPtr; noDash = tru
 proc contains*(tree: JsonTree, path: JsonPtr): bool =
   ## Checks if `key` exists in `n`.
   var tmp = rootNodeId
-  let n = posFromPtr(tree, tmp, path)
+  let n = posFromPtr(tree, path, tmp)
   result = n >= rootNodeId
 
 proc kind*(tree: JsonTree; path: JsonPtr): JsonNodeKind {.inline.} =
   var tmp = rootNodeId
-  let n = posFromPtr(tree, tmp, path)
+  let n = posFromPtr(tree, path, tmp)
   if n.isNil: raisePathError(path.string)
   JsonNodeKind tree.nodes[n.int].kind
 
 proc len*(tree: JsonTree; path: JsonPtr): int =
   result = 0
   var tmp = rootNodeId
-  let n = posFromPtr(tree, tmp, path)
+  let n = posFromPtr(tree, path, tmp)
   if n.isNil: raisePathError(path.string)
   if tree.nodes[n.int].kind > opcodeString:
     for child in sonsReadonly(tree, n): inc result
@@ -267,7 +267,7 @@ proc rawRemove(tree: var JsonTree, parent, n: NodePos) =
 proc remove*(tree: var JsonTree, path: JsonPtr) =
   ## Removes `path`.
   var parent = rootNodeId
-  let n = posFromPtr(tree, parent, path)
+  let n = posFromPtr(tree, path, parent)
   if n.isNil: raisePathError(path.string)
   rawRemove(tree, parent, if parent.kind == opcodeObject: NodePos(n.int-2) else: n)
 
@@ -279,7 +279,7 @@ proc getStr*(tree: JsonTree, path: JsonPtr, default: string = ""): string =
   ##
   ## Returns `default` if `x` is not a `JString`.
   var tmp = rootNodeId
-  let n = posFromPtr(tree, tmp, path)
+  let n = posFromPtr(tree, path, tmp)
   if n.isNil or n.kind != opcodeString: result = default
   else: result = n.str
 
@@ -288,7 +288,7 @@ proc getInt*(tree: JsonTree, path: JsonPtr, default: int = 0): int =
   ##
   ## Returns `default` if `x` is not a `JInt`, or if `x` is nil.
   var tmp = rootNodeId
-  let n = posFromPtr(tree, tmp, path)
+  let n = posFromPtr(tree, path, tmp)
   if n.isNil or n.kind != opcodeInt: result = default
   else: result = parseInt n.str
 
@@ -297,7 +297,7 @@ proc getBiggestInt*(tree: JsonTree, path: JsonPtr, default: BiggestInt = 0): Big
   ##
   ## Returns `default` if `x` is not a `JInt`, or if `x` is nil.
   var tmp = rootNodeId
-  let n = posFromPtr(tree, tmp, path)
+  let n = posFromPtr(tree, path, tmp)
   if n.isNil or n.kind != opcodeInt: result = default
   else: result = parseBiggestInt n.str
 
@@ -306,7 +306,7 @@ proc getFloat*(tree: JsonTree, path: JsonPtr, default: float = 0.0): float =
   ##
   ## Returns `default` if `x` is not a `JFloat` or `JInt`, or if `x` is nil.
   var tmp = rootNodeId
-  let n = posFromPtr(tree, tmp, path)
+  let n = posFromPtr(tree, path, tmp)
   if n.isNil: return default
   case n.kind
   of opcodeFloat:
@@ -321,7 +321,7 @@ proc getBool*(tree: JsonTree, path: JsonPtr, default: bool = false): bool =
   ##
   ## Returns `default` if `n` is not a `JBool`, or if `n` is nil.
   var tmp = rootNodeId
-  let n = posFromPtr(tree, tmp, path)
+  let n = posFromPtr(tree, path, tmp)
   if n.isNil or n.kind != opcodeBool: result = default
   else: result = n.bval
 
@@ -581,7 +581,7 @@ proc toUgly(result: var string, tree: JsonTree, n: NodePos) =
 proc dump*(tree: JsonTree, path: JsonPtr): string =
   result = ""
   var tmp = rootNodeId
-  let n = posFromPtr(tree, tmp, path)
+  let n = posFromPtr(tree, path, tmp)
   if n.isNil: raisePathError(path.string)
   toUgly(result, tree, n)
 
@@ -699,13 +699,13 @@ proc rawExtract(result: var JsonTree, tree: JsonTree, n: NodePos) =
 
 proc extract*(tree: JsonTree; path: JsonPtr): JsonTree =
   var tmp = rootNodeId
-  let n = posFromPtr(tree, tmp, path)
+  let n = posFromPtr(tree, path, tmp)
   if n.isNil: raisePathError(path.string)
   rawExtract(result, tree, n)
 
 proc test*(tree: JsonTree; path: JsonPtr, value: JsonTree): bool =
   var tmp = rootNodeId
-  let n = posFromPtr(tree, tmp, path)
+  let n = posFromPtr(tree, path, tmp)
   if n.isNil: raisePathError(path.string)
   if n.kind != value.nodes[rootNodeId.int].kind: return false
   if n.kind == opcodeNull: return true
