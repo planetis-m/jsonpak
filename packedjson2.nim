@@ -1,6 +1,6 @@
 import
   packedjson2 / bitabs,
-  std / [parsejson, streams, strutils, macros]
+  std / [parsejson, streams, strutils, macros, tables, options]
 export JsonParsingError, JsonKindError
 
 type
@@ -85,6 +85,11 @@ proc parentImpl(tree: JsonTree; n: NodePos): NodePos =
   result = NodePos(pos)
 
 template parent(n: NodePos): NodePos = parentImpl(tree, n)
+
+proc len(tree: JsonTree; n: NodePos): int =
+  result = 0
+  if tree.nodes[n.int].kind > opcodeNull:
+    for child in sonsReadonly(tree, n): inc result
 
 proc isNil(n: NodePos): bool {.inline.} = n == nilNodeId
 proc firstSon(n: NodePos): NodePos {.inline.} = NodePos(n.int+1)
@@ -245,12 +250,10 @@ proc kind*(tree: JsonTree; path: JsonPtr): JsonNodeKind {.inline.} =
   JsonNodeKind tree.nodes[n.int].kind
 
 proc len*(tree: JsonTree; path: JsonPtr): int =
-  result = 0
   var tmp = rootNodeId
   let n = posFromPtr(tree, path, tmp)
   if n.isNil: raisePathError(path.string)
-  if tree.nodes[n.int].kind > opcodeString:
-    for child in sonsReadonly(tree, n): inc result
+  len(tree, n)
 
 proc rawRemove(tree: var JsonTree, parent, n: NodePos) =
   let diff = span(tree, n.int).int32
@@ -720,36 +723,31 @@ proc test*(tree: JsonTree; path: JsonPtr, value: JsonTree): bool =
       if value.nodes[i] != tree.nodes[n.int]: return false
   return true
 
-template ast(n: NodePos): string =
-  var dump = ""
-  toUgly(dump, tree, n)
-  dump
-
-template verifyJsonKind(tree: JsonTree; n: NodePos, kind: JsonNodeKind, kinds: set[JsonNodeKind]) =
+template verifyJsonKind(tree: JsonTree; n: NodePos, kinds: set[JsonNodeKind], path: string) =
   if n.isNil:
-    raisePathError(n.ast)
-  elif kind notin kinds:
-    let msg = format("Incorrect JSON kind. Wanted '$1' in '$2' but got '$3'.", kinds, n.ast, kind)
+    raisePathError(path)
+  elif (let kind = JsonNodeKind(n.kind); kind notin kinds):
+    let msg = format("Incorrect JSON kind. Wanted '$1' in '$2' but got '$3'.", kinds, path, kind)
     raise newException(JsonKindError, msg)
 
-proc initFromJson(dst: var string; tree: JsonTree; n: NodePos) =
-  verifyJsonKind(tree, n, JsonNodeKind(n.kind), {JString, JNull})
+proc initFromJson(dst: var string; tree: JsonTree; n: NodePos; path: var string) =
+  verifyJsonKind(tree, n, {JString, JNull}, path)
   if n.kind == opcodeNull:
     dst = ""
   else:
     dst = n.str
 
-proc initFromJson(dst: var bool; tree: JsonTree; n: NodePos) =
-  verifyJsonKind(tree, n, JsonNodeKind(n.kind), {JBool})
+proc initFromJson(dst: var bool; tree: JsonTree; n: NodePos; path: var string) =
+  verifyJsonKind(tree, n, {JBool}, path)
   dst = n.bval
 
-proc initFromJson(dst: var JsonTree; tree: JsonTree; n: NodePos) =
+proc initFromJson(dst: var JsonTree; tree: JsonTree; n: NodePos; path: var string) =
   if n.isNil:
-    raisePathError(n.ast)
+    raisePathError(path)
   rawExtract(dst, tree, n)
 
-proc initFromJson[T: SomeInteger](dst: var T; tree: JsonTree; n: NodePos) =
-  verifyJsonKind(tree, n, JsonNodeKind(n.kind), {JInt})
+proc initFromJson[T: SomeInteger](dst: var T; tree: JsonTree; n: NodePos; path: var string) =
+  verifyJsonKind(tree, n, {JInt}, path)
   when T is BiggestUInt:
     dst = parseBiggestUInt n.str
   elif T is BiggestInt:
@@ -758,6 +756,67 @@ proc initFromJson[T: SomeInteger](dst: var T; tree: JsonTree; n: NodePos) =
     dst = T(parseInt n.str)
   else:
     dst = T(parseUInt n.str)
+
+proc initFromJson[T: SomeFloat](dst: var T; tree: JsonTree; n: NodePos; path: var string) =
+  verifyJsonKind(tree, n, {JInt, JFloat}, path)
+  if n.kind == opcodeFloat:
+    dst = T(parseFloat n.str)
+  else:
+    dst = T(parseFloat n.str)
+
+proc initFromJson[T: enum](dst: var T; tree: JsonTree; n: NodePos; path: var string) =
+  verifyJsonKind(tree, n, {JString}, path)
+  dst = parseEnum[T](n.str)
+
+proc initFromJson[T](dst: var seq[T]; tree: JsonTree; n: NodePos; path: var string) =
+  verifyJsonKind(tree, n, {JArray}, path)
+  dst.setLen len(tree, n)
+  let oldLen = path.len
+  var i = 0
+  for x in sonsReadonly(tree, n):
+    path.add '/'
+    path.addInt i
+    initFromJson(dst[i], tree, x, path)
+    path.setLen oldLen
+    inc i
+
+proc initFromJson[S, T](dst: var array[S, T]; tree: JsonTree; n: NodePos; path: var string) =
+  verifyJsonKind(tree, n, {JArray}, path)
+  let oldLen = path.len
+  var i = 0
+  for x in sonsReadonly(tree, n):
+    path.add '/'
+    path.addInt i
+    initFromJson(dst[S(i)], tree, n, path)
+    path.setLen oldLen
+    inc i
+
+proc initFromJson[T](dst: var (Table[string, T]|OrderedTable[string, T]); tree: JsonTree; n: NodePos; path: var string) =
+  dst = initTable[string, T]()
+  verifyJsonKind(tree, n, {JObject}, path)
+  let oldLen = path.len
+  for x in sonsReadonly(tree, n):
+    assert x.kind == opcodeKeyValuePair
+    path.add '/'
+    path.add x.firstSon.str
+    initFromJson(mgetOrPut(dst, x.firstSon.str, default(T)), tree, NodePos(x.int+2), path)
+    path.setLen oldLen
+
+proc initFromJson[T](dst: var ref T; tree: JsonTree; n: NodePos; path: var string) =
+  verifyJsonKind(tree, n, {JObject, JNull}, path)
+  if n.kind == opcodeNull:
+    dst = nil
+  else:
+    dst = new(T)
+    initFromJson(dst[], tree, n, path)
+
+proc initFromJson[T](dst: var Option[T]; tree: JsonTree; n: NodePos; path: var string) =
+  if not n.isNil and n.kind != opcodeNull:
+    when T is ref:
+      dst = some(new(T))
+    else:
+      dst = some(default(T))
+    initFromJson(dst.get, tree, n, path)
 
 when isMainModule:
   include tests/internals
