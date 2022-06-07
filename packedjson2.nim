@@ -723,31 +723,31 @@ proc test*(tree: JsonTree; path: JsonPtr, value: JsonTree): bool =
       if value.nodes[i] != tree.nodes[n.int]: return false
   return true
 
-template verifyJsonKind(tree: JsonTree; n: NodePos, kinds: set[JsonNodeKind], path: string) =
+template verifyJsonKind(tree: JsonTree; n: NodePos, kinds: set[JsonNodeKind]) =
   if n.isNil:
-    raisePathError(path)
+    raisePathError("<unknown>")
   elif (let kind = JsonNodeKind(n.kind); kind notin kinds):
-    let msg = format("Incorrect JSON kind. Wanted '$1' in '$2' but got '$3'.", kinds, path, kind)
+    let msg = format("Incorrect JSON kind. Wanted '$1' but got '$3'.", kinds, kind)
     raise newException(JsonKindError, msg)
 
-proc initFromJson(dst: var string; tree: JsonTree; n: NodePos; path: var string) =
-  verifyJsonKind(tree, n, {JString, JNull}, path)
+proc initFromJson(dst: var string; tree: JsonTree; n: NodePos) =
+  verifyJsonKind(tree, n, {JString, JNull})
   if n.kind == opcodeNull:
     dst = ""
   else:
     dst = n.str
 
-proc initFromJson(dst: var bool; tree: JsonTree; n: NodePos; path: var string) =
-  verifyJsonKind(tree, n, {JBool}, path)
+proc initFromJson(dst: var bool; tree: JsonTree; n: NodePos) =
+  verifyJsonKind(tree, n, {JBool})
   dst = n.bval
 
-proc initFromJson(dst: var JsonTree; tree: JsonTree; n: NodePos; path: var string) =
+proc initFromJson(dst: var JsonTree; tree: JsonTree; n: NodePos) =
   if n.isNil:
-    raisePathError(path)
+    raisePathError("<unknown>")
   rawExtract(dst, tree, n)
 
-proc initFromJson[T: SomeInteger](dst: var T; tree: JsonTree; n: NodePos; path: var string) =
-  verifyJsonKind(tree, n, {JInt}, path)
+proc initFromJson[T: SomeInteger](dst: var T; tree: JsonTree; n: NodePos) =
+  verifyJsonKind(tree, n, {JInt})
   when T is BiggestUInt:
     dst = parseBiggestUInt n.str
   elif T is BiggestInt:
@@ -757,66 +757,53 @@ proc initFromJson[T: SomeInteger](dst: var T; tree: JsonTree; n: NodePos; path: 
   else:
     dst = T(parseUInt n.str)
 
-proc initFromJson[T: SomeFloat](dst: var T; tree: JsonTree; n: NodePos; path: var string) =
-  verifyJsonKind(tree, n, {JInt, JFloat}, path)
+proc initFromJson[T: SomeFloat](dst: var T; tree: JsonTree; n: NodePos) =
+  verifyJsonKind(tree, n, {JInt, JFloat})
   if n.kind == opcodeFloat:
     dst = T(parseFloat n.str)
   else:
     dst = T(parseFloat n.str)
 
-proc initFromJson[T: enum](dst: var T; tree: JsonTree; n: NodePos; path: var string) =
-  verifyJsonKind(tree, n, {JString}, path)
+proc initFromJson[T: enum](dst: var T; tree: JsonTree; n: NodePos) =
+  verifyJsonKind(tree, n, {JString})
   dst = parseEnum[T](n.str)
 
-proc initFromJson[T](dst: var seq[T]; tree: JsonTree; n: NodePos; path: var string) =
-  verifyJsonKind(tree, n, {JArray}, path)
+proc initFromJson[T](dst: var seq[T]; tree: JsonTree; n: NodePos) =
+  verifyJsonKind(tree, n, {JArray})
   dst.setLen len(tree, n)
-  let oldLen = path.len
   var i = 0
   for x in sonsReadonly(tree, n):
-    path.add '/'
-    path.addInt i
-    initFromJson(dst[i], tree, x, path)
-    path.setLen oldLen
+    initFromJson(dst[i], tree, x)
     inc i
 
-proc initFromJson[S, T](dst: var array[S, T]; tree: JsonTree; n: NodePos; path: var string) =
-  verifyJsonKind(tree, n, {JArray}, path)
-  let oldLen = path.len
+proc initFromJson[S, T](dst: var array[S, T]; tree: JsonTree; n: NodePos) =
+  verifyJsonKind(tree, n, {JArray})
   var i = 0
   for x in sonsReadonly(tree, n):
-    path.add '/'
-    path.addInt i
-    initFromJson(dst[S(i)], tree, n, path)
-    path.setLen oldLen
+    initFromJson(dst[S(i)], tree, n)
     inc i
 
-proc initFromJson[T](dst: var (Table[string, T]|OrderedTable[string, T]); tree: JsonTree; n: NodePos; path: var string) =
-  dst = initTable[string, T]()
-  verifyJsonKind(tree, n, {JObject}, path)
-  let oldLen = path.len
+proc initFromJson[T](dst: var (Table[string, T]|OrderedTable[string, T]); tree: JsonTree; n: NodePos) =
+  verifyJsonKind(tree, n, {JObject})
   for x in sonsReadonly(tree, n):
     assert x.kind == opcodeKeyValuePair
-    path.add '/'
-    path.add x.firstSon.str
-    initFromJson(mgetOrPut(dst, x.firstSon.str, default(T)), tree, NodePos(x.int+2), path)
-    path.setLen oldLen
+    initFromJson(mgetOrPut(dst, x.firstSon.str, default(T)), tree, NodePos(x.int+2))
 
-proc initFromJson[T](dst: var ref T; tree: JsonTree; n: NodePos; path: var string) =
-  verifyJsonKind(tree, n, {JObject, JNull}, path)
+proc initFromJson[T](dst: var ref T; tree: JsonTree; n: NodePos) =
+  verifyJsonKind(tree, n, {JObject, JNull})
   if n.kind == opcodeNull:
     dst = nil
   else:
     dst = new(T)
-    initFromJson(dst[], tree, n, path)
+    initFromJson(dst[], tree, n)
 
-proc initFromJson[T](dst: var Option[T]; tree: JsonTree; n: NodePos; path: var string) =
+proc initFromJson[T](dst: var Option[T]; tree: JsonTree; n: NodePos) =
   if not n.isNil and n.kind != opcodeNull:
     when T is ref:
       dst = some(new(T))
     else:
       dst = some(default(T))
-    initFromJson(dst.get, tree, n, path)
+    initFromJson(dst.get, tree, n)
 
 when isMainModule:
   include tests/internals
