@@ -724,9 +724,7 @@ proc test*(tree: JsonTree; path: JsonPtr, value: JsonTree): bool =
   return true
 
 template verifyJsonKind(tree: JsonTree; n: NodePos, kinds: set[JsonNodeKind]) =
-  if n.isNil:
-    raisePathError("<unknown>")
-  elif (let kind = JsonNodeKind(n.kind); kind notin kinds):
+  if (let kind = JsonNodeKind(n.kind); kind notin kinds):
     let msg = format("Incorrect JSON kind. Wanted '$1' but got '$3'.", kinds, kind)
     raise newException(JsonKindError, msg)
 
@@ -742,8 +740,6 @@ proc initFromJson(dst: var bool; tree: JsonTree; n: NodePos) =
   dst = n.bval
 
 proc initFromJson(dst: var JsonTree; tree: JsonTree; n: NodePos) =
-  if n.isNil:
-    raisePathError("<unknown>")
   rawExtract(dst, tree, n)
 
 proc initFromJson[T: SomeInteger](dst: var T; tree: JsonTree; n: NodePos) =
@@ -762,7 +758,7 @@ proc initFromJson[T: SomeFloat](dst: var T; tree: JsonTree; n: NodePos) =
   if n.kind == opcodeFloat:
     dst = T(parseFloat n.str)
   else:
-    dst = T(parseFloat n.str)
+    dst = T(parseBiggestInt n.str)
 
 proc initFromJson[T: enum](dst: var T; tree: JsonTree; n: NodePos) =
   verifyJsonKind(tree, n, {JString})
@@ -778,7 +774,7 @@ proc initFromJson[T](dst: var seq[T]; tree: JsonTree; n: NodePos) =
 
 proc initFromJson[S, T](dst: var array[S, T]; tree: JsonTree; n: NodePos) =
   verifyJsonKind(tree, n, {JArray})
-  var i = 0
+  var i = int(low(dst))
   for x in sonsReadonly(tree, n):
     initFromJson(dst[S(i)], tree, n)
     inc i
@@ -804,6 +800,8 @@ proc initFromJson[T](dst: var Option[T]; tree: JsonTree; n: NodePos) =
     else:
       dst = some(default(T))
     initFromJson(dst.get, tree, n)
+
+
 
 when isMainModule:
   include tests/internals
