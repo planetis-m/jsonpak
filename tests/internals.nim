@@ -111,6 +111,8 @@ block:
   assert $extract(x, JsonPtr"/b") == "4"
   assert $extract(x, JsonPtr"/d") == """{"e":[7,8],"f":9}"""
   assert $extract(x, JsonPtr"/d/e") == "[7,8]"
+  assert test(x, JsonPtr"/d", %*{"e": [7, 8], "f": 9})
+  assert test(x, JsonPtr"/d/e", %*[7, 8])
   assert $x == """{"a":[1,2,3],"b":4,"c":[5,6],"d":{"e":[7,8],"f":9}}"""
 
 block:

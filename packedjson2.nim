@@ -25,6 +25,8 @@ proc `<`(a, b: NodePos): bool {.borrow.}
 proc `<=`(a, b: NodePos): bool {.borrow.}
 proc `==`(a, b: NodePos): bool {.borrow.}
 
+proc `==`(a, b: Node): bool {.borrow.}
+
 const
   opcodeBits = 3
 
@@ -701,13 +703,30 @@ proc extract*(tree: JsonTree; path: JsonPtr): JsonTree =
   if n.isNil: raisePathError(path.string)
   rawExtract(result, tree, n)
 
+proc test*(tree: JsonTree; path: JsonPtr, value: JsonTree): bool =
+  var tmp = rootNodeId
+  let n = posFromPtr(tree, tmp, path)
+  if n.isNil: raisePathError(path.string)
+  if n.kind != value.nodes[rootNodeId.int].kind: return false
+  if n.kind == opcodeNull: return true
+  let L = span(tree, n.int)
+  if L != value.nodes.len: return false
+  for i in 0..<L:
+    let n = NodePos(i+n.int) # careful
+    case n.kind
+    of opcodeInt, opcodeFloat, opcodeString:
+      if value.atoms[LitId value.nodes[i].operand] != n.str: return false
+    else:
+      if value.nodes[i] != tree.nodes[n.int]: return false
+  return true
+
 template ast(n: NodePos): string =
   var dump = ""
   toUgly(dump, tree, n)
   dump
 
 template verifyJsonKind(tree: JsonTree; n: NodePos, kind: JsonNodeKind, kinds: set[JsonNodeKind]) =
-  if n == nilNodeId:
+  if n.isNil:
     raisePathError(n.ast)
   elif kind notin kinds:
     let msg = format("Incorrect JSON kind. Wanted '$1' in '$2' but got '$3'.", kinds, n.ast, kind)
@@ -723,6 +742,11 @@ proc initFromJson(dst: var string; tree: JsonTree; n: NodePos) =
 proc initFromJson(dst: var bool; tree: JsonTree; n: NodePos) =
   verifyJsonKind(tree, n, JsonNodeKind(n.kind), {JBool})
   dst = n.bval
+
+proc initFromJson(dst: var JsonTree; tree: JsonTree; n: NodePos) =
+  if n.isNil:
+    raisePathError(n.ast)
+  rawExtract(dst, tree, n)
 
 proc initFromJson[T: SomeInteger](dst: var T; tree: JsonTree; n: NodePos) =
   verifyJsonKind(tree, n, JsonNodeKind(n.kind), {JInt})
