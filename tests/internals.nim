@@ -115,6 +115,7 @@ block:
   assert test(x, JsonPtr"/d/e", %*[7, 8])
   assert not test(x, JsonPtr"/d/e", %*[7, 8, 9])
   assert test(extract(x, JsonPtr"/d/e"), JsonPtr"", %*[7, 8])
+  assert fromJson(x, JsonPtr"/d/e", array[2, int]) == [7, 8]
   assert $x == """{"a":[1,2,3],"b":4,"c":[5,6],"d":{"e":[7,8],"f":9}}"""
 
 block:
@@ -131,4 +132,8 @@ block:
   let x = %*Foo(a: [Vec3(x: 1, y: 2, z: 3)], b: true, c: "hi", d: foo)
   assert not x.isEmpty
   assert x.atoms.len == 12
+  assert fromJson(x, JsonPtr"/a/0", Vec3) == Vec3(x: 1, y: 2, z: 3)
+  assert fromJson(x, JsonPtr"/b", bool) == true
+  assert fromJson(x, JsonPtr"/c", string) == "hi"
+  assert fromJson(x, JsonPtr"/d", Bar) == foo
   assert $x == """{"a":[{"x":1,"y":2,"z":3}],"b":true,"c":"hi","d":"foo"}"""
