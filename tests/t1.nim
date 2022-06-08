@@ -75,6 +75,7 @@ proc main =
     assert $x == """{"a":[{"x":1,"y":2,"z":3}],"b":true,"c":"hi","d":"foo"}"""
     for v in items(x, JsonPtr"/a", Vec3):
       assert v == Vec3(x: 1, y: 2, z: 3)
+    assert not test(x, JsonPtr"", %*nil)
 
 static: main()
 main()
