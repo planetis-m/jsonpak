@@ -103,10 +103,11 @@ block:
     "a": [1, 2, 3],
     "b": 4,
     "c": [5, 6],
-    "d": {"e": [7, 8], "f": 9}
+    "d": {"e": [7, 8], "f": 9},
+    "": {"": [10, 11], "g": 12}
   }
   assert not x.isEmpty
-  assert x.atoms.len == 15
+  assert x.atoms.len == 20
   assert $extract(x, JsonPtr"/a") == "[1,2,3]"
   assert $extract(x, JsonPtr"/b") == "4"
   assert $extract(x, JsonPtr"/d") == """{"e":[7,8],"f":9}"""
@@ -116,7 +117,8 @@ block:
   assert not test(x, JsonPtr"/d/e", %*[7, 8, 9])
   assert test(extract(x, JsonPtr"/d/e"), JsonPtr"", %*[7, 8])
   assert fromJson(x, JsonPtr"/d/e", array[2, int]) == [7, 8]
-  assert $x == """{"a":[1,2,3],"b":4,"c":[5,6],"d":{"e":[7,8],"f":9}}"""
+  assert fromJson(x, JsonPtr"///1", int) == 11
+  assert $x == """{"a":[1,2,3],"b":4,"c":[5,6],"d":{"e":[7,8],"f":9},"":{"":[10,11],"g":12}}"""
 
 block:
   type
