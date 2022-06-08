@@ -44,7 +44,7 @@ const
   opcodeMask = 0b111
 
 template kind(n: Node): int32 = n.int32 and opcodeMask
-template operand*(n: Node): int32 = int32(n.uint32 shr opcodeBits.int32)
+template operand(n: Node): int32 = int32(n.uint32 shr opcodeBits.int32)
 template toNode(kind, operand: int32): Node = Node(operand shl opcodeBits.int32 or kind)
 
 type
@@ -95,7 +95,7 @@ proc isNil(n: NodePos): bool {.inline.} = n == nilNodeId
 proc firstSon(n: NodePos): NodePos {.inline.} = NodePos(n.int+1)
 
 template kind(n: NodePos): int32 = tree.nodes[n.int].kind
-template litId*(n: NodePos): LitId = LitId tree.nodes[n.int].operand
+template litId(n: NodePos): LitId = LitId operand(tree.nodes[n.int])
 template operand(n: NodePos): int32 = tree.nodes[n.int].operand
 
 proc rawGet(tree: JsonTree, n: NodePos, name: string): NodePos =
@@ -275,7 +275,7 @@ proc remove*(tree: var JsonTree, path: JsonPtr) =
   preamble(n, parent)
   rawRemove(tree, parent, if parent.kind == opcodeObject: NodePos(n.int-2) else: n)
 
-template str(n: NodePos): string = tree.atoms[n.litId]
+template str(n: NodePos): string = tree.atoms[litId(n)]
 template bval(n: NodePos): bool = n.operand == 1
 
 proc getStr*(tree: JsonTree, path: JsonPtr, default: string = ""): string =
