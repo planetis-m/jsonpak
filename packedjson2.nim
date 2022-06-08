@@ -215,8 +215,7 @@ proc posFromPtr(tree: JsonTree; path: JsonPtr; parent: var NodePos; noDash = tru
       for i in 0..high(cur):
         cur[i] = path[i+first]
     else:
-      if first < last:
-        copyMem(cur.cstring, addr path[first], cur.len)
+      if first < last: copyMem(cur.cstring, addr path[first], cur.len)
     case result.kind
     of opcodeObject:
       unescapeJsonPtr(cur)

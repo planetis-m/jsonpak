@@ -36,7 +36,7 @@ proc main =
       "b": 4,
       "c": [5, 6],
       "d": {"e": [7, 8], "f": 9},
-      "": {"": [10, 11], "g": 12}
+      "": {"": [10, 11], "g": [12]}
     }
     assert not x.isEmpty
     assert $extract(x, JsonPtr"/a") == "[1,2,3]"
@@ -49,7 +49,9 @@ proc main =
     assert test(extract(x, JsonPtr"/d/e"), JsonPtr"", %*[7, 8])
     assert fromJson(x, JsonPtr"/d/e", array[2, int]) == [7, 8]
     assert fromJson(x, JsonPtr"///1", int) == 11
-    assert $x == """{"a":[1,2,3],"b":4,"c":[5,6],"d":{"e":[7,8],"f":9},"":{"":[10,11],"g":12}}"""
+    for k, v in pairs(x, JsonPtr"/", seq[int]):
+      assert k in ["", "g"]
+    assert $x == """{"a":[1,2,3],"b":4,"c":[5,6],"d":{"e":[7,8],"f":9},"":{"":[10,11],"g":[12]}}"""
 
   block:
     type
@@ -71,6 +73,8 @@ proc main =
     assert fromJson(x, JsonPtr"/c", string) == "hi"
     assert fromJson(x, JsonPtr"/d", Bar) == foo
     assert $x == """{"a":[{"x":1,"y":2,"z":3}],"b":true,"c":"hi","d":"foo"}"""
+    for v in items(x, JsonPtr"/a", Vec3):
+      assert v == Vec3(x: 1, y: 2, z: 3)
 
 static: main()
 main()
