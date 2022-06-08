@@ -98,6 +98,9 @@ template kind(n: NodePos): int32 = tree.nodes[n.int].kind
 template litId(n: NodePos): LitId = LitId operand(tree.nodes[n.int])
 template operand(n: NodePos): int32 = tree.nodes[n.int].operand
 
+template str(n: NodePos): string = tree.atoms[litId(n)]
+template bval(n: NodePos): bool = n.operand == 1
+
 proc rawGet(tree: JsonTree, n: NodePos, name: string): NodePos =
   let litId = tree.atoms.getKeyId(name)
   if litId == LitId(0):
@@ -273,60 +276,6 @@ proc remove*(tree: var JsonTree, path: JsonPtr) =
   ## Removes `path`.
   preamble(n, parent)
   rawRemove(tree, parent, if parent.kind == opcodeObject: NodePos(n.int-2) else: n)
-
-template str(n: NodePos): string = tree.atoms[litId(n)]
-template bval(n: NodePos): bool = n.operand == 1
-
-proc getStr*(tree: JsonTree, path: JsonPtr, default: string = ""): string =
-  ## Retrieves the string value of a `JString`.
-  ##
-  ## Returns `default` if `x` is not a `JString`.
-  var tmp = rootNodeId
-  let n = posFromPtr(tree, path, tmp)
-  if n.isNil or n.kind != opcodeString: result = default
-  else: result = n.str
-
-proc getInt*(tree: JsonTree, path: JsonPtr, default: int = 0): int =
-  ## Retrieves the int value of a `JInt`.
-  ##
-  ## Returns `default` if `x` is not a `JInt`, or if `x` is nil.
-  var tmp = rootNodeId
-  let n = posFromPtr(tree, path, tmp)
-  if n.isNil or n.kind != opcodeInt: result = default
-  else: result = parseInt n.str
-
-proc getBiggestInt*(tree: JsonTree, path: JsonPtr, default: BiggestInt = 0): BiggestInt =
-  ## Retrieves the BiggestInt value of a `JInt`.
-  ##
-  ## Returns `default` if `x` is not a `JInt`, or if `x` is nil.
-  var tmp = rootNodeId
-  let n = posFromPtr(tree, path, tmp)
-  if n.isNil or n.kind != opcodeInt: result = default
-  else: result = parseBiggestInt n.str
-
-proc getFloat*(tree: JsonTree, path: JsonPtr, default: float = 0.0): float =
-  ## Retrieves the float value of a `JFloat`.
-  ##
-  ## Returns `default` if `x` is not a `JFloat` or `JInt`, or if `x` is nil.
-  var tmp = rootNodeId
-  let n = posFromPtr(tree, path, tmp)
-  if n.isNil: return default
-  case n.kind
-  of opcodeFloat:
-    result = parseFloat n.str
-  of opcodeInt:
-    result = float(parseBiggestInt n.str)
-  else:
-    result = default
-
-proc getBool*(tree: JsonTree, path: JsonPtr, default: bool = false): bool =
-  ## Retrieves the bool value of a `JBool`.
-  ##
-  ## Returns `default` if `n` is not a `JBool`, or if `n` is nil.
-  var tmp = rootNodeId
-  let n = posFromPtr(tree, path, tmp)
-  if n.isNil or n.kind != opcodeBool: result = default
-  else: result = n.bval
 
 type
   PatchPos = distinct int32
