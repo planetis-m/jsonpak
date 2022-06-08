@@ -62,8 +62,10 @@ proc main =
         foo, bar, baz
       Vec3 = object
         x, y, z: int
-    let x = %*Foo(a: [Vec3(x: 1, y: 2, z: 3)], b: true, c: "hi", d: foo)
+    let y = Foo(a: [Vec3(x: 1, y: 2, z: 3)], b: true, c: "hi", d: foo)
+    let x = %*y
     assert not x.isEmpty
+    assert fromJson(x, JsonPtr"", Foo)[] == y[]
     assert fromJson(x, JsonPtr"/a/0", Vec3) == Vec3(x: 1, y: 2, z: 3)
     assert fromJson(x, JsonPtr"/b", bool) == true
     assert fromJson(x, JsonPtr"/c", string) == "hi"
