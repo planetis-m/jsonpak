@@ -207,7 +207,7 @@ template copyTokenToBuffer(buf, src, first, last) =
   else:
     if first < last: copyMem(buf.cstring, addr src[first], buf.len)
 
-proc posFromPtr(tree: JsonTree; path: string; n: NodePos): NodePos =
+template posFromPtrImpl() =
   result = n
   if result.isNil: return
   var cur = ""
@@ -216,16 +216,28 @@ proc posFromPtr(tree: JsonTree; path: string; n: NodePos): NodePos =
     var first = last
     while last < len(path) and path[last] != '/':
       inc(last)
+    when compiles(noDash):
+      let final = last == len(path)
     copyTokenToBuffer(cur, path, first, last)
     case result.kind
     of opcodeObject:
+      when compiles(insertPos):
+        insertPos.add result.PatchPos
       unescapeJsonPtr(cur)
       result = rawGet(tree, result, cur)
       if result.isNil: return
+      when compiles(insertPos):
+        insertPos.add PatchPos(result.int32-2)
     of opcodeArray:
+      when compiles(insertPos):
+        insertPos.add result.PatchPos
       var i = getArrayIndex(cur)
       if i == -1:
-        raiseSyntaxError(path)
+        when compiles(noDash):
+          if not noDash and final: return NodePos(result.int+result.operand)
+          else: raiseSyntaxError(path)
+        else:
+          raiseSyntaxError(path)
       block searchLoop:
         for x in sonsReadonly(tree, result):
           if i == 0:
@@ -235,44 +247,16 @@ proc posFromPtr(tree: JsonTree; path: string; n: NodePos): NodePos =
         return nilNodeId
     else: return nilNodeId
     inc(last)
+
+proc posFromPtr(tree: JsonTree; path: string; n: NodePos): NodePos =
+  posFromPtrImpl()
 
 template posFromPtr(tree: JsonTree; path: JsonPtr): NodePos =
   posFromPtr(tree, path.string, rootNodeId)
 
 proc posFromPtr(tree: JsonTree; path: string; n: NodePos;
     insertPos: var seq[PatchPos]; noDash = true): NodePos =
-  result = n
-  if result.isNil: return
-  var cur = ""
-  var last = 1
-  while last <= len(path):
-    var first = last
-    while last < len(path) and path[last] != '/':
-      inc(last)
-    let final = last == len(path)
-    copyTokenToBuffer(cur, path, first, last)
-    case result.kind
-    of opcodeObject:
-      unescapeJsonPtr(cur)
-      insertPos.add result.PatchPos
-      result = rawGet(tree, result, cur)
-      if result.isNil: return
-      insertPos.add PatchPos(result.int32-2)
-    of opcodeArray:
-      insertPos.add result.PatchPos
-      var i = getArrayIndex(cur)
-      if i == -1:
-        if not noDash and final: return NodePos(result.int+result.operand)
-        else: raiseSyntaxError(path)
-      block searchLoop:
-        for x in sonsReadonly(tree, result):
-          if i == 0:
-            result = x
-            break searchLoop
-          dec i
-        return nilNodeId
-    else: return nilNodeId
-    inc(last)
+  posFromPtrImpl()
 
 proc contains*(tree: JsonTree, path: JsonPtr): bool =
   ## Checks if `key` exists in `n`.
