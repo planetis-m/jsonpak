@@ -18,6 +18,7 @@ proc main =
     assert contains(x, JsonPtr"/key")
     assert contains(x, JsonPtr"/a")
     assert kind(x, JsonPtr"") == JObject
+    assert kind(x, JsonPtr"/a") == JInt
     assert $x == """{"a":0,"key":[4,[1,2,3]]}"""
     remove(x, JsonPtr"/a")
     assert not contains(x, JsonPtr"/a")
@@ -27,7 +28,6 @@ proc main =
     assert $x == """{"key":[[1,2,3]]}"""
     remove(x, JsonPtr"/key/0/1")
     assert $x == """{"key":[[1,3]]}"""
-    #assert kind(x, JsonPtr"/a") == JInt
     assert kind(x, JsonPtr"/key") == JArray
     remove(x, JsonPtr"")
     assert x.isEmpty
