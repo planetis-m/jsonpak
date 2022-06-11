@@ -64,18 +64,20 @@ proc main =
         foo, bar, baz
       Vec3 = object
         x, y, z: int
+    let z = Vec3(x: 1, y: 2, z: 3)
     let y = Foo(a: [Vec3(x: 1, y: 2, z: 3)], b: true, c: "hi", d: foo)
     let x = %*y
     assert not x.isEmpty
     assert fromJson(x, JsonPtr"", Foo)[] == y[]
-    assert fromJson(x, JsonPtr"/a/0", Vec3) == Vec3(x: 1, y: 2, z: 3)
+    assert fromJson(x, JsonPtr"/a/0", Vec3) == z
+    assert test(fromJson(x, JsonPtr"/a/0", JsonTree), JsonPtr"", %*z)
     assert fromJson(x, JsonPtr"/b", bool) == true
     assert fromJson(x, JsonPtr"/c", string) == "hi"
     assert fromJson(x, JsonPtr"/d", Bar) == foo
     assert $x == """{"a":[{"x":1,"y":2,"z":3}],"b":true,"c":"hi","d":"foo"}"""
     for v in items(x, JsonPtr"/a", Vec3):
-      assert v == Vec3(x: 1, y: 2, z: 3)
+      assert v == z
     assert not test(x, JsonPtr"", %*nil)
 
-static: main()
+#static: main()
 main()

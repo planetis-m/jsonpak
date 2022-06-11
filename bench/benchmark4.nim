@@ -13,10 +13,14 @@ proc genTree(r: var Rand; depth: int): JsonTree =
   }
   inc genId
   if depth > 0:
+    #var arr = %*[]
     for i in 0 .. r.rand(0..3):
+      #arr.add JsonPtr"/-", genTree(r, depth-1)
       result.add JsonPtr"/kids/-", genTree(r, depth-1)
     for i in 0 .. r.rand(0..3):
+      #arr.add JsonPtr"/-", %*nil
       result.add JsonPtr"/kids/-", %*nil
+    #result.replace JsonPtr"/kids", arr
 
 proc main =
   let start = cpuTime()

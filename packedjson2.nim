@@ -17,6 +17,8 @@ type
     JObject,
     JArray
 
+  PatchPos = distinct int32
+
 const
   rootNodeId = NodePos(0) ## Each `JsonTree` starts from this index.
   nilNodeId = NodePos(-1) ## Empty `NodePos`
@@ -197,39 +199,71 @@ func getArrayIndex(token: string): int {.inline.} =
   try: result = parseInt(token)
   except: raiseSyntaxError(token)
 
-proc posFromPtr(tree: JsonTree; path: JsonPtr; parent: var NodePos; noDash = true): NodePos =
-  template returnEarly =
-    if not last1: parent = nilNodeId
-    return nilNodeId
+template copyTokenToBuffer(buf, src, first, last) =
+  buf.setLen(last-first)
+  when nimvm:
+    for i in 0..high(buf):
+      buf[i] = src[i+first]
+  else:
+    if first < last: copyMem(buf.cstring, addr src[first], buf.len)
 
-  result = parent
-  parent = nilNodeId
+proc posFromPtr(tree: JsonTree; path: string; n: NodePos): NodePos =
+  result = n
   if result.isNil: return
-  let path = string(path)
   var cur = ""
   var last = 1
   while last <= len(path):
     var first = last
     while last < len(path) and path[last] != '/':
       inc(last)
-    cur.setLen(last-first)
-    let last1 = last == len(path)
-    when nimvm:
-      for i in 0..high(cur):
-        cur[i] = path[i+first]
-    else:
-      if first < last: copyMem(cur.cstring, addr path[first], cur.len)
+    copyTokenToBuffer(cur, path, first, last)
     case result.kind
     of opcodeObject:
       unescapeJsonPtr(cur)
-      parent = result
       result = rawGet(tree, result, cur)
-      if result.isNil: returnEarly
+      if result.isNil: return
     of opcodeArray:
       var i = getArrayIndex(cur)
-      parent = result
       if i == -1:
-        if not noDash and last1: return NodePos(result.int+result.operand)
+        raiseSyntaxError(path)
+      block searchLoop:
+        for x in sonsReadonly(tree, result):
+          if i == 0:
+            result = x
+            break searchLoop
+          dec i
+        return nilNodeId
+    else: return nilNodeId
+    inc(last)
+
+template posFromPtr(tree: JsonTree; path: JsonPtr): NodePos =
+  posFromPtr(tree, path.string, rootNodeId)
+
+proc posFromPtr(tree: JsonTree; path: string; n: NodePos;
+    insertPos: var seq[PatchPos]; noDash = true): NodePos =
+  result = n
+  if result.isNil: return
+  insertPos.add result.PatchPos
+  var cur = ""
+  var last = 1
+  while last <= len(path):
+    var first = last
+    while last < len(path) and path[last] != '/':
+      inc(last)
+    let final = last == len(path)
+    copyTokenToBuffer(cur, path, first, last)
+    case result.kind
+    of opcodeObject:
+      unescapeJsonPtr(cur)
+      insertPos.add result.PatchPos
+      result = rawGet(tree, result, cur)
+      if result.isNil: return
+      insertPos.add PatchPos(result.int32-2)
+    of opcodeArray:
+      insertPos.add result.PatchPos
+      var i = getArrayIndex(cur)
+      if i == -1:
+        if not noDash and final: return NodePos(result.int+result.operand)
         else: raiseSyntaxError(path)
       block searchLoop:
         for x in sonsReadonly(tree, result):
@@ -237,48 +271,40 @@ proc posFromPtr(tree: JsonTree; path: JsonPtr; parent: var NodePos; noDash = tru
             result = x
             break searchLoop
           dec i
-        returnEarly
-    else: returnEarly
+        return nilNodeId
+    else: return nilNodeId
     inc(last)
-
-template preamble(n, parent) =
-  var parent = rootNodeId
-  let n = posFromPtr(tree, path, parent)
-  if n.isNil: raisePathError(path.string)
 
 proc contains*(tree: JsonTree, path: JsonPtr): bool =
   ## Checks if `key` exists in `n`.
-  var tmp = rootNodeId
-  let n = posFromPtr(tree, path, tmp)
+  let n = posFromPtr(tree, path)
   result = n >= rootNodeId
 
 proc kind*(tree: JsonTree; path: JsonPtr): JsonNodeKind {.inline.} =
-  preamble(n, tmp)
+  let n = posFromPtr(tree, path)
+  if n.isNil: raisePathError(path.string)
   JsonNodeKind tree.nodes[n.int].kind
 
 proc len*(tree: JsonTree; path: JsonPtr): int =
-  preamble(n, tmp)
+  let n = posFromPtr(tree, path)
+  if n.isNil: raisePathError(path.string)
   len(tree, n)
-
-proc rawRemove(tree: var JsonTree, parent, n: NodePos) =
-  let diff = span(tree, n.int).int32
-  var pos = parent.int
-  while true:
-    let distance = tree.nodes[pos].operand - diff
-    tree.nodes[pos] = toNode(tree.nodes[pos].kind, distance)
-    if pos <= 0: break
-    pos = NodePos(pos).parent.int
-  let oldfull = tree.nodes.len
-  for i in countup(n.int, oldfull-diff-1): tree.nodes[i] = tree.nodes[i+diff]
-  setLen(tree.nodes, oldfull-diff)
 
 proc remove*(tree: var JsonTree, path: JsonPtr) =
   ## Removes `path`.
-  preamble(n, parent)
-  rawRemove(tree, parent, if parent.kind == opcodeObject: NodePos(n.int-2) else: n)
-
-type
-  PatchPos = distinct int32
+  var insertPos: seq[PatchPos] = @[]
+  var n = posFromPtr(tree, path.string, rootNodeId, insertPos)
+  if n.isNil: raisePathError(path.string)
+  if insertPos.len > 0 and kind(NodePos insertPos[^1]) == opcodeKeyValuePair:
+    n = NodePos insertPos.pop()
+  let diff = span(tree, n.int).int32
+  while insertPos.len > 0:
+    let pos = insertPos.pop().int
+    let distance = tree.nodes[pos].operand - diff
+    tree.nodes[pos] = toNode(tree.nodes[pos].kind, distance)
+  let oldfull = tree.nodes.len
+  for i in countup(n.int, oldfull-diff-1): tree.nodes[i] = tree.nodes[i+diff]
+  setLen(tree.nodes, oldfull-diff)
 
 proc prepare(tree: var JsonTree; kind: int32): PatchPos =
   result = PatchPos tree.nodes.len
@@ -532,7 +558,8 @@ proc toUgly(result: var string, tree: JsonTree, n: NodePos) =
 
 proc dump*(tree: JsonTree, path: JsonPtr): string =
   result = ""
-  preamble(n, tmp)
+  let n = posFromPtr(tree, path)
+  if n.isNil: raisePathError(path.string)
   toUgly(result, tree, n)
 
 proc `$`*(tree: JsonTree): string =
@@ -648,11 +675,13 @@ proc rawExtract(result: var JsonTree, tree: JsonTree, n: NodePos) =
       result.nodes[i] = tree.nodes[n.int]
 
 proc extract*(tree: JsonTree; path: JsonPtr): JsonTree =
-  preamble(n, tmp)
+  let n = posFromPtr(tree, path)
+  if n.isNil: raisePathError(path.string)
   rawExtract(result, tree, n)
 
 proc test*(tree: JsonTree; path: JsonPtr, value: JsonTree): bool =
-  preamble(n, tmp)
+  let n = posFromPtr(tree, path)
+  if n.isNil: raisePathError(path.string)
   if n.kind != value.nodes[rootNodeId.int].kind: return false
   if n.kind == opcodeNull: return true
   let L = span(tree, n.int)
@@ -771,12 +800,14 @@ proc initFromJson[T: object|tuple](dst: var T; tree: JsonTree; n: NodePos) =
           break outer
 
 proc fromJson*[T](tree: JsonTree; path: JsonPtr; t: typedesc[T]): T =
-  preamble(n, tmp)
+  let n = posFromPtr(tree, path)
+  if n.isNil: raisePathError(path.string)
   initFromJson(result, tree, n)
 
 iterator items*[T](tree: JsonTree; path: JsonPtr; t: typedesc[T]): T =
   ## Iterator for the items of `x`. `x` has to be a JArray.
-  preamble(n, tmp)
+  let n = posFromPtr(tree, path)
+  if n.isNil: raisePathError(path.string)
   assert n.kind == opcodeArray
   var item: T
   for x in sonsReadonly(tree, n):
@@ -785,7 +816,8 @@ iterator items*[T](tree: JsonTree; path: JsonPtr; t: typedesc[T]): T =
 
 iterator pairs*[T](tree: JsonTree; path: JsonPtr; t: typedesc[T]): (lent string, T) =
   ## Iterator for the pairs of `x`. `x` has to be a JObject.
-  preamble(n, tmp)
+  let n = posFromPtr(tree, path)
+  if n.isNil: raisePathError(path.string)
   assert n.kind == opcodeObject
   var item: T
   for x in sonsReadonly(tree, n):
