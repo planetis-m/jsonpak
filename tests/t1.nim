@@ -29,6 +29,8 @@ proc main =
     assert $x == """{"key":[[1,3]]}"""
     #assert kind(x, JsonPtr"/a") == JInt
     assert kind(x, JsonPtr"/key") == JArray
+    remove(x, JsonPtr"")
+    assert x.isEmpty
 
   block:
     const x = %*{
@@ -79,5 +81,5 @@ proc main =
       assert v == z
     assert not test(x, JsonPtr"", %*nil)
 
-#static: main()
+static: main()
 main()

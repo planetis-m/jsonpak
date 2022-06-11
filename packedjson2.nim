@@ -243,7 +243,6 @@ proc posFromPtr(tree: JsonTree; path: string; n: NodePos;
     insertPos: var seq[PatchPos]; noDash = true): NodePos =
   result = n
   if result.isNil: return
-  insertPos.add result.PatchPos
   var cur = ""
   var last = 1
   while last <= len(path):
