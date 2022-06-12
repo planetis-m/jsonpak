@@ -35,13 +35,13 @@ proc main =
 
   block:
     var x = %*[]
-    let z = [1, 2, 3, 4, 5]
-    add(x, JsonPtr"/-", %*z)
-    assert test(x, JsonPtr"/0", %*z)
+    let z = %*[1, 2, 3, 4, 5]
+    add(x, JsonPtr"/-", z)
+    assert test(x, JsonPtr"/0", z)
     add(x, JsonPtr"/-", %*"a")
     assert test(x, JsonPtr"", %*[z, "a"])
     var y = %*{}
-    add(y, JsonPtr"/x", %*z)
+    add(y, JsonPtr"/x", z)
     assert test(y, JsonPtr"", %*{"x": z})
 
   block:
@@ -54,5 +54,5 @@ proc main =
     #assert posFromPtr(x, JsonPtr"/1/2", NodePos 6) == NodePos 11
     assert $x == data
 
-static: main()
+#static: main()
 main()

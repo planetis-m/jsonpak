@@ -667,6 +667,10 @@ proc toJson*(o: enum; tree: var JsonTree) =
   ## string. Creates a new ``JString JsonNode``.
   toJson($o, tree)
 
+proc toJson*(value: JsonTree; tree: var JsonTree) =
+  ## Generic constructor for JSON data. Creates a new `JFloat JsonNode`.
+  rawAdd(tree, value, NodePos tree.nodes.len)
+
 proc toJsonImpl(x, res: NimNode): NimNode =
   template addEmpty(kind, tree): untyped =
     newCall(bindSym"add", newDotExpr(tree, ident"nodes"),
