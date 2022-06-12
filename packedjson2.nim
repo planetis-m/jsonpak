@@ -668,7 +668,7 @@ proc toJson*(o: enum; tree: var JsonTree) =
   toJson($o, tree)
 
 proc toJson*(value: JsonTree; tree: var JsonTree) =
-  ## Generic constructor for JSON data. Creates a new `JFloat JsonNode`.
+  ## Generic constructor for JSON data. Copies the JsonTree `value` into `tree`.
   rawAdd(tree, value, NodePos tree.nodes.len)
 
 proc toJsonImpl(x, res: NimNode): NimNode =
