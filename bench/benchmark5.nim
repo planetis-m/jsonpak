@@ -18,3 +18,12 @@ proc main =
   echo " used Mem: ", formatSize getOccupiedMem(), " time: ", cpuTime() - start, "s"
 
 main()
+
+#[
+Results on my machine:
+
+packedjson2:  used Mem: 178.028MiB time: 1.67s
+packed json:  used Mem: 62.02MiB   time: 2.56s
+stdlib json:  used Mem: 631.353MiB time: 0.823s
+
+]#
