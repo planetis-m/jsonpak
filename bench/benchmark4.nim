@@ -29,3 +29,12 @@ proc main =
   echo genId, " node tree\n used Mem: ", formatSize getOccupiedMem(), " time: ", cpuTime() - start, "s"
 
 main()
+
+#[
+Results on my machine:
+
+packedjson2:  used Mem: 315.735MiB time: 9.21s
+packed json:  used Mem: 84.02MiB   time: 7.4s
+stdlib json:  used Mem: 1.265GiB   time: 1.18s
+
+]#
