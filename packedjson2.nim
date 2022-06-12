@@ -712,13 +712,13 @@ proc add*(tree: var JsonTree; path: JsonPtr; value: JsonTree) =
   if insertPos.len > 0 and insertPos[^1].int + operand(NodePos insertPos[^1]) - 1 < n.int and
       kind(NodePos insertPos[^1]) == opcodeObject:
     let key = substr(path.string, rfind(path.string, '/')+1)
-    tree.nodes.insert [toNode(opcodeKeyValuePair, int32(diff+n.int+1)),
+    tree.nodes.insert [toNode(opcodeKeyValuePair, int32(diff+2)),
         toNode(opcodeString, int32 getOrIncl(tree.atoms, key))], n.int
     n = NodePos(n.int+2)
     inc diff, 2
   while insertPos.len > 0:
     let pos = insertPos.pop().int
-    let distance = tree.nodes[pos].operand + diff + 1
+    let distance = tree.nodes[pos].operand + diff
     tree.nodes[pos] = toNode(tree.nodes[pos].kind, distance)
   rawAdd(tree, value, n)
 

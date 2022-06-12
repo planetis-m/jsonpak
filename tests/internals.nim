@@ -1,5 +1,4 @@
 # To be included by main!
-
 proc main =
   block:
     let data = """{"a":[1,false,{"key":[4,5]},4]}"""
@@ -55,5 +54,5 @@ proc main =
     #assert posFromPtr(x, JsonPtr"/1/2", NodePos 6) == NodePos 11
     assert $x == data
 
-#static: main()
+static: main()
 main()
