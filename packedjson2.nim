@@ -687,7 +687,7 @@ proc remove*(tree: var JsonTree, path: JsonPtr) =
 proc rawAdd(result: var JsonTree, tree: JsonTree, n: NodePos) =
   let L = span(tree, 0)
   let oldfull = result.nodes.len
-  newSeq(result.nodes, oldfull+L)
+  setLen(result.nodes, oldfull+L)
   for i in countdown(oldfull+L-1, n.int+L):
     result.nodes[i] = result.nodes[i-L]
   for i in 0..<L:
@@ -704,16 +704,17 @@ proc add*(tree: var JsonTree; path: JsonPtr; value: JsonTree) =
   var insertPos: seq[PatchPos] = @[]
   var n = posFromPtr(tree, path.string, rootNodeId, insertPos, noDash = false)
   if n.isNil: raisePathError(path.string)
-  let diff = span(value, 0).int32
+  var diff = span(value, 0).int32
   if insertPos.len > 0 and insertPos[^1].int + operand(NodePos insertPos[^1]) - 1 < n.int and
       kind(NodePos insertPos[^1]) == opcodeObject:
     let key = substr(path.string, rfind(path.string, '/')+1)
     tree.nodes.insert [toNode(opcodeKeyValuePair, int32(diff+n.int+1)),
         toNode(opcodeString, int32 getOrIncl(tree.atoms, key))], n.int
     n = NodePos(n.int+2)
+    inc diff, 2
   while insertPos.len > 0:
     let pos = insertPos.pop().int
-    let distance = tree.nodes[pos].operand + diff
+    let distance = tree.nodes[pos].operand + diff + 1
     tree.nodes[pos] = toNode(tree.nodes[pos].kind, distance)
   rawAdd(tree, value, n)
 
