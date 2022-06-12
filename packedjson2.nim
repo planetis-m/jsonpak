@@ -540,6 +540,88 @@ proc `$`*(tree: JsonTree): string =
   result = newStringOfCap(tree.nodes.len shl 1)
   toUgly(result, tree, rootNodeId)
 
+proc rawExtract(result: var JsonTree, tree: JsonTree, n: NodePos) =
+  let L = span(tree, n.int)
+  newSeq(result.nodes, L)
+  for i in 0..<L:
+    let n = NodePos(i+n.int) # careful
+    case n.kind
+    of opcodeInt, opcodeFloat, opcodeString:
+      result.nodes[i] = toNode(n.kind, int32 getOrIncl(result.atoms, n.str))
+    else:
+      result.nodes[i] = tree.nodes[n.int]
+
+proc extract*(tree: JsonTree; path: JsonPtr): JsonTree =
+  let n = posFromPtr(tree, path)
+  if n.isNil: raisePathError(path.string)
+  rawExtract(result, tree, n)
+
+proc test*(tree: JsonTree; path: JsonPtr, value: JsonTree): bool =
+  let n = posFromPtr(tree, path)
+  if n.isNil: raisePathError(path.string)
+  if n.kind != value.nodes[rootNodeId.int].kind: return false
+  if n.kind == opcodeNull: return true
+  let L = span(tree, n.int)
+  if L != value.nodes.len: return false
+  for i in 0..<L:
+    let n = NodePos(i+n.int) # careful
+    case n.kind
+    of opcodeInt, opcodeFloat, opcodeString:
+      if value.atoms[LitId value.nodes[i].operand] != n.str: return false
+    else:
+      if value.nodes[i] != tree.nodes[n.int]: return false
+  return true
+
+proc remove*(tree: var JsonTree, path: JsonPtr) =
+  ## Removes `path`.
+  var insertPos: seq[PatchPos] = @[]
+  var n = posFromPtr(tree, path.string, rootNodeId, insertPos)
+  if n.isNil: raisePathError(path.string)
+  if insertPos.len > 0 and kind(NodePos insertPos[^1]) == opcodeKeyValuePair:
+    n = NodePos insertPos.pop()
+  let diff = span(tree, n.int).int32
+  while insertPos.len > 0:
+    let pos = insertPos.pop().int
+    let distance = tree.nodes[pos].operand - diff
+    tree.nodes[pos] = toNode(tree.nodes[pos].kind, distance)
+  let oldfull = tree.nodes.len
+  for i in countup(n.int, oldfull-diff-1): tree.nodes[i] = tree.nodes[i+diff]
+  setLen(tree.nodes, oldfull-diff)
+
+proc rawAdd(result: var JsonTree, tree: JsonTree, n: NodePos) =
+  let L = span(tree, 0)
+  let oldfull = result.nodes.len
+  setLen(result.nodes, oldfull+L)
+  for i in countdown(oldfull+L-1, n.int+L):
+    result.nodes[i] = result.nodes[i-L]
+  for i in 0..<L:
+    let m = NodePos(i)
+    case m.kind
+    of opcodeInt, opcodeFloat, opcodeString:
+      result.nodes[i+n.int] = toNode(m.kind, int32 getOrIncl(result.atoms, m.str))
+    else:
+      result.nodes[i+n.int] = tree.nodes[i]
+
+from sequtils import insert
+proc add*(tree: var JsonTree; path: JsonPtr; value: JsonTree) =
+  assert not value.isEmpty
+  var insertPos: seq[PatchPos] = @[]
+  var n = posFromPtr(tree, path.string, rootNodeId, insertPos, noDash = false)
+  if n.isNil: raisePathError(path.string)
+  var diff = span(value, 0).int32
+  if insertPos.len > 0 and insertPos[^1].int + operand(NodePos insertPos[^1]) - 1 < n.int and
+      kind(NodePos insertPos[^1]) == opcodeObject:
+    let key = substr(path.string, rfind(path.string, '/')+1)
+    tree.nodes.insert [toNode(opcodeKeyValuePair, int32(diff+2)),
+        toNode(opcodeString, int32 getOrIncl(tree.atoms, key))], n.int
+    n = NodePos(n.int+2)
+    inc diff, 2
+  while insertPos.len > 0:
+    let pos = insertPos.pop().int
+    let distance = tree.nodes[pos].operand + diff
+    tree.nodes[pos] = toNode(tree.nodes[pos].kind, distance)
+  rawAdd(tree, value, n)
+
 proc toJson*(s: string; tree: var JsonTree) =
   ## Generic constructor for JSON data. Creates a new `JString JsonNode`.
   storeAtom(tree, opcodeString, s)
@@ -639,88 +721,6 @@ macro `%*`*(x: untyped): untyped =
   let v = newTree(nnkVarSection,
     newTree(nnkIdentDefs, res, bindSym"JsonTree", newEmptyNode()))
   result = newTree(nnkStmtListExpr, v, toJsonImpl(x, res), res)
-
-proc rawExtract(result: var JsonTree, tree: JsonTree, n: NodePos) =
-  let L = span(tree, n.int)
-  newSeq(result.nodes, L)
-  for i in 0..<L:
-    let n = NodePos(i+n.int) # careful
-    case n.kind
-    of opcodeInt, opcodeFloat, opcodeString:
-      result.nodes[i] = toNode(n.kind, int32 getOrIncl(result.atoms, n.str))
-    else:
-      result.nodes[i] = tree.nodes[n.int]
-
-proc extract*(tree: JsonTree; path: JsonPtr): JsonTree =
-  let n = posFromPtr(tree, path)
-  if n.isNil: raisePathError(path.string)
-  rawExtract(result, tree, n)
-
-proc test*(tree: JsonTree; path: JsonPtr, value: JsonTree): bool =
-  let n = posFromPtr(tree, path)
-  if n.isNil: raisePathError(path.string)
-  if n.kind != value.nodes[rootNodeId.int].kind: return false
-  if n.kind == opcodeNull: return true
-  let L = span(tree, n.int)
-  if L != value.nodes.len: return false
-  for i in 0..<L:
-    let n = NodePos(i+n.int) # careful
-    case n.kind
-    of opcodeInt, opcodeFloat, opcodeString:
-      if value.atoms[LitId value.nodes[i].operand] != n.str: return false
-    else:
-      if value.nodes[i] != tree.nodes[n.int]: return false
-  return true
-
-proc remove*(tree: var JsonTree, path: JsonPtr) =
-  ## Removes `path`.
-  var insertPos: seq[PatchPos] = @[]
-  var n = posFromPtr(tree, path.string, rootNodeId, insertPos)
-  if n.isNil: raisePathError(path.string)
-  if insertPos.len > 0 and kind(NodePos insertPos[^1]) == opcodeKeyValuePair:
-    n = NodePos insertPos.pop()
-  let diff = span(tree, n.int).int32
-  while insertPos.len > 0:
-    let pos = insertPos.pop().int
-    let distance = tree.nodes[pos].operand - diff
-    tree.nodes[pos] = toNode(tree.nodes[pos].kind, distance)
-  let oldfull = tree.nodes.len
-  for i in countup(n.int, oldfull-diff-1): tree.nodes[i] = tree.nodes[i+diff]
-  setLen(tree.nodes, oldfull-diff)
-
-proc rawAdd(result: var JsonTree, tree: JsonTree, n: NodePos) =
-  let L = span(tree, 0)
-  let oldfull = result.nodes.len
-  setLen(result.nodes, oldfull+L)
-  for i in countdown(oldfull+L-1, n.int+L):
-    result.nodes[i] = result.nodes[i-L]
-  for i in 0..<L:
-    let m = NodePos(i)
-    case m.kind
-    of opcodeInt, opcodeFloat, opcodeString:
-      result.nodes[i+n.int] = toNode(m.kind, int32 getOrIncl(result.atoms, m.str))
-    else:
-      result.nodes[i+n.int] = tree.nodes[i]
-
-from sequtils import insert
-proc add*(tree: var JsonTree; path: JsonPtr; value: JsonTree) =
-  assert not value.isEmpty
-  var insertPos: seq[PatchPos] = @[]
-  var n = posFromPtr(tree, path.string, rootNodeId, insertPos, noDash = false)
-  if n.isNil: raisePathError(path.string)
-  var diff = span(value, 0).int32
-  if insertPos.len > 0 and insertPos[^1].int + operand(NodePos insertPos[^1]) - 1 < n.int and
-      kind(NodePos insertPos[^1]) == opcodeObject:
-    let key = substr(path.string, rfind(path.string, '/')+1)
-    tree.nodes.insert [toNode(opcodeKeyValuePair, int32(diff+2)),
-        toNode(opcodeString, int32 getOrIncl(tree.atoms, key))], n.int
-    n = NodePos(n.int+2)
-    inc diff, 2
-  while insertPos.len > 0:
-    let pos = insertPos.pop().int
-    let distance = tree.nodes[pos].operand + diff
-    tree.nodes[pos] = toNode(tree.nodes[pos].kind, distance)
-  rawAdd(tree, value, n)
 
 proc raiseJsonKindError(kind: JsonNodeKind, kinds: set[JsonNodeKind]) {.noreturn.} =
   let msg = format("Incorrect JSON kind. Wanted '$1' but got '$2'.", kinds, kind)
