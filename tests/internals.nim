@@ -34,6 +34,12 @@ proc main =
     assert $x == data
 
   block:
+    var x = %*[]
+    add(x, JsonPtr"/-", %*[1, 2, 3, 4, 5])
+    #add(x, JsonPtr"/-", %*["a", "b", "c", "d"])
+    echo x
+
+  block:
     let data = """{"a":{"key":[4,[1,2,3]]}}"""
     let x = parseJson(data)
     assert not x.isEmpty

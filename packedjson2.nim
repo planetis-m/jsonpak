@@ -224,9 +224,14 @@ template posFromPtrImpl() =
     of opcodeObject:
       when compiles(insertPos):
         insertPos.add result.PatchPos
+      when compiles(noDash):
+        let prev = result
       unescapeJsonPtr(cur)
       result = rawGet(tree, result, cur)
-      if result.isNil: return
+      if result.isNil:
+        when compiles(noDash):
+          if not noDash and lastToken: return NodePos(prev.int+prev.operand)
+        else: return
       when compiles(insertPos):
         insertPos.add PatchPos(result.int32-2)
     of opcodeArray:
@@ -678,6 +683,39 @@ proc remove*(tree: var JsonTree, path: JsonPtr) =
   let oldfull = tree.nodes.len
   for i in countup(n.int, oldfull-diff-1): tree.nodes[i] = tree.nodes[i+diff]
   setLen(tree.nodes, oldfull-diff)
+
+proc rawAdd(result: var JsonTree, tree: JsonTree, n: NodePos) =
+  let L = span(tree, 0)
+  let oldfull = result.nodes.len
+  newSeq(result.nodes, oldfull+L)
+  for i in countdown(oldfull+L-1, n.int+L):
+    result.nodes[i] = result.nodes[i-L]
+  for i in 0..<L:
+    let m = NodePos(i)
+    case m.kind
+    of opcodeInt, opcodeFloat, opcodeString:
+      result.nodes[i+n.int] = toNode(m.kind, int32 getOrIncl(result.atoms, m.str))
+    else:
+      result.nodes[i+n.int] = tree.nodes[i]
+
+from sequtils import insert
+proc add*(tree: var JsonTree; path: JsonPtr; value: JsonTree) =
+  assert not value.isEmpty
+  var insertPos: seq[PatchPos] = @[]
+  var n = posFromPtr(tree, path.string, rootNodeId, insertPos, noDash = false)
+  if n.isNil: raisePathError(path.string)
+  let diff = span(value, 0).int32
+  if insertPos.len > 0 and insertPos[^1].int + operand(NodePos insertPos[^1]) - 1 < n.int and
+      kind(NodePos insertPos[^1]) == opcodeObject:
+    let key = substr(path.string, rfind(path.string, '/')+1)
+    tree.nodes.insert [toNode(opcodeKeyValuePair, int32(diff+n.int+1)),
+        toNode(opcodeString, int32 getOrIncl(tree.atoms, key))], n.int
+    n = NodePos(n.int+2)
+  while insertPos.len > 0:
+    let pos = insertPos.pop().int
+    let distance = tree.nodes[pos].operand + diff
+    tree.nodes[pos] = toNode(tree.nodes[pos].kind, distance)
+  rawAdd(tree, value, n)
 
 proc raiseJsonKindError(kind: JsonNodeKind, kinds: set[JsonNodeKind]) {.noreturn.} =
   let msg = format("Incorrect JSON kind. Wanted '$1' but got '$2'.", kinds, kind)
