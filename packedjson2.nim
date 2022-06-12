@@ -587,7 +587,11 @@ proc toJson*(o: enum; tree: var JsonTree) =
 
 proc toJsonImpl(x, res: NimNode): NimNode =
   template addEmpty(kind, tree): untyped =
-    newCall(bindSym"add", newDotExpr(tree, ident"nodes"), newCall(bindSym"Node", kind))
+    newCall(bindSym"add", newDotExpr(tree, ident"nodes"),
+        newCall(bindSym"toNode", kind, newLit(1)))
+  template addNull(tree): untyped =
+    newCall(bindSym"add", newDotExpr(tree, ident"nodes"),
+        newCall(bindSym"Node", bindSym"opcodeNull"))
 
   template prepareCompl(tmp, kind, tree): untyped =
     newLetStmt(tmp, newCall(bindSym"prepare", tree, kind))
@@ -621,7 +625,7 @@ proc toJsonImpl(x, res: NimNode): NimNode =
     x.expectLen(0)
     result = addEmpty(bindSym"opcodeObject", res)
   of nnkNilLit:
-    result = addEmpty(bindSym"opcodeNull", res)
+    result = addNull(res)
   of nnkPar:
     if x.len == 1: result = toJsonImpl(x[0], res)
     else: result = newCall(bindSym("toJson", brOpen), x, res)

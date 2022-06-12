@@ -1,4 +1,5 @@
 # To be included by main!
+
 proc main =
   block:
     let data = """{"a":[1,false,{"key":[4,5]},4]}"""
