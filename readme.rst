@@ -177,22 +177,34 @@ Reading
 
 File: `benchmark.nim <bench/benchmark.nim>`_
 
-.. code-block::
++-------------+--------------+-----------+
+| Library     | Used Mem     | Time      |
++=============+==============+===========+
+| packedjson2 | 386.075MiB   | 2.82s     |
++-------------+--------------+-----------+
+| packedjson  | **94.02MiB** | **2.0s**  |
++-------------+--------------+-----------+
+| body row 1  | 1.32GiB      | 3.07s     |
++-------------+--------------+-----------+
 
-  packedjson2:  used Mem: 386.075MiB time: 2.82s
-  packed json:  used Mem: 94.02MiB time: 2.0s
-  stdlib json:  used Mem: 1.32GiB time: 3.07s
+packedjson2  used Mem: 386.075MiB time: 2.82s
+packed json  used Mem: 94.02MiB time: 2.0s
+stdlib json  used Mem: 1.32GiB time: 3.07s
 
 Adding
 ------
 
 File: `benchmark5.nim <bench/benchmark5.nim>`_
 
-.. code-block::
-
-  packedjson2:  used Mem: 178.028MiB time: 1.67s
-  packed json:  used Mem: 62.02MiB   time: 2.56s
-  stdlib json:  used Mem: 631.353MiB time: 0.823s
++-------------+--------------+-----------+
+| Library     | Used Mem     | Time      |
++=============+==============+===========+
+| packedjson2 | 178.028MiB   | 1.67s     |
++-------------+--------------+-----------+
+| packedjson  | **62.02MiB** | 2.56s     |
++-------------+--------------+-----------+
+| body row 1  | 1.32GiB      | **0.82s** |
++-------------+--------------+-----------+
 
 TODO
 ====
