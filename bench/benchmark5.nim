@@ -12,7 +12,7 @@ proc main =
       "y": rand(1.0),
       "z": rand(1.0),
       "name": alpha[0..4].join & ' ' & $rand(10000),
-      "opts": {"1": [1, true]},
+      "opts": {"1": [1, true]}
     }
     x.add JsonPtr"/-", h
   echo " used Mem: ", formatSize getOccupiedMem(), " time: ", cpuTime() - start, "s"

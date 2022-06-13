@@ -733,12 +733,15 @@ proc toJsonImpl(x, res: NimNode): NimNode =
     result = newCall(bindSym"toJson", x, res)
 
 macro `%*`*(x: untyped): untyped =
-  ## Convert an expression to a JsonTree directly, without having to specify
-  ## `%` for every element.
+  ## Convert an expression to a JsonTree.
   bind prepare
   let res = genSym(nskVar, "toJsonResult")
   result = genAst(tree = res, body = toJsonImpl(x, res)):
     (var tree: JsonTree; body; tree)
+
+proc toJson*[T](x: T): JsonTree =
+  ## Convert `x` to a JsonTree.
+  toJson(x, result)
 
 proc raiseJsonKindError(kind: JsonNodeKind, kinds: set[JsonNodeKind]) {.noinline.} =
   let msg = format("Incorrect JSON kind. Wanted '$1' but got '$2'.", kinds, kind)

@@ -70,6 +70,8 @@ proc main =
     let y = Foo(a: [Vec3(x: 1, y: 2, z: 3)], b: true, c: "hi", d: foo)
     let x = %*y
     assert not x.isEmpty
+    assert toJson(y) == x
+    assert toJson(z) == %*z
     assert fromJson(x, JsonPtr"", Foo)[] == y[]
     assert fromJson(x, JsonPtr"/a/0", Vec3) == z
     assert test(fromJson(x, JsonPtr"/a/0", JsonTree), JsonPtr"", %*z)

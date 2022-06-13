@@ -56,7 +56,7 @@ Add
 
 .. code-block:: nim
 
-  proc add*(x: var JsonTree; path: JsonPtr; value: JsonTree)
+  proc add(x: var JsonTree; path: JsonPtr; value: JsonTree)
 
 Adds a value to an object or inserts it into an array. In the case of an array, the value
 is inserted before the given index. The ``-`` character can be used instead of an index to
@@ -67,7 +67,7 @@ Remove
 
 .. code-block:: nim
 
-  proc remove*(x: var JsonTree; path: JsonPtr)
+  proc remove(x: var JsonTree; path: JsonPtr)
 
 Removes a value from an object or array.
 
@@ -76,7 +76,7 @@ Replace
 
 .. code-block:: nim
 
-  proc replace*(x: var JsonTree; path: JsonPtr, value: JsonTree)
+  proc replace(x: var JsonTree; path: JsonPtr, value: JsonTree)
 
 Replaces a value. Equivalent to a ``remove`` followed by an ``add``.
 
@@ -85,7 +85,7 @@ Copy
 
 .. code-block:: nim
 
-  proc copy*(x: var JsonTree; `from`, path: JsonPtr)
+  proc copy(x: var JsonTree; `from`, path: JsonPtr)
 
 Copies a value from one location to another within the JSON document. Both ``from`` and
 ``path`` are JSON Pointers.
@@ -95,7 +95,7 @@ Move
 
 .. code-block:: nim
 
-  proc move*(x: var JsonTree; `from`, path: JsonPtr)
+  proc move(x: var JsonTree; `from`, path: JsonPtr)
 
 Moves a value from one location to the other. Both ``from`` and ``path`` are JSON Pointers.
 
@@ -104,8 +104,7 @@ Test
 
 .. code-block:: nim
 
-  proc test*(x: JsonTree; path: JsonPtr, value: JsonTree): bool
-
+  proc test(x: JsonTree; path: JsonPtr, value: JsonTree): bool
 
 Tests that the specified value is set in the document. If the test fails, then the patch
 as a whole should not apply.
@@ -116,16 +115,17 @@ Misc
 .. code-block:: nim
 
   # basic usage
-  proc len*(x: JsonTree; path: JsonPtr): int
-  proc kind*(x: JsonTree; path: JsonPtr): JsonNodeKind
-  proc contains*(x: JsonTree; path: JsonPtr): bool
-  proc extract*(x: JsonTree; path: JsonPtr): JsonTree
-  # deserialize
-  proc fromJson*[T](x: JsonTree; path: JsonPtr; t: typedesc[T]): T
-  proc toJson*[T](x: T): JsonTree
+  proc len(x: JsonTree; path: JsonPtr): int
+  proc kind(x: JsonTree; path: JsonPtr): JsonNodeKind
+  proc contains(x: JsonTree; path: JsonPtr): bool
+  proc extract(x: JsonTree; path: JsonPtr): JsonTree
+  # (de)serialize
+  proc fromJson[T](x: JsonTree; path: JsonPtr; t: typedesc[T]): T
+  proc toJson[T](x: T): JsonTree
+  macro %*(x: untyped): JsonTree
   # iterators
-  iterator items*(x: JsonTree; path: JsonPtr; t: typedesc[T]): T
-  iterator pairs*(x: JsonTree; path: JsonPtr; t: typedesc[T]): (lent string, T)
+  iterator items(x: JsonTree; path: JsonPtr; t: typedesc[T]): T
+  iterator pairs(x: JsonTree; path: JsonPtr; t: typedesc[T]): (lent string, T)
 
 Examples
 ========
