@@ -79,25 +79,24 @@ proc main =
     assert $x == """{"a":[{"x":1,"y":2,"z":3}],"b":true,"c":"hi","d":"foo"}"""
     for v in items(x, JsonPtr"/a", Vec3):
       assert v == z
-    assert not test(x, JsonPtr"", %*nil)
+    assert x != %*nil
 
   block:
     var x = %*[]
     var y = parseJson("[]")
-    assert test(x, JsonPtr"", y)
+    assert x == y
     x = %*{}
     y = parseJson("{}")
-    assert test(x, JsonPtr"", y)
+    assert x == y
     x = %*[x]
     y = parseJson("[{}]")
-    assert test(x, JsonPtr"", y)
+    assert x == y
     y = parseJson("[1, 2, 3]")
     x = %*{"x": y}
-    assert test(x, JsonPtr"", parseJson("""{"x": [1, 2, 3]}"""))
+    assert x == parseJson("""{"x": [1, 2, 3]}""")
     x = %*{"x": 1, "y": y}
-    assert test(x, JsonPtr"", parseJson("""{"x": 1, "y": [1, 2, 3]}"""))
+    assert x == parseJson("""{"x": 1, "y": [1, 2, 3]}""")
     x = %*{"x": y, "y": 1}
-    assert test(x, JsonPtr"", parseJson("""{"x": [1, 2, 3], "y": 1}"""))
     assert x == parseJson("""{"x": [1, 2, 3], "y": 1}""")
 
   block:
@@ -106,7 +105,7 @@ proc main =
     add(x, JsonPtr"/-", z)
     assert test(x, JsonPtr"/0", z)
     add(x, JsonPtr"/-", %*"a")
-    assert test(x, JsonPtr"", %*[z, "a"])
+    assert x == %*[z, "a"]
     var y = %*{}
     add(y, JsonPtr"/x", z)
     assert test(y, JsonPtr"", %*{"x": z})
