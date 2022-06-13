@@ -163,6 +163,7 @@ Examples
   assert test(x, JsonPtr"/d", %*{"e": [7], "f": "foo"})
   assert $extract(x, JsonPtr"/d") == """{"e":[7,8],"f":9}"""
   assert fromJson(x, JsonPtr"/d/e", seq[int]) == @[7, 8]
+  assert toJson(@[1, 2, 3]) == extract(x, JsonPtr"/a")
   # Iterating
   for x items(x, JsonPtr"/a", int): echo x, " "
   # 1 2 3
