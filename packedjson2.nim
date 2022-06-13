@@ -1,6 +1,6 @@
 import
-  packedjson2 / bitabs,
-  std / [parsejson, streams, strutils, macros, tables, options]
+  fusion/astdsl, packedjson2 / bitabs,
+  std / [parsejson, streams, strutils, macros, genasts, tables, options]
 export JsonParsingError, JsonKindError
 
 type
@@ -718,9 +718,6 @@ proc toJson(keyVals: openArray[tuple[key: string, val: JsonTree]]; tree: var Jso
   tree.patch patchPos1
 
 proc toJsonImpl(x, res: NimNode): NimNode =
-  template addNull(tree): untyped =
-    tree.nodes.add Node opcodeNull
-
   template addEmpty(kind, tree): untyped =
     tree.nodes.add toNode(kind, 1)
 
@@ -731,27 +728,29 @@ proc toJsonImpl(x, res: NimNode): NimNode =
   of nnkBracket: # array
     if x.len == 0: return getAst addEmpty(bindSym"opcodeArray", res)
     let tmp = genSym(nskLet, "tmp")
-    result = newStmtList(getAst prepareCompl(tmp, res, bindSym"opcodeArray"))
-    for i in 0 ..< x.len:
-      result.add toJsonImpl(x[i], res)
-    result.add newCall(bindSym"patch", res, tmp)
+    result = buildAst(stmtList):
+      getAst prepareCompl(tmp, res, bindSym"opcodeArray")
+      for i in 0 ..< x.len:
+        toJsonImpl(x[i], res)
+      call(bindSym"patch", res, tmp)
   of nnkTableConstr: # object
     if x.len == 0: return getAst addEmpty(bindSym"opcodeObject", res)
     let tmp1 = genSym(nskLet, "tmp")
-    result = newStmtList(getAst prepareCompl(tmp1, res, bindSym"opcodeObject"))
-    for i in 0 ..< x.len:
-      x[i].expectKind nnkExprColonExpr
-      let tmp2 = genSym(nskLet, "tmp")
-      result.add getAst prepareCompl(tmp2, res, bindSym"opcodeKeyValuePair")
-      result.add newCall(bindSym"storeAtom", res, bindSym"opcodeString", x[i][0])
-      result.add toJsonImpl(x[i][1], res)
-      result.add newCall(bindSym"patch", res, tmp2)
-    result.add newCall(bindSym"patch", res, tmp1)
+    result = buildAst(stmtList):
+      getAst prepareCompl(tmp1, res, bindSym"opcodeObject")
+      for i in 0 ..< x.len:
+        x[i].expectKind nnkExprColonExpr
+        let tmp2 = genSym(nskLet, "tmp")
+        getAst prepareCompl(tmp2, res, bindSym"opcodeKeyValuePair")
+        call(bindSym"storeAtom", res, bindSym"opcodeString", x[i][0])
+        toJsonImpl(x[i][1], res)
+        call(bindSym"patch", res, tmp2)
+      call(bindSym"patch", res, tmp1)
   of nnkCurly: # nil object
     x.expectLen(0)
     result = getAst addEmpty(bindSym"opcodeObject", res)
   of nnkNilLit:
-    result = getAst(addNull(res))
+    result = genAst(tree = res, tree.nodes.add Node opcodeNull)
   of nnkPar:
     if x.len == 1: result = toJsonImpl(x[0], res)
     else: result = newCall(bindSym"toJson", x, res)
@@ -763,9 +762,8 @@ macro `%*`*(x: untyped): untyped =
   ## `%` for every element.
   bind prepare
   let res = genSym(nskVar, "toJsonResult")
-  let v = newTree(nnkVarSection,
-    newTree(nnkIdentDefs, res, bindSym"JsonTree", newEmptyNode()))
-  result = newTree(nnkStmtListExpr, v, toJsonImpl(x, res), res)
+  result = genAst(tree = res, body = toJsonImpl(x, res)):
+    (var tree: JsonTree; body; tree)
 
 proc raiseJsonKindError(kind: JsonNodeKind, kinds: set[JsonNodeKind]) {.noreturn.} =
   let msg = format("Incorrect JSON kind. Wanted '$1' but got '$2'.", kinds, kind)
