@@ -637,7 +637,6 @@ proc toJson[T: enum](o: T; tree: var JsonTree)
 proc toJson(value: JsonTree; tree: var JsonTree)
 proc toJson[T](table: Table[string, T]|OrderedTable[string, T]; tree: var JsonTree)
 proc toJson[T](opt: Option[T]; tree: var JsonTree)
-proc toJson(keyVals: openArray[tuple[key: string, val: JsonTree]]; tree: var JsonTree)
 
 proc toJson(s: string; tree: var JsonTree) =
   ## Generic constructor for JSON data. Creates a new `JString JsonNode`.
@@ -706,17 +705,6 @@ proc toJson[T](opt: Option[T]; tree: var JsonTree) =
   else:
     tree.nodes.add Node opcodeNull
 
-proc toJson(keyVals: openArray[tuple[key: string, val: JsonTree]]; tree: var JsonTree) =
-  ## Generic constructor for JSON data. Creates a new `JObject JsonNode`
-  if keyVals.len == 0: tree.nodes.add toNode(opcodeArray, 1); return
-  let patchPos1 = tree.prepare(opcodeObject)
-  for k, v in items(keyVals):
-    let patchPos2 = tree.prepare(opcodeKeyValuePair)
-    storeAtom(tree, opcodeString, k)
-    toJson(v, tree)
-    tree.patch patchPos2
-  tree.patch patchPos1
-
 proc toJsonImpl(x, res: NimNode): NimNode =
   template addEmpty(kind, tree): untyped =
     tree.nodes.add toNode(kind, 1)
@@ -770,7 +758,8 @@ proc raiseJsonKindError(kind: JsonNodeKind, kinds: set[JsonNodeKind]) {.noreturn
   raise newException(JsonKindError, msg)
 
 template verifyJsonKind(tree: JsonTree; n: NodePos, kinds: set[JsonNodeKind]) =
-  if (let kind = JsonNodeKind(n.kind); kind notin kinds):
+  let kind = JsonNodeKind(n.kind)
+  if kind notin kinds:
     raiseJsonKindError(kind, kinds)
 
 proc initFromJson(dst: var string; tree: JsonTree; n: NodePos)
