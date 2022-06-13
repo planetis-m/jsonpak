@@ -556,10 +556,8 @@ proc extract*(tree: JsonTree; path: JsonPtr): JsonTree =
   if n.isNil: raisePathError(path.string)
   rawExtract(result, tree, n)
 
-proc test*(tree: JsonTree; path: JsonPtr, value: JsonTree): bool =
-  let n = posFromPtr(tree, path)
-  if n.isNil: raisePathError(path.string)
-  if n.kind != value.nodes[rootNodeId.int].kind: return false
+proc rawTest(tree: JsonTree, value: JsonTree, n: NodePos): bool =
+  if n.kind != value.nodes[0].kind: return false
   if n.kind == opcodeNull: return true
   let L = span(tree, n.int)
   if L != value.nodes.len: return false
@@ -571,6 +569,13 @@ proc test*(tree: JsonTree; path: JsonPtr, value: JsonTree): bool =
     else:
       if value.nodes[i] != tree.nodes[n.int]: return false
   return true
+
+proc test*(tree: JsonTree; path: JsonPtr, value: JsonTree): bool =
+  let n = posFromPtr(tree, path)
+  if n.isNil: raisePathError(path.string)
+  rawTest(tree, value, n)
+
+proc `==`*(a, b: JsonTree): bool {.inline.} = rawTest(a, b, rootNodeId)
 
 proc remove*(tree: var JsonTree, path: JsonPtr) =
   ## Removes `path`.
@@ -604,7 +609,6 @@ proc rawAdd(result: var JsonTree, tree: JsonTree, n: NodePos) =
 
 from sequtils import insert
 proc add*(tree: var JsonTree; path: JsonPtr; value: JsonTree) =
-  assert not value.isEmpty
   var insertPos: seq[PatchPos] = @[]
   var n = posFromPtr(tree, path.string, rootNodeId, insertPos, noDash = false)
   if n.isNil: raisePathError(path.string)

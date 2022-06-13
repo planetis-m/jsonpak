@@ -98,6 +98,7 @@ proc main =
     assert test(x, JsonPtr"", parseJson("""{"x": 1, "y": [1, 2, 3]}"""))
     x = %*{"x": y, "y": 1}
     assert test(x, JsonPtr"", parseJson("""{"x": [1, 2, 3], "y": 1}"""))
+    assert x == parseJson("""{"x": [1, 2, 3], "y": 1}""")
 
   block:
     var x = %*[]
