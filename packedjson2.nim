@@ -714,51 +714,45 @@ proc toJson(keyVals: openArray[tuple[key: string, val: JsonTree]]; tree: var Jso
   tree.patch patchPos1
 
 proc toJsonImpl(x, res: NimNode): NimNode =
-  template addEmpty(kind, tree): untyped =
-    newCall(bindSym"add", newDotExpr(tree, ident"nodes"),
-        newCall(bindSym"toNode", kind, newLit(1)))
   template addNull(tree): untyped =
-    newCall(bindSym"add", newDotExpr(tree, ident"nodes"),
-        newCall(bindSym"Node", bindSym"opcodeNull"))
+    tree.nodes.add Node opcodeNull
 
-  template prepareCompl(tmp, kind, tree): untyped =
+  template addEmpty(kind, tree): untyped =
+    tree.nodes.add toNode(kind, 1)
+
+  template prepareCompl(tmp, tree, kind): untyped =
     newLetStmt(tmp, newCall(bindSym"prepare", tree, kind))
-
-  template storeKey(tmp, key, tree): untyped =
-    newCall(bindSym"storeAtom", tree, bindSym"opcodeString", key)
 
   case x.kind
   of nnkBracket: # array
-    if x.len == 0: return addEmpty(bindSym"opcodeArray", res)
+    if x.len == 0: return getAst addEmpty(bindSym"opcodeArray", res)
     let tmp = genSym(nskLet, "tmp")
-    result = newStmtList(
-        prepareCompl(tmp, bindSym"opcodeArray", res))
+    result = newStmtList(prepareCompl(tmp, res, bindSym"opcodeArray"))
     for i in 0 ..< x.len:
       result.add toJsonImpl(x[i], res)
     result.add newCall(bindSym"patch", res, tmp)
   of nnkTableConstr: # object
-    if x.len == 0: return addEmpty(bindSym"opcodeObject", res)
+    if x.len == 0: return getAst addEmpty(bindSym"opcodeObject", res)
     let tmp1 = genSym(nskLet, "tmp")
-    result = newStmtList(
-        prepareCompl(tmp1, bindSym"opcodeObject", res))
+    result = newStmtList(prepareCompl(tmp1, res, bindSym"opcodeObject"))
     for i in 0 ..< x.len:
       x[i].expectKind nnkExprColonExpr
       let tmp2 = genSym(nskLet, "tmp")
-      result.add prepareCompl(tmp2, bindSym"opcodeKeyValuePair", res)
-      result.add storeKey(tmp2, x[i][0], res)
+      result.add prepareCompl(tmp2, res, bindSym"opcodeKeyValuePair")
+      result.add newCall(bindSym"storeAtom", res, bindSym"opcodeString", x[i][0])
       result.add toJsonImpl(x[i][1], res)
       result.add newCall(bindSym"patch", res, tmp2)
     result.add newCall(bindSym"patch", res, tmp1)
   of nnkCurly: # nil object
     x.expectLen(0)
-    result = addEmpty(bindSym"opcodeObject", res)
+    result = getAst addEmpty(bindSym"opcodeObject", res)
   of nnkNilLit:
-    result = addNull(res)
+    result = getAst(addNull(res))
   of nnkPar:
     if x.len == 1: result = toJsonImpl(x[0], res)
-    else: result = newCall(bindSym("toJson", brOpen), x, res)
+    else: result = newCall(bindSym"toJson", x, res)
   else:
-    result = newCall(bindSym("toJson", brOpen), x, res)
+    result = newCall(bindSym"toJson", x, res)
 
 macro `%*`*(x: untyped): untyped =
   ## Convert an expression to a JsonTree directly, without having to specify
