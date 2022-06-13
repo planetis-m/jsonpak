@@ -187,10 +187,6 @@ File: `benchmark.nim <bench/benchmark.nim>`_
 | std/json    | 1.32GiB      | 3.07s     |
 +-------------+--------------+-----------+
 
-packedjson2  used Mem: 386.075MiB time: 2.82s
-packed json  used Mem: 94.02MiB time: 2.0s
-stdlib json  used Mem: 1.32GiB time: 3.07s
-
 Adding
 ------
 
