@@ -46,10 +46,8 @@ proc main =
     y = parseJson("[1, 2, 3]")
     x = %*{"x": y}
     assert test(x, JsonPtr"", parseJson("""{"x": [1, 2, 3]}"""))
-    y = parseJson("[1, 2, 3]")
     x = %*{"x": 1, "y": y}
     assert test(x, JsonPtr"", parseJson("""{"x": 1, "y": [1, 2, 3]}"""))
-    y = parseJson("[1, 2, 3]")
     x = %*{"x": y, "y": 1}
     assert test(x, JsonPtr"", parseJson("""{"x": [1, 2, 3], "y": 1}"""))
 
