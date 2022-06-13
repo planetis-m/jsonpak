@@ -108,7 +108,7 @@ proc main =
     assert x == %*[z, "a"]
     var y = %*{}
     add(y, JsonPtr"/x", z)
-    assert test(y, JsonPtr"", %*{"x": z})
+    assert y == %*{"x": z}
 
 static: main()
 main()

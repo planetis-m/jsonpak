@@ -115,17 +115,17 @@ Misc
 
 .. code-block:: nim
 
+  # basic usage
+  proc len*(x: JsonTree; path: JsonPtr): int
+  proc kind*(x: JsonTree; path: JsonPtr): JsonNodeKind
+  proc contains*(x: JsonTree; path: JsonPtr): bool
+  proc extract*(x: JsonTree; path: JsonPtr): JsonTree
   # deserialize
   proc fromJson*[T](x: JsonTree; path: JsonPtr; t: typedesc[T]): T
   proc toJson*[T](x: T): JsonTree
   # iterators
   iterator items*(x: JsonTree; path: JsonPtr; t: typedesc[T]): T
   iterator pairs*(x: JsonTree; path: JsonPtr; t: typedesc[T]): (lent string, T)
-  # basic usage
-  proc len*(x: JsonTree; path: JsonPtr): int
-  proc kind*(x: JsonTree; path: JsonPtr): JsonNodeKind
-  proc contains*(x: JsonTree; path: JsonPtr): bool
-  proc extract*(x: JsonTree; path: JsonPtr): JsonTree
 
 Examples
 ========
@@ -168,3 +168,35 @@ Examples
   # 1 2 3
   for k, v pairs(x, JsonPtr"/d", JsonTree): echo (k, v), " "
   # ("e", [7, 8]) ("f", 9)
+
+Benchmarks
+==========
+
+Reading
+-------
+
+File: `benchmark.nim <bench/benchmark.nim>`_
+
+.. code-block::
+
+  packedjson2:  used Mem: 386.075MiB time: 2.82s
+  packed json:  used Mem: 94.02MiB time: 2.0s
+  stdlib json:  used Mem: 1.32GiB time: 3.07s
+
+Adding
+------
+
+File: `benchmark5.nim <bench/benchmark5.nim>`_
+
+.. code-block::
+
+  packedjson2:  used Mem: 178.028MiB time: 1.67s
+  packed json:  used Mem: 62.02MiB   time: 2.56s
+  stdlib json:  used Mem: 631.353MiB time: 0.823s
+
+TODO
+====
+
+#. Optimize further `#16 <https://github.com/planetis-m/packedjson2/issues/16>`_
+#. Make ``test`` order independent `#24 <https://github.com/planetis-m/packedjson2/issues/24>`_
+#. Implement all procs from `#7 <https://github.com/planetis-m/packedjson2/issues/7>`_

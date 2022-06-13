@@ -740,7 +740,7 @@ macro `%*`*(x: untyped): untyped =
   result = genAst(tree = res, body = toJsonImpl(x, res)):
     (var tree: JsonTree; body; tree)
 
-proc raiseJsonKindError(kind: JsonNodeKind, kinds: set[JsonNodeKind]) {.noreturn.} =
+proc raiseJsonKindError(kind: JsonNodeKind, kinds: set[JsonNodeKind]) {.noinline.} =
   let msg = format("Incorrect JSON kind. Wanted '$1' but got '$2'.", kinds, kind)
   raise newException(JsonKindError, msg)
 
