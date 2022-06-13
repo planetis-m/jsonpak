@@ -623,24 +623,27 @@ proc add*(tree: var JsonTree; path: JsonPtr; value: JsonTree) =
   rawAdd(tree, value, n)
 
 proc toJson(s: string; tree: var JsonTree)
-proc toJson(n: BiggestInt; tree: var JsonTree)
-proc toJson(n: float; tree: var JsonTree)
+proc toJson[T: SomeInteger](n: T; tree: var JsonTree)
+proc toJson[T: SomeFloat](n: T; tree: var JsonTree)
 proc toJson(b: bool; tree: var JsonTree)
 proc toJson[T](elements: openArray[T]; tree: var JsonTree)
-proc toJson(o: object; tree: var JsonTree)
-proc toJson(o: ref object; tree: var JsonTree)
-proc toJson(o: enum; tree: var JsonTree)
+proc toJson[T: object](o: T; tree: var JsonTree)
+proc toJson[T](o: ref T; tree: var JsonTree)
+proc toJson[T: enum](o: T; tree: var JsonTree)
 proc toJson(value: JsonTree; tree: var JsonTree)
+proc toJson[T](table: Table[string, T]|OrderedTable[string, T]; tree: var JsonTree)
+proc toJson[T](opt: Option[T]; tree: var JsonTree)
+proc toJson(keyVals: openArray[tuple[key: string, val: JsonTree]]; tree: var JsonTree)
 
 proc toJson(s: string; tree: var JsonTree) =
   ## Generic constructor for JSON data. Creates a new `JString JsonNode`.
   storeAtom(tree, opcodeString, s)
 
-proc toJson(n: BiggestInt; tree: var JsonTree) =
+proc toJson[T: SomeInteger](n: T; tree: var JsonTree) =
   ## Generic constructor for JSON data. Creates a new `JInt JsonNode`.
   storeAtom(tree, opcodeInt, $n)
 
-proc toJson(n: float; tree: var JsonTree) =
+proc toJson[T: SomeFloat](n: T; tree: var JsonTree) =
   ## Generic constructor for JSON data. Creates a new `JFloat JsonNode`.
   storeAtom(tree, opcodeFloat, $n)
 
@@ -655,7 +658,7 @@ proc toJson[T](elements: openArray[T]; tree: var JsonTree) =
     toJson(elem, tree)
   tree.patch patchPos
 
-proc toJson(o: object; tree: var JsonTree) =
+proc toJson[T: object](o: T; tree: var JsonTree) =
   ## Generic constructor for JSON data. Creates a new `JObject JsonNode`
   let patchPos1 = tree.prepare(opcodeObject)
   for k, v in o.fieldPairs:
@@ -665,14 +668,14 @@ proc toJson(o: object; tree: var JsonTree) =
     tree.patch patchPos2
   tree.patch patchPos1
 
-proc toJson(o: ref object; tree: var JsonTree) =
+proc toJson[T](o: ref T; tree: var JsonTree) =
   ## Generic constructor for JSON data. Creates a new `JObject JsonNode`
   if o.isNil:
     tree.nodes.add Node opcodeNull
   else:
     toJson(o[], tree)
 
-proc toJson(o: enum; tree: var JsonTree) =
+proc toJson[T: enum](o: T; tree: var JsonTree) =
   ## Construct a JsonNode that represents the specified enum value as a
   ## string. Creates a new ``JString JsonNode``.
   toJson($o, tree)
@@ -680,6 +683,35 @@ proc toJson(o: enum; tree: var JsonTree) =
 proc toJson(value: JsonTree; tree: var JsonTree) =
   ## Generic constructor for JSON data. Copies the JsonTree `value` into `tree`.
   rawAdd(tree, value, NodePos tree.nodes.len)
+
+proc toJson[T](table: Table[string, T]|OrderedTable[string, T]; tree: var JsonTree) =
+  ## Generic constructor for JSON data. Creates a new `JObject JsonNode`.
+  let patchPos1 = tree.prepare(opcodeObject)
+  for k, v in pairs(table):
+    let patchPos2 = tree.prepare(opcodeKeyValuePair)
+    storeAtom(tree, opcodeString, k)
+    toJson(v, tree)
+    tree.patch patchPos2
+  tree.patch patchPos1
+
+proc toJson[T](opt: Option[T]; tree: var JsonTree) =
+  ## Generic constructor for JSON data. Creates a new `JNull JsonNode`
+  ## if `opt` is empty, otherwise it delegates to the underlying value.
+  if opt.isSome:
+    toJson(opt.get, tree)
+  else:
+    tree.nodes.add Node opcodeNull
+
+proc toJson(keyVals: openArray[tuple[key: string, val: JsonTree]]; tree: var JsonTree) =
+  ## Generic constructor for JSON data. Creates a new `JObject JsonNode`
+  if keyVals.len == 0: tree.nodes.add toNode(opcodeArray, 1); return
+  let patchPos1 = tree.prepare(opcodeObject)
+  for k, v in items(keyVals):
+    let patchPos2 = tree.prepare(opcodeKeyValuePair)
+    storeAtom(tree, opcodeString, k)
+    toJson(v, tree)
+    tree.patch patchPos2
+  tree.patch patchPos1
 
 proc toJsonImpl(x, res: NimNode): NimNode =
   template addEmpty(kind, tree): untyped =
