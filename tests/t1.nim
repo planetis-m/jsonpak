@@ -81,5 +81,34 @@ proc main =
       assert v == z
     assert not test(x, JsonPtr"", %*nil)
 
+  block:
+    var x = %*[]
+    var y = parseJson("[]")
+    assert test(x, JsonPtr"", y)
+    x = %*{}
+    y = parseJson("{}")
+    assert test(x, JsonPtr"", y)
+    x = %*[x]
+    y = parseJson("[{}]")
+    assert test(x, JsonPtr"", y)
+    y = parseJson("[1, 2, 3]")
+    x = %*{"x": y}
+    assert test(x, JsonPtr"", parseJson("""{"x": [1, 2, 3]}"""))
+    x = %*{"x": 1, "y": y}
+    assert test(x, JsonPtr"", parseJson("""{"x": 1, "y": [1, 2, 3]}"""))
+    x = %*{"x": y, "y": 1}
+    assert test(x, JsonPtr"", parseJson("""{"x": [1, 2, 3], "y": 1}"""))
+
+  block:
+    var x = %*[]
+    let z = %*[1, 2, 3, 4, 5]
+    add(x, JsonPtr"/-", z)
+    assert test(x, JsonPtr"/0", z)
+    add(x, JsonPtr"/-", %*"a")
+    assert test(x, JsonPtr"", %*[z, "a"])
+    var y = %*{}
+    add(y, JsonPtr"/x", z)
+    assert test(y, JsonPtr"", %*{"x": z})
+
 static: main()
 main()
