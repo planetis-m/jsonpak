@@ -721,24 +721,24 @@ proc toJsonImpl(x, res: NimNode): NimNode =
     tree.nodes.add toNode(kind, 1)
 
   template prepareCompl(tmp, tree, kind): untyped =
-    newLetStmt(tmp, newCall(bindSym"prepare", tree, kind))
+    let tmp = prepare(tree, kind)
 
   case x.kind
   of nnkBracket: # array
     if x.len == 0: return getAst addEmpty(bindSym"opcodeArray", res)
     let tmp = genSym(nskLet, "tmp")
-    result = newStmtList(prepareCompl(tmp, res, bindSym"opcodeArray"))
+    result = newStmtList(getAst prepareCompl(tmp, res, bindSym"opcodeArray"))
     for i in 0 ..< x.len:
       result.add toJsonImpl(x[i], res)
     result.add newCall(bindSym"patch", res, tmp)
   of nnkTableConstr: # object
     if x.len == 0: return getAst addEmpty(bindSym"opcodeObject", res)
     let tmp1 = genSym(nskLet, "tmp")
-    result = newStmtList(prepareCompl(tmp1, res, bindSym"opcodeObject"))
+    result = newStmtList(getAst prepareCompl(tmp1, res, bindSym"opcodeObject"))
     for i in 0 ..< x.len:
       x[i].expectKind nnkExprColonExpr
       let tmp2 = genSym(nskLet, "tmp")
-      result.add prepareCompl(tmp2, res, bindSym"opcodeKeyValuePair")
+      result.add getAst prepareCompl(tmp2, res, bindSym"opcodeKeyValuePair")
       result.add newCall(bindSym"storeAtom", res, bindSym"opcodeString", x[i][0])
       result.add toJsonImpl(x[i][1], res)
       result.add newCall(bindSym"patch", res, tmp2)
@@ -757,6 +757,7 @@ proc toJsonImpl(x, res: NimNode): NimNode =
 macro `%*`*(x: untyped): untyped =
   ## Convert an expression to a JsonTree directly, without having to specify
   ## `%` for every element.
+  bind prepare
   let res = genSym(nskVar, "toJsonResult")
   let v = newTree(nnkVarSection,
     newTree(nnkIdentDefs, res, bindSym"JsonTree", newEmptyNode()))
