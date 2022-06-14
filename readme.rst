@@ -37,8 +37,8 @@ specify keys in objects or indexes into arrays. For example, given the JSON
 ``/d/e`` would point to the array of ints ``[7, 8]`` and ``/d/e/0`` would point to ``7``.
 
 To point to the root of the document use an empty string for the pointer. The pointer
-``/`` doesn’t point to the root, it points to a key of "" on the root (which is totally
-valid in JSON).
+``/`` doesn’t point to the root, it points to a key of ``""`` on the root (which is
+totally valid in JSON).
 
 If you need to refer to a key with ``~`` or ``/`` in its name, you must escape the
 characters with ``~0`` and ``~1`` respectively. For example, to get ``"baz"`` from ``{
@@ -201,6 +201,21 @@ File: `benchmark5.nim <bench/benchmark5.nim>`_
 | packedjson  | **62.02MiB** | 2.56s     |
 +-------------+--------------+-----------+
 | std/json    | 631.353MiB   | **0.82s** |
++-------------+--------------+-----------+
+
+Deleting
+--------
+
+File: `benchmark7.nim <bench/benchmark7.nim>`_
+
++-------------+--------------+-----------+
+| Library     | Used Mem     | Time      |
++=============+==============+===========+
+| packedjson2 | 386.075MiB   | 14s       |
++-------------+--------------+-----------+
+| packedjson  | **94.02MiB** | 66s       |
++-------------+--------------+-----------+
+| std/json    | 1.32GiB      | **2.9s**  |
 +-------------+--------------+-----------+
 
 TODO
