@@ -100,6 +100,8 @@ proc main =
     assert x == parseJson("""{"x": 1, "y": [1, 2, 3]}""")
     x = %*{"x": y, "y": 1}
     assert x == parseJson("""{"x": [1, 2, 3], "y": 1}""")
+    x = %*{"x": x, "y": 1}
+    assert x == parseJson("""{"x": {"x": [1, 2, 3], "y": 1}, "y": 1}""")
 
   block:
     var x = %*[]

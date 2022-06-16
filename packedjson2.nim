@@ -217,33 +217,21 @@ template posFromPtrImpl() =
     var first = last
     while last < len(path) and path[last] != '/':
       inc(last)
-    when compiles(noDash):
-      let lastToken = last == len(path)
     copyTokenToBuffer(cur, path, first, last)
     case result.kind
     of opcodeObject:
       when compiles(insertPos):
-        insertPos.add result.PatchPos
-      when compiles(noDash):
-        let prev = result
+        insertPos.add PatchPos result
       unescapeJsonPtr(cur)
       result = rawGet(tree, result, cur)
-      if result.isNil:
-        when compiles(noDash):
-          if not noDash and lastToken: return NodePos(prev.int+prev.operand)
-        else: return
+      if result.isNil: return
       when compiles(insertPos):
         insertPos.add PatchPos(result.int32-2)
     of opcodeArray:
       when compiles(insertPos):
-        insertPos.add result.PatchPos
+        insertPos.add PatchPos result
       var i = getArrayIndex(cur)
-      if i == -1:
-        when compiles(noDash):
-          if not noDash and lastToken: return NodePos(result.int+result.operand)
-          else: raiseSyntaxError(path)
-        else:
-          raiseSyntaxError(path)
+      if i == -1: raiseSyntaxError(path)
       block searchLoop:
         for x in sonsReadonly(tree, result):
           if i == 0:
@@ -261,8 +249,46 @@ template posFromPtr(tree: JsonTree; path: JsonPtr): NodePos =
   posFromPtr(tree, path.string, rootNodeId)
 
 proc posFromPtr(tree: JsonTree; path: string; n: NodePos;
-    insertPos: var seq[PatchPos]; noDash = true): NodePos =
+    insertPos: var seq[PatchPos]): NodePos =
   posFromPtrImpl()
+
+proc mposFromPtr(tree: var JsonTree; path: string; n: NodePos;
+    insertPos: var seq[PatchPos]): (NodePos, LitId) =
+  var n = n
+  if n.isNil: return (n, LitId(0))
+  var cur = ""
+  var last = 1
+  while last <= len(path):
+    var first = last
+    while last < len(path) and path[last] != '/':
+      inc(last)
+    let lastToken = last == len(path)
+    copyTokenToBuffer(cur, path, first, last)
+    case n.kind
+    of opcodeObject:
+      insertPos.add PatchPos n
+      let prev = n
+      unescapeJsonPtr(cur)
+      n = rawGet(tree, n, cur)
+      if n.isNil:
+        if lastToken: return (NodePos(prev.int+prev.operand), LitId getOrIncl(tree.atoms, cur))
+      insertPos.add PatchPos(n.int32-2)
+    of opcodeArray:
+      insertPos.add PatchPos n
+      var i = getArrayIndex(cur)
+      if i == -1:
+        if lastToken: return (NodePos(n.int+n.operand), LitId(0))
+        else: raiseSyntaxError(path)
+      block searchLoop:
+        for x in sonsReadonly(tree, n):
+          if i == 0:
+            n = x
+            break searchLoop
+          dec i
+        return (nilNodeId, LitId(0))
+    else: return (nilNodeId, LitId(0))
+    inc(last)
+  result = (n, LitId(0))
 
 proc contains*(tree: JsonTree, path: JsonPtr): bool =
   ## Checks if `key` exists in `n`.
@@ -610,14 +636,13 @@ proc rawAdd(result: var JsonTree, tree: JsonTree, n: NodePos) =
 from sequtils import insert
 proc add*(tree: var JsonTree; path: JsonPtr; value: JsonTree) =
   var insertPos: seq[PatchPos] = @[]
-  var n = posFromPtr(tree, path.string, rootNodeId, insertPos, noDash = false)
+  var (n, keyId) = mposFromPtr(tree, path.string, rootNodeId, insertPos)
   if n.isNil: raisePathError(path.string)
   var diff = span(value, 0).int32
   if insertPos.len > 0 and insertPos[^1].int + operand(NodePos insertPos[^1]) - 1 < n.int and
       kind(NodePos insertPos[^1]) == opcodeObject:
-    let key = substr(path.string, rfind(path.string, '/')+1)
     tree.nodes.insert [toNode(opcodeKeyValuePair, int32(diff+2)),
-        toNode(opcodeString, int32 getOrIncl(tree.atoms, key))], n.int
+        toNode(opcodeString, int32 keyId)], n.int
     n = NodePos(n.int+2)
     inc diff, 2
   while insertPos.len > 0:
