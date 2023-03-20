@@ -165,9 +165,9 @@ Examples
   assert fromJson(x, JsonPtr"/d/e", seq[int]) == @[7, 8]
   assert toJson(@[1, 2, 3]) == extract(x, JsonPtr"/a")
   # Iterating
-  for x items(x, JsonPtr"/a", int): echo x, " "
+  for x in items(x, JsonPtr"/a", int): echo x, " "
   # 1 2 3
-  for k, v pairs(x, JsonPtr"/d", JsonTree): echo (k, v), " "
+  for k, v in pairs(x, JsonPtr"/d", JsonTree): echo (k, v), " "
   # ("e", [7, 8]) ("f", 9)
 
 Benchmarks
