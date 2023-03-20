@@ -1,7 +1,6 @@
 import packedjson2, strutils, times
 
 proc main =
-  let start = cpuTime()
   var jobj = parseFile("1.json")
 
   let L = len(jobj, JsonPtr"/coordinates")
@@ -9,8 +8,11 @@ proc main =
 
   for i in 0..<1000:
     remove(jobj, JsonPtr("/coordinates/" & $i & "/x"))
-
+  let start = cpuTime()
+  let x = jobj.toJson
+  #let x = jobj
   echo "used Mem: ", formatSize getOccupiedMem(), " time: ", cpuTime() - start, "s"
+  assert not jobj.isEmpty
 
 main()
 

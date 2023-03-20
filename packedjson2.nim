@@ -198,7 +198,7 @@ func getArrayIndex(token: string): int {.inline.} =
   if token[0] < '1':
     raiseSyntaxError(token)
   try: result = parseInt(token)
-  except: raiseSyntaxError(token)
+  except ValueError: raiseSyntaxError(token)
 
 template copyTokenToBuffer(buf, src, first, last) =
   buf.setLen(last-first)
@@ -271,7 +271,7 @@ proc mposFromPtr(tree: var JsonTree; path: string; n: NodePos;
       unescapeJsonPtr(cur)
       n = rawGet(tree, n, cur)
       if n.isNil:
-        if lastToken: return (NodePos(prev.int+prev.operand), LitId getOrIncl(tree.atoms, cur))
+        if lastToken: return (NodePos(prev.int+prev.operand), getOrIncl(tree.atoms, cur))
       insertPos.add PatchPos(n.int32-2)
     of opcodeArray:
       insertPos.add PatchPos n
@@ -556,6 +556,7 @@ proc toUgly(result: var string, tree: JsonTree, n: NodePos) =
   else: discard
 
 proc dump*(tree: JsonTree, path: JsonPtr): string =
+  ## Dumps the JSON tree `tree` to a string.
   result = ""
   let n = posFromPtr(tree, path)
   if n.isNil: raisePathError(path.string)
@@ -578,6 +579,7 @@ proc rawExtract(result: var JsonTree, tree: JsonTree, n: NodePos) =
       result.nodes[i] = tree.nodes[n.int]
 
 proc extract*(tree: JsonTree; path: JsonPtr): JsonTree =
+  ## Extracts the JSON tree at `path` from `tree`.
   let n = posFromPtr(tree, path)
   if n.isNil: raisePathError(path.string)
   rawExtract(result, tree, n)
