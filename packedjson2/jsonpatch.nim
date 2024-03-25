@@ -1,0 +1,273 @@
+import private/bitabs, jsontree, jsonnode, jsonpointer, jsonops, std/[sequtils, importutils]
+
+proc test*(tree: JsonTree; path: JsonPtr, value: JsonTree): bool =
+  let n = findNode(tree, path.string)
+  if n.isNil:
+    raisePathError(path.string)
+  rawTest(tree, value, n, rootNodeId)
+
+proc replace*(tree: var JsonTree, path: JsonPtr, value: JsonTree) =
+  privateAccess(JsonTree)
+  # Find the target node
+  let res = findNodeMut(tree, path.string)
+  if res.node.isNil:
+    raisePathError(path.string)
+  # Replace the value at the target node
+  let startPos = res.node.int
+  let endPos = startPos + span(tree, res.node.int)
+  let diff = span(value, 0) - span(tree, res.node.int)
+  tree.nodes.delete(startPos, endPos - 1)
+  rawAdd(tree, value, res.node)
+  # Update the operand of the parent node
+  for parent in res.parents:
+    let distance = tree.nodes[parent.int].operand + diff
+    tree.nodes[parent.int] = toNode(tree.nodes[parent.int].kind, distance.int32)
+
+proc remove*(tree: var JsonTree, path: JsonPtr) =
+  privateAccess(JsonTree)
+  # Find the target node
+  var res = findNodeMut(tree, path.string)
+  if res.node.isNil:
+    raisePathError(path.string)
+  # Remove the target node
+  var startPos, diff = 0
+  if res.parents.len > 0 and res.parents[^1].NodePos.kind == opcodeObject:
+    startPos = res.node.int - 1
+    diff = 1 + span(tree, res.node.int)
+  else:
+    startPos = res.node.int
+    diff = span(tree, res.node.int)
+  let endPos = startPos + diff
+  tree.nodes.delete(startPos, endPos - 1)
+  # Update the operand of the parent node
+  for parent in res.parents:
+    let distance = tree.nodes[parent.int].operand - diff
+    tree.nodes[parent.int] = toNode(tree.nodes[parent.int].kind, distance.int32)
+
+proc add*(tree: var JsonTree, path: JsonPtr, value: JsonTree) =
+  privateAccess(JsonTree)
+  # Find the target node
+  var res = findNodeMut(tree, path.string)
+  var diff = 0
+  if res.node.isNil:
+    # Adding a new node
+    if res.parents.len == 0:
+      # Adding to the root
+      rawAdd(tree, value, res.node)
+    else:
+      let parent = res.parents[^1].NodePos
+      if parent.kind == opcodeObject:
+        # Adding a new key-value pair to an object
+        let keyNode = toNode(opcodeString, int32 getOrIncl(tree.atoms, res.key))
+        let startPos = parent.int + parent.operand
+        diff = 1 + span(value, 0)
+        tree.nodes.insert(keyNode, startPos)
+        rawAdd(tree, value, NodePos(startPos + 1))
+      else:
+        # Adding a new element to an array
+        let startPos = parent.int + parent.operand
+        diff = span(value, 0)
+        rawAdd(tree, value, NodePos(startPos))
+  else:
+    if res.parents.len > 0 and res.parents[^1].NodePos.kind == opcodeArray:
+      # Insert a value before the given index
+      diff = span(value, 0)
+    else:
+      # Replacing an existing node
+      let startPos = res.node.int
+      let endPos = startPos + span(tree, res.node.int)
+      diff = span(value, 0) - span(tree, res.node.int)
+      tree.nodes.delete(startPos, endPos - 1)
+    rawAdd(tree, value, res.node)
+  for parent in res.parents:
+    let distance = tree.nodes[parent.int].operand + diff
+    tree.nodes[parent.int] = toNode(tree.nodes[parent.int].kind, distance.int32)
+
+when isMainModule:
+  import std/assertions, jsonmapper, jsonops
+
+  proc main =
+    var tree = %*{
+      "name": "John",
+      "age": 30,
+      "numbers": [1, 2, 3]
+    }
+
+    block: # replace a string value
+      var tree = tree
+      var newValue = %*"Jane"
+      tree.replace(JsonPtr"/name", newValue)
+      assert tree == %*{
+        "name": "Jane",
+        "age": 30,
+        "numbers": [1, 2, 3]
+      }
+
+    block: # replace an array
+      var tree = tree
+      var newValue = %*[4, 5]
+      tree.replace(JsonPtr"/numbers", newValue)
+      assert tree == %*{
+        "name": "John",
+        "age": 30,
+        "numbers": [4, 5]
+      }
+
+    block: # replace a non-existing path
+      var tree = tree
+      var newValue = %*"New York"
+      assert:
+        try: (tree.replace(JsonPtr"/address", newValue); false)
+        except PathError: true
+
+    block: # replace an object
+      var tree = tree
+      var newValue = %*{"city": "New York"}
+      tree.replace(JsonPtr"", newValue)
+      assert tree == %*{"city": "New York"}
+
+    tree = %*{
+      "a": 1,
+      "b": {"c": 2, "d": 3},
+      "e": [4, 5, 6],
+      "f": nil,
+      "g": true
+    }
+
+    block:
+      var tree = tree
+      var newValue = %*7
+      tree.replace(JsonPtr"/e/2", newValue)
+      assert tree == %*{
+        "a": 1,
+        "b": {"c": 2, "d": 3},
+        "e": [4, 5, 7],
+        "f": nil,
+        "g": true
+      }
+
+    block:
+      var tree = tree
+      var newValue = %*5
+      tree.replace(JsonPtr"/b/c", newValue)
+      assert tree == %*{
+        "a": 1,
+        "b": {"c": 5, "d": 3},
+        "e": [4, 5, 6],
+        "f": nil,
+        "g": true
+      }
+
+    block:
+      var tree = tree
+      var newValue = %*5
+      assert:
+        try: (tree.replace(JsonPtr"/e/-", newValue); false)
+        except PathError: true
+
+    block:
+      var tree = tree
+      var newValue = %*{"": [10, 11], "g": [12]}
+      tree.replace(JsonPtr"/f", newValue)
+      assert tree == %*{
+        "a": 1,
+        "b": {"c": 2, "d": 3},
+        "e": [4, 5, 6],
+        "f": {"": [10, 11], "g": [12]},
+        "g": true
+      }
+
+    block:
+      var tree = %*{
+        "a": 1,
+        "b": {"c": 2, "d": 3},
+        "e": [4, 5, 6]
+      }
+
+      tree.remove(JsonPtr"/b/c")
+      assert tree == %*{
+        "a": 1,
+        "b": {"d": 3},
+        "e": [4, 5, 6]
+      }
+
+      tree.remove(JsonPtr"/e/1")
+      assert tree == %*{
+        "a": 1,
+        "b": {"d": 3},
+        "e": [4, 6]
+      }
+
+      tree.remove(JsonPtr"/a")
+      assert tree == %*{
+        "b": {"d": 3},
+        "e": [4, 6]
+      }
+
+      assert:
+        try: (tree.remove(JsonPtr"/x"); false)
+        except PathError: true
+
+      tree.remove(JsonPtr"/e")
+      assert tree == %*{
+        "b": {"d": 3}
+      }
+
+      tree.remove(JsonPtr"")
+      assert tree.isEmpty
+
+    block: # add
+      var tree = %*{
+        "a": 1,
+        "b": {"c": 2},
+        "d": [3, 4]
+      }
+
+      var value1 = %*{"f": 5}
+      tree.add(JsonPtr"/b/e", value1)
+      assert tree == %*{
+        "a": 1,
+        "b": {"c": 2, "e": {"f": 5}},
+        "d": [3, 4]
+      }
+
+      tree = %*{
+        "a": {"x": 24, "y": 25},
+        "b": {"c": 3, "d": 4},
+        "arr": [1, 2, 3, 4],
+        "str": "hello"
+      }
+
+      block: # test
+        assert tree.test(JsonPtr"/a", %*{"x": 24, "y": 25}) == true
+        assert tree.test(JsonPtr"/b", %*{"c": 3, "d": 5}) == false
+        assert tree.test(JsonPtr"/arr", %*[1, 2, 3, 4]) == true
+        assert tree.test(JsonPtr"/str", %*"hello") == true
+
+      block: # add - replace existing node
+        let newValue = %*{"x": 100, "y": 200}
+        tree.add(JsonPtr"/a", newValue)
+        assert tree.test(JsonPtr"/a", newValue) == true
+
+      block: # add - add new key-value pair to object
+        let newValue = %*{"e": 5}
+        tree.add(JsonPtr"/b", newValue)
+        assert tree.test(JsonPtr"/b", %*{"e": 5}) == true
+
+      block: # add - add new element to array
+        let newValue = %*5
+        tree.add(JsonPtr"/arr/2", newValue)
+        assert tree.test(JsonPtr"/arr", %*[1, 2, 5, 3, 4]) == true
+
+      block: # add - add new element to the end of array
+        let newValue = %*5
+        tree.add(JsonPtr"/arr/-", newValue)
+        assert tree.test(JsonPtr"/arr", %*[1, 2, 5, 3, 4, 5]) == true
+
+      block: # add - add new node to root
+        let newValue = %*{"new": "value"}
+        tree.add(JsonPtr"", newValue)
+        assert tree.test(JsonPtr"/new", %*"value") == true
+
+  static: main()
+  main()

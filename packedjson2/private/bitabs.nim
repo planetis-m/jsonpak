@@ -1,7 +1,7 @@
 ## A BiTable is a table that can be seen as an optimized pair
 ## of (Table[LitId, Val], Table[Val, LitId]).
 
-import std/hashes
+import std/[hashes, assertions]
 
 const
   defaultInitialSize = 64
@@ -105,35 +105,54 @@ proc `[]`*[T](t: BiTable[T]; LitId: LitId): lent T {.inline.} =
   result = t.vals[idx]
 
 when isMainModule:
+  proc main =
+    block:
+      var t: BiTable[string]
+      assert t.getOrIncl("hello") == LitId(1)
+      assert t.getOrIncl("hello") == LitId(1)
+      assert t.getOrIncl("world") == LitId(2)
+      assert t.getOrIncl("hello") == LitId(1)
+      assert t.getOrIncl("world") == LitId(2)
+      assert t.len == 2
 
-  var t: BiTable[string]
+    block:
+      var t: BiTable[string]
+      discard t.getOrIncl("hello")
+      discard t.getOrIncl("world")
+      assert t.getKeyId("hello") == LitId(1)
+      assert t.getKeyId("world") == LitId(2)
+      assert t.getKeyId("none") == LitId(0)
 
-  echo getOrIncl(t, "hello")
+    block:
+      var t: BiTable[string]
+      discard t.getOrIncl("hello")
+      discard t.getOrIncl("world")
+      assert t.hasLitId(LitId(1)) == true
+      assert t.hasLitId(LitId(2)) == true
+      assert t.hasLitId(LitId(3)) == false
 
-  echo getOrIncl(t, "hello")
-  echo getOrIncl(t, "hello3")
-  echo getOrIncl(t, "hello4")
-  echo getOrIncl(t, "helloasfasdfdsa")
-  echo getOrIncl(t, "hello")
-  echo getKeyId(t, "hello")
-  echo getKeyId(t, "none")
+    block:
+      var t: BiTable[string]
+      let id1 = t.getOrIncl("hello")
+      let id2 = t.getOrIncl("world")
+      assert t[id1] == "hello"
+      assert t[id2] == "world"
 
-  for i in 0 ..< 100_000:
-    discard t.getOrIncl($i & "___" & $i)
+    block:
+      var t: BiTable[string]
+      for i in 0 ..< 1000:
+        discard t.getOrIncl($i)
+      assert t.len == 1000
 
-  for i in 0 ..< 100_000:
-    assert t.getOrIncl($i & "___" & $i).idToIdx == i + 4
-  echo "begin"
-  echo t.vals.len
+    block:
+      var t: BiTable[float]
+      let id1 = t.getOrIncl(0.4)
+      let id2 = t.getOrIncl(16.4)
+      let id3 = t.getOrIncl(32.4)
+      assert t.getKeyId(0.4) == id1
+      assert t.getKeyId(16.4) == id2
+      assert t.getKeyId(32.4) == id3
+      assert t.len == 3
 
-  echo t.vals[0]
-  echo t.vals[1004]
-
-  echo "middle"
-
-  var tf: BiTable[float]
-
-  discard tf.getOrIncl(0.4)
-  discard tf.getOrIncl(16.4)
-  discard tf.getOrIncl(32.4)
-  echo getKeyId(tf, 32.4)
+  static: main()
+  main()
