@@ -10,6 +10,12 @@ proc rawGet*(tree: JsonTree, n: NodePos, name: string): NodePos =
       return x.firstSon
   return nilNodeId
 
+proc rawUpdateParents(tree: var JsonTree, parents: seq[PatchPos], diff: int) =
+  privateAccess(JsonTree)
+  for parent in parents:
+    let distance = tree.nodes[parent.int].operand + diff
+    tree.nodes[parent.int] = toNode(tree.nodes[parent.int].kind, distance.int32)
+
 proc rawExtract*(result: var JsonTree, tree: JsonTree, n: NodePos) =
   privateAccess(JsonTree)
   let L = span(tree, n.int)
@@ -48,6 +54,35 @@ proc rawAdd*(result: var JsonTree, tree: JsonTree, n: NodePos) =
       result.nodes[i+n.int] = toNode(m.kind, int32 getOrIncl(result.atoms, m.str))
     else:
       result.nodes[i+n.int] = tree.nodes[i]
+
+proc rawAddKeyValuePair*(result: var JsonTree, src, dest: NodePos, key: string) =
+  privateAccess(JsonTree)
+  let L = span(result, src.int) + 1
+  let oldfull = result.nodes.len
+  setLen(result.nodes, oldfull+L)
+  for i in countdown(oldfull-1, dest.int):
+    result.nodes[i+L] = result.nodes[i]
+  result.nodes[dest.int] = toNode(opcodeString, int32 getOrIncl(result.atoms, key))
+  let src =
+    if src >= dest: NodePos(src.int+L) else: src
+  for i in 0..<L-1:
+    result.nodes[dest.int+i+1] = result.nodes[src.int+i]
+
+proc rawAddKeyValuePair*(result: var JsonTree, tree: JsonTree, n: NodePos, key: string) =
+  privateAccess(JsonTree)
+  let L = span(tree, 0) + 1
+  let oldfull = result.nodes.len
+  setLen(result.nodes, oldfull+L)
+  for i in countdown(oldfull-1, n.int):
+    result.nodes[i+L] = result.nodes[i]
+  result.nodes[n.int] = toNode(opcodeString, int32 getOrIncl(result.atoms, key))
+  for i in 0..<L-1:
+    let m = NodePos(i)
+    case m.kind
+    of opcodeInt, opcodeFloat, opcodeString:
+      result.nodes[i+n.int+1] = toNode(m.kind, int32 getOrIncl(result.atoms, m.str))
+    else:
+      result.nodes[i+n.int+1] = tree.nodes[i]
 
 proc rawReplace*(result: var JsonTree, src, dest: NodePos) =
   privateAccess(JsonTree)
@@ -137,6 +172,9 @@ proc rawTest*(a, b: JsonTree, na, nb: NodePos): bool =
   else: discard
 
 proc `==`*(a, b: JsonTree): bool {.inline.} =
+  privateAccess(JsonTree)
+  if a.nodes.len != b.nodes.len:
+    return false
   rawTest(a, b, rootNodeId, rootNodeId)
 
 proc extract*(tree: JsonTree): JsonTree =
@@ -210,8 +248,6 @@ when isMainModule:
       let tree1 = %*{"a": 1, "b": 2}
       let tree2 = %*{"a": 1, "b": 3}
       assert tree1 != tree2
-
-
 
   static: main()
   main()

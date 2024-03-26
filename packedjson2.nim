@@ -3,7 +3,8 @@ import
                jsondollar, jsonops, jsonpointer, jsonpatch, jsonextra]
 
 export
-  JsonTree, isEmpty, JsonNodeKind, fromJson, items, pairs, toJson, `%*`, parseJson,
-  JsonParsingError, JsonKindError, `$`, dump, `==`, extract,
-  JsonPtr, JsonPtrError, PathError, SyntaxError, UsageError, escapeJsonPtr,
+  JsonTree, isEmpty, JsonNodeKind, fromJson, items, pairs, JsonKindError,
+  toJson, `%*`, parseJson, JsonParsingError, `$`, dump, `==`, extract,
+  JsonPtr, JsonPtrError, PathError, SyntaxError, UsageError,
+  addEscapedJsonPtr, escapeJsonPtr, unescapeJsonPtr
   test, replace, remove, add, copy, contains, kind, len

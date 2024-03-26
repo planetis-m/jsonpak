@@ -1,9 +1,12 @@
 import private/bitabs, jsontree, jsonnode, jsonpointer, jsonops, std/[algorithm, sequtils, importutils]
 
 proc test*(tree: JsonTree; path: JsonPtr, value: JsonTree): bool =
+  privateAccess(JsonTree)
   let n = findNode(tree, path.string)
   if n.isNil:
     raisePathError(path.string)
+  if span(tree, n.int) != value.nodes.len:
+    return false
   rawTest(tree, value, n, rootNodeId)
 
 proc replace*(tree: var JsonTree, path: JsonPtr, value: JsonTree) =
@@ -15,10 +18,8 @@ proc replace*(tree: var JsonTree, path: JsonPtr, value: JsonTree) =
   # Replace the value at the target node
   let diff = span(value, 0) - span(tree, res.node.int)
   rawReplace(tree, value, res.node)
-  # Update the operand of the parent node
-  for parent in res.parents:
-    let distance = tree.nodes[parent.int].operand + diff
-    tree.nodes[parent.int] = toNode(tree.nodes[parent.int].kind, distance.int32)
+  # Update the operands of the parent nodes
+  rawUpdateParents(tree, res.parents, diff)
 
 proc remove*(tree: var JsonTree, path: JsonPtr) =
   privateAccess(JsonTree)
@@ -36,10 +37,8 @@ proc remove*(tree: var JsonTree, path: JsonPtr) =
     diff = span(tree, res.node.int)
   let endPos = startPos + diff
   tree.nodes.delete(startPos, endPos - 1)
-  # Update the operand of the parent node
-  for parent in res.parents:
-    let distance = tree.nodes[parent.int].operand - diff
-    tree.nodes[parent.int] = toNode(tree.nodes[parent.int].kind, distance.int32)
+  # Update the operands of the parent nodes
+  rawUpdateParents(tree, res.parents, -diff)
 
 proc add*(tree: var JsonTree, path: JsonPtr, value: JsonTree) =
   privateAccess(JsonTree)
@@ -48,18 +47,14 @@ proc add*(tree: var JsonTree, path: JsonPtr, value: JsonTree) =
   var diff = 0
   if res.node.isNil:
     # Adding a new node
-    # assert res.parents.len > 0
     let parent = res.parents[^1].NodePos
+    let startPos = parent.int + parent.operand
     if parent.kind == opcodeObject:
       # Adding a new key-value pair to an object
-      let keyNode = toNode(opcodeString, int32 getOrIncl(tree.atoms, res.key))
-      let startPos = parent.int + parent.operand
       diff = 1 + span(value, 0)
-      tree.nodes.insert(keyNode, startPos)
-      rawAdd(tree, value, NodePos(startPos + 1))
+      rawAddKeyValuePair(tree, value, NodePos(startPos), res.key)
     else:
       # Adding a new element to an array
-      let startPos = parent.int + parent.operand
       diff = span(value, 0)
       rawAdd(tree, value, NodePos(startPos))
   else:
@@ -71,9 +66,7 @@ proc add*(tree: var JsonTree, path: JsonPtr, value: JsonTree) =
       # Replacing an existing node
       diff = span(value, 0) - span(tree, res.node.int)
       rawReplace(tree, value, res.node)
-  for parent in res.parents:
-    let distance = tree.nodes[parent.int].operand + diff
-    tree.nodes[parent.int] = toNode(tree.nodes[parent.int].kind, distance.int32)
+  rawUpdateParents(tree, res.parents, diff)
 
 proc copy*(tree: var JsonTree, `from`, path: JsonPtr) =
   privateAccess(JsonTree)
@@ -91,18 +84,14 @@ proc copy*(tree: var JsonTree, `from`, path: JsonPtr) =
   var diff = 0
   if res.node.isNil:
     # Copying to a new node
-    # assert res.parents.len > 0
     let parent = res.parents[^1].NodePos
+    let startPos = parent.int + parent.operand
     if parent.kind == opcodeObject:
       # Copying to a new key-value pair in an object
-      let keyNode = toNode(opcodeString, int32 getOrIncl(tree.atoms, res.key))
-      let startPos = parent.int + parent.operand
       diff = 1 + span(tree, srcNode.int)
-      tree.nodes.insert(keyNode, startPos)
-      rawAdd(tree, srcNode, NodePos(startPos + 1))
+      rawAddKeyValuePair(tree, srcNode, NodePos(startPos), res.key)
     else:
       # Copying to a new element in an array
-      let startPos = parent.int + parent.operand
       diff = span(tree, srcNode.int)
       rawAdd(tree, srcNode, NodePos(startPos))
   else:
@@ -114,9 +103,7 @@ proc copy*(tree: var JsonTree, `from`, path: JsonPtr) =
       # Replacing an existing node
       diff = span(tree, srcNode.int) - span(tree, res.node.int)
       rawReplace(tree, srcNode, res.node)
-  for parent in res.parents:
-    let distance = tree.nodes[parent.int].operand + diff
-    tree.nodes[parent.int] = toNode(tree.nodes[parent.int].kind, distance.int32)
+  rawUpdateParents(tree, res.parents, diff)
 
 when isMainModule:
   import std/assertions, jsonmapper
