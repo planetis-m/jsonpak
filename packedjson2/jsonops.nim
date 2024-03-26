@@ -90,7 +90,7 @@ proc rawReplace*(result: var JsonTree, src, dest: NodePos) =
   let diff = L - span(result, dest.int)
   let oldfull = result.nodes.len
   let endpos = dest.int + span(result, dest.int)
-  if diff > 0:
+  if diff >= 0:
     # Expand the nodes sequence if the new value is larger
     setLen(result.nodes, oldfull+diff)
     for i in countdown(oldfull-1, endpos):

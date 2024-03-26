@@ -143,13 +143,14 @@ proc move*(tree: var JsonTree, `from`, path: JsonPtr) =
       rawReplace(tree, src.node, dest.node)
   rawUpdateParents(tree, dest.parents, diff)
   if binarySearch(src.parents, dest.node.PatchPos) >= 0:
-    # In case the source was overwritten by the destination
+    # The source was overwritten by the destination
     return
   for parent in mitems(src.parents):
     if parent >= startPos.PatchPos:
       inc parent, diff
   if src.node >= startPos.NodePos:
     inc src.node, diff
+  # Remove the source node
   if src.parents.len > 0 and src.parents[^1].NodePos.kind == opcodeObject:
     startPos = src.node.int - 1
     diff = -1 - span(tree, src.node.int)
@@ -162,7 +163,7 @@ proc move*(tree: var JsonTree, `from`, path: JsonPtr) =
   rawUpdateParents(tree, src.parents, diff)
 
 when isMainModule:
-  import std/assertions, jsonmapper, jsondollar
+  import std/assertions, jsonmapper
 
   proc main =
     var tree = %*{
@@ -440,6 +441,12 @@ when isMainModule:
         tree.move(JsonPtr"/b", JsonPtr"/a/x")
         assert tree.test(JsonPtr"",
           %*{"a":{"x":{"c":3,"d":4,"e":5},"y":25},"arr":[1,2,3,4],"str":"hello"})
+
+      block: # move existing node to replace another node
+        var tree = tree
+        tree.move(JsonPtr"/b/e", JsonPtr"/a/y")
+        assert tree.test(JsonPtr"",
+          %*{"a":{"x":24,"y":5},"b":{"c":3,"d":4},"arr":[1,2,3,4],"str":"hello"})
 
   static: main()
   main()
