@@ -1,4 +1,4 @@
-import private/bitabs, jsontree, jsonnode, jsonpointer, jsonops, std/[sequtils, importutils]
+import private/bitabs, jsontree, jsonnode, jsonpointer, jsonops, std/[algorithm, sequtils, importutils]
 
 proc test*(tree: JsonTree; path: JsonPtr, value: JsonTree): bool =
   let n = findNode(tree, path.string)
@@ -13,11 +13,8 @@ proc replace*(tree: var JsonTree, path: JsonPtr, value: JsonTree) =
   if res.node.isNil:
     raisePathError(path.string)
   # Replace the value at the target node
-  let startPos = res.node.int
-  let endPos = startPos + span(tree, res.node.int)
   let diff = span(value, 0) - span(tree, res.node.int)
-  tree.nodes.delete(startPos, endPos - 1)
-  rawAdd(tree, value, res.node)
+  rawReplace(tree, value, res.node)
   # Update the operand of the parent node
   for parent in res.parents:
     let distance = tree.nodes[parent.int].operand + diff
@@ -51,40 +48,78 @@ proc add*(tree: var JsonTree, path: JsonPtr, value: JsonTree) =
   var diff = 0
   if res.node.isNil:
     # Adding a new node
-    if res.parents.len == 0:
-      # Adding to the root
-      rawAdd(tree, value, res.node)
+    # assert res.parents.len > 0
+    let parent = res.parents[^1].NodePos
+    if parent.kind == opcodeObject:
+      # Adding a new key-value pair to an object
+      let keyNode = toNode(opcodeString, int32 getOrIncl(tree.atoms, res.key))
+      let startPos = parent.int + parent.operand
+      diff = 1 + span(value, 0)
+      tree.nodes.insert(keyNode, startPos)
+      rawAdd(tree, value, NodePos(startPos + 1))
     else:
-      let parent = res.parents[^1].NodePos
-      if parent.kind == opcodeObject:
-        # Adding a new key-value pair to an object
-        let keyNode = toNode(opcodeString, int32 getOrIncl(tree.atoms, res.key))
-        let startPos = parent.int + parent.operand
-        diff = 1 + span(value, 0)
-        tree.nodes.insert(keyNode, startPos)
-        rawAdd(tree, value, NodePos(startPos + 1))
-      else:
-        # Adding a new element to an array
-        let startPos = parent.int + parent.operand
-        diff = span(value, 0)
-        rawAdd(tree, value, NodePos(startPos))
+      # Adding a new element to an array
+      let startPos = parent.int + parent.operand
+      diff = span(value, 0)
+      rawAdd(tree, value, NodePos(startPos))
   else:
     if res.parents.len > 0 and res.parents[^1].NodePos.kind == opcodeArray:
       # Insert a value before the given index
       diff = span(value, 0)
+      rawAdd(tree, value, res.node)
     else:
       # Replacing an existing node
-      let startPos = res.node.int
-      let endPos = startPos + span(tree, res.node.int)
       diff = span(value, 0) - span(tree, res.node.int)
-      tree.nodes.delete(startPos, endPos - 1)
-    rawAdd(tree, value, res.node)
+      rawReplace(tree, value, res.node)
+  for parent in res.parents:
+    let distance = tree.nodes[parent.int].operand + diff
+    tree.nodes[parent.int] = toNode(tree.nodes[parent.int].kind, distance.int32)
+
+proc copy*(tree: var JsonTree, `from`, path: JsonPtr) =
+  privateAccess(JsonTree)
+  # Find the source node
+  let srcNode = findNode(tree, `from`.string)
+  if srcNode.isNil:
+    raisePathError(`from`.string)
+  # Find the target node
+  let res = findNodeMut(tree, path.string)
+  if res.node == srcNode:
+    # Source and destination are the same, no need to copy
+    return
+  if binarySearch(res.parents, srcNode.PatchPos) >= 0:
+    raise newException(PathError, "Invalid operation: `from` is an ancestor of `path`")
+  var diff = 0
+  if res.node.isNil:
+    # Copying to a new node
+    # assert res.parents.len > 0
+    let parent = res.parents[^1].NodePos
+    if parent.kind == opcodeObject:
+      # Copying to a new key-value pair in an object
+      let keyNode = toNode(opcodeString, int32 getOrIncl(tree.atoms, res.key))
+      let startPos = parent.int + parent.operand
+      diff = 1 + span(tree, srcNode.int)
+      tree.nodes.insert(keyNode, startPos)
+      rawAdd(tree, srcNode, NodePos(startPos + 1))
+    else:
+      # Copying to a new element in an array
+      let startPos = parent.int + parent.operand
+      diff = span(tree, srcNode.int)
+      rawAdd(tree, srcNode, NodePos(startPos))
+  else:
+    if res.parents.len > 0 and res.parents[^1].NodePos.kind == opcodeArray:
+      # Insert the copied value before the given index
+      diff = span(tree, srcNode.int)
+      rawAdd(tree, srcNode, res.node)
+    else:
+      # Replacing an existing node
+      diff = span(tree, srcNode.int) - span(tree, res.node.int)
+      rawReplace(tree, srcNode, res.node)
   for parent in res.parents:
     let distance = tree.nodes[parent.int].operand + diff
     tree.nodes[parent.int] = toNode(tree.nodes[parent.int].kind, distance.int32)
 
 when isMainModule:
-  import std/assertions, jsonmapper, jsonops
+  import std/assertions, jsonmapper
 
   proc main =
     var tree = %*{
@@ -244,30 +279,96 @@ when isMainModule:
         assert tree.test(JsonPtr"/arr", %*[1, 2, 3, 4]) == true
         assert tree.test(JsonPtr"/str", %*"hello") == true
 
-      block: # add - replace existing node
+      block: # replace existing node
         let newValue = %*{"x": 100, "y": 200}
         tree.add(JsonPtr"/a", newValue)
         assert tree.test(JsonPtr"/a", newValue) == true
 
-      block: # add - add new key-value pair to object
+      block: # add new key-value pair to object
         let newValue = %*{"e": 5}
         tree.add(JsonPtr"/b", newValue)
         assert tree.test(JsonPtr"/b", %*{"e": 5}) == true
 
-      block: # add - add new element to array
+      block: # add new element to array
         let newValue = %*5
         tree.add(JsonPtr"/arr/2", newValue)
         assert tree.test(JsonPtr"/arr", %*[1, 2, 5, 3, 4]) == true
 
-      block: # add - add new element to the end of array
+      block: # add new element to the end of array
         let newValue = %*5
         tree.add(JsonPtr"/arr/-", newValue)
         assert tree.test(JsonPtr"/arr", %*[1, 2, 5, 3, 4, 5]) == true
 
-      block: # add - add new node to root
+      block: # add new node to root
         let newValue = %*{"new": "value"}
         tree.add(JsonPtr"", newValue)
         assert tree.test(JsonPtr"/new", %*"value") == true
+
+      tree = %*{
+        "a": {"x": 24, "y": 25},
+        "b": {"c": 3, "d": 4, "e": 5},
+        "arr": [1, 2, 3, 4],
+        "str": "hello"
+      }
+
+      block: # copy existing node to a new location
+        var tree = tree
+        tree.copy(JsonPtr"/a", JsonPtr"/copied")
+        assert tree.test(JsonPtr"/copied", %*{"x": 24, "y": 25}) == true
+
+      block: # copy existing node to replace another node
+        var tree = tree
+        tree.copy(JsonPtr"/a", JsonPtr"/b")
+        assert tree.test(JsonPtr"/b", %*{"x": 24, "y": 25}) == true
+
+      block: # copy existing node to a new element in an array
+        var tree = tree
+        tree.copy(JsonPtr"/a", JsonPtr"/arr/2")
+        assert tree.test(JsonPtr"/arr", %*[1, 2, {"x": 24, "y": 25}, 3, 4]) == true
+
+      block: # copy existing node to the end of an array
+        var tree = tree
+        tree.copy(JsonPtr"/a", JsonPtr"/arr/-")
+        assert tree.test(JsonPtr"/arr", %*[1, 2, 3, 4, {"x": 24, "y": 25}]) == true
+
+      block: # copy existing node to the root
+        var tree = tree
+        tree.copy(JsonPtr"/a", JsonPtr"")
+        assert tree.test(JsonPtr"", %*{"x": 24, "y": 25}) == true
+
+      block: # copy a child node to its parent
+        var tree = tree
+        tree.copy(JsonPtr"/a/x", JsonPtr"/a")
+        assert tree.test(JsonPtr"/a", %*24) == true
+
+      block: # copy a node to itself
+        var tree = tree
+        tree.copy(JsonPtr"/a", JsonPtr"/a")
+        assert tree.test(JsonPtr"/a", %*{"x": 24, "y": 25}) == true
+
+      block: # copy array element to a new location
+        var tree = tree
+        tree.copy(JsonPtr"/arr/0", JsonPtr"/copied_element")
+        assert tree.test(JsonPtr"/copied_element", %*1) == true
+
+      block: # copy array element to replace another element
+        var tree = tree
+        tree.copy(JsonPtr"/arr/0", JsonPtr"/arr/1")
+        assert tree.test(JsonPtr"/arr", %*[1, 1, 2, 3, 4]) == true
+
+      block: # copy non-existing node (should raise PathError)
+        try:
+          tree.copy(JsonPtr"/non_existing", JsonPtr"/copied")
+          assert false, "Expected PathError"
+        except PathError:
+          assert true
+
+      block: # copy parent to child (should raise PathError)
+        try:
+          tree.copy(JsonPtr"/a", JsonPtr"/a/x")
+          assert false, "Expected PathError"
+        except PathError:
+          assert true
 
   static: main()
   main()

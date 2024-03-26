@@ -158,6 +158,8 @@ proc findNodeMut*(tree: JsonTree, path: string): PathResult =
       unescapeJsonPtr(cur)
       n = rawGet(tree, n, cur)
       if n.isNil:
+        if last < len(path):
+          raisePathError(path)
         return PathResult(node: nilNodeId, parents: parents, key: cur)
     of opcodeArray:
       parents.add(n.PatchPos)
@@ -167,7 +169,7 @@ proc findNodeMut*(tree: JsonTree, path: string): PathResult =
         return PathResult(node: nilNodeId, parents: parents)
       var i = getArrayIndex(cur)
       if i >= len(tree, n):
-        return PathResult(node: nilNodeId, parents: parents)
+        raisePathError(path)
       var pos = n.int + 1
       for j in 0..<i:
         nextChild(tree, pos)
