@@ -7,4 +7,4 @@ export
   toJson, `%*`, parseJson, JsonParsingError, `$`, dump, `==`, extract,
   JsonPtr, JsonPtrError, PathError, SyntaxError, UsageError,
   addEscapedJsonPtr, escapeJsonPtr, unescapeJsonPtr
-  test, replace, remove, add, copy, contains, kind, len
+  test, replace, remove, add, copy, move, contains, kind, len

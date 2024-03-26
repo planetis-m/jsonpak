@@ -10,7 +10,7 @@ proc rawGet*(tree: JsonTree, n: NodePos, name: string): NodePos =
       return x.firstSon
   return nilNodeId
 
-proc rawUpdateParents(tree: var JsonTree, parents: seq[PatchPos], diff: int) =
+proc rawUpdateParents*(tree: var JsonTree, parents: seq[PatchPos], diff: int) =
   privateAccess(JsonTree)
   for parent in parents:
     let distance = tree.nodes[parent.int].operand + diff

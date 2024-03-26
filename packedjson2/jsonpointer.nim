@@ -97,7 +97,8 @@ template copyTokenToBuffer(buf, src, first, last) =
     for i in 0..high(buf):
       buf[i] = src[i+first]
   else:
-    if first < last: copyMem(cstring(buf), addr src[first], buf.len)
+    if first < last:
+      copyMem(cstring(buf), addr src[first], buf.len)
 
 proc findNode*(tree: JsonTree, path: string): NodePos =
   var

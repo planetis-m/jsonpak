@@ -46,12 +46,12 @@ iterator sonsReadonly*(tree: JsonTree; n: NodePos): NodePos =
 
 iterator sonsReadonlySkip1*(tree: JsonTree; n: NodePos): NodePos =
   var pos = n.int
-  assert tree.nodes[pos].kind > opcodeString
+  assert tree.nodes[pos].kind == opcodeObject
   let last = pos + tree.nodes[pos].operand
   inc pos
   while pos < last:
     yield NodePos(pos)
-    nextChild tree, pos
+    inc pos
     nextChild tree, pos
 
 proc len*(tree: JsonTree; n: NodePos): int =
