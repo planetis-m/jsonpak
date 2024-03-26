@@ -162,7 +162,7 @@ proc move*(tree: var JsonTree, `from`, path: JsonPtr) =
   rawUpdateParents(tree, src.parents, diff)
 
 when isMainModule:
-  import std/assertions, jsonmapper
+  import std/assertions, jsonmapper, jsondollar
 
   proc main =
     var tree = %*{
@@ -427,13 +427,19 @@ when isMainModule:
         var tree = tree
         tree.move(JsonPtr"/arr/0", JsonPtr"/copied_element")
         assert tree.test(JsonPtr"",
-          %*{"a":{"x": 24, "y": 25},"b":{"c":3,"d":4,"e":5},"arr":[2,3,4],"str":"hello","copied_element":1})
+          %*{"a":{"x":24,"y":25},"b":{"c":3,"d":4,"e":5},"arr":[2,3,4],"str":"hello","copied_element":1})
 
       block: # move existing node to the end of an array
         var tree = tree
         tree.move(JsonPtr"/a", JsonPtr"/arr/-")
         assert tree.test(JsonPtr"",
           %*{"b":{"c":3,"d":4,"e":5},"arr":[1,2,3,4,{"x":24,"y":25}],"str":"hello"})
+
+      block: # move existing node to replace another node
+        var tree = tree
+        tree.move(JsonPtr"/b", JsonPtr"/a/x")
+        assert tree.test(JsonPtr"",
+          %*{"a":{"x":{"c":3,"d":4,"e":5},"y":25},"arr":[1,2,3,4],"str":"hello"})
 
   static: main()
   main()
