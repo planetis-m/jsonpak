@@ -5,5 +5,5 @@ import
 export
   JsonTree, isEmpty, JsonNodeKind, fromJson, items, pairs, toJson, `%*`, parseJson,
   JsonParsingError, JsonKindError, `$`, dump, `==`, extract,
-  JsonPtr, JsonPtrError, PathError, SyntaxErr, UsageError, escapeJsonPtr,
+  JsonPtr, JsonPtrError, PathError, SyntaxError, UsageError, escapeJsonPtr,
   test, replace, remove, add, copy, contains, kind, len
