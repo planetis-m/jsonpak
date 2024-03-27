@@ -137,6 +137,8 @@ iterator pairs(x: JsonTree; path: JsonPtr; t: typedesc[T]): (lent string, T)
 
 ```nim
 
+import jsonpak, jsonpak/[patch, jsonptr, extra, builder, mapper, dollar]
+
 var x = %*{
   "a": [1, 2, 3],
   "b": 4,
