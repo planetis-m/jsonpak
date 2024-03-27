@@ -17,24 +17,19 @@ let
   pkgDir = thisDir().quoteShell
   docsDir = "docs"
 
+proc buildDoc(src, doc: string) =
+  exec("nim doc --index:on --verbosity:0 --git.url:" & projectUrl &
+      " --git.devel:main --git.commit:main --out:" & doc & " " & src)
+
 task docs, "Generate documentation":
   # https://nim-lang.github.io/Nim/docgen.html
   withDir(pkgDir):
     let filenames = [
-      "jsonpak",
-      "jsonpak" / "builder",
-      "jsonpak" / "dollar",
-      "jsonpak" / "extra",
-      "jsonpak" / "jsonptr",
-      "jsonpak" / "mapper",
-      "jsonpak" / "parser",
-      "jsonpak" / "patch",
-      "jsonpak" / "sorted"
+      "builder", "dollar", "extra", "jsonptr",
+      "mapper", "parser", "patch", "sorted"
     ]
     for file in filenames:
-      let src = srcDir / file
-      let doc = docsDir / (file & ".html")
       # Generate the docs for {src}
-      exec("nim doc --index:on --verbosity:0 --git.url:" & projectUrl &
-          " --git.devel:main --git.commit:main --out:" & doc & " " & src)
+      buildDoc(srcDir / "jsonpak" / (file & ".nim"), docsDir / (file & ".html"))
+    buildDoc(srcDir / "jsonpak.nim", docsDir / "jsonpak.html")
     exec("nim buildIndex --out:" & (docsDir / "index.html") & " " & docsDir)
