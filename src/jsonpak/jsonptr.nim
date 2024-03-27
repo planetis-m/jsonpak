@@ -78,6 +78,7 @@ func unescapeJsonPtr*(token: var string) =
   token.setLen(p)
 
 proc getArrayIndex(token: string): int =
+  result = 0
   if len(token) == 0:
     raiseSyntaxError(token)
   if token == "-":

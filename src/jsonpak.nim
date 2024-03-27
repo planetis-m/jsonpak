@@ -11,4 +11,5 @@ proc `==`*(a, b: JsonTree): bool {.inline.} =
 
 proc copy*(tree: JsonTree): JsonTree =
   ## Returns a fresh copy of `tree`.
+  result = JsonTree()
   rawExtract(result, tree, rootNodeId)

@@ -172,4 +172,4 @@ proc rawTest*(a, b: JsonTree, na, nb: NodePos): bool =
       if valB.isNil or not rawTest(a, b, valA, valB):
         return false
     return true
-  else: discard
+  else: return false # Cannot happen.

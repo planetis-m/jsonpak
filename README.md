@@ -4,7 +4,7 @@ jsonpak is JSON library that implements the JSON Patch RFC which is specified in
 [RFC 6902](https://datatracker.ietf.org/doc/html/rfc5789/) from the IETF.
 
 It uses Packed ASTs for compact and efficient JSON representation. Based on Araq's
-[idea](https://github.com/planetis-m/jsonecs#8).
+[idea](https://github.com/planetis-m/jsonecs/issues/8).
 
 ### Documentation
 

@@ -89,8 +89,7 @@ proc toJsonImpl(x, res: NimNode): NimNode =
 macro `%*`*(x: untyped): untyped =
   ## Convert an expression to a JsonTree.
   let res = genSym(nskVar, "toJsonResult")
-  result = newStmtList(newTree(nnkVarSection,
-      newIdentDefs(res, bindSym"JsonTree")), toJsonImpl(x, res), res)
+  result = newStmtList(newVarStmt(res, newCall(bindSym"JsonTree")), toJsonImpl(x, res), res)
 
 proc toJson*[T](x: T): JsonTree =
   ## Convert `x` to a JsonTree.
