@@ -24,12 +24,11 @@ proc buildDoc(src, doc: string) =
 task docs, "Generate documentation":
   # https://nim-lang.github.io/Nim/docgen.html
   withDir(pkgDir):
-    let filenames = [
-      "builder", "dollar", "extra", "jsonptr",
-      "mapper", "parser", "patch", "sorted"
-    ]
-    for file in filenames:
-      # Generate the docs for {src}
-      buildDoc(srcDir / "jsonpak" / (file & ".nim"), docsDir / (file & ".html"))
+    for filename in ["builder", "dollar", "extra", "jsonptr",
+        "mapper", "parser", "patch", "sorted"]:
+      # Generate the docs for the submodules
+      buildDoc(srcDir / "jsonpak" / (filename & ".nim"), docsDir / (filename & ".html"))
+    # Generate the docs for the main module
     buildDoc(srcDir / "jsonpak.nim", docsDir / "jsonpak.html")
+    # Generate the index.html
     exec("nim buildIndex --out:" & (docsDir / "index.html") & " " & docsDir)
