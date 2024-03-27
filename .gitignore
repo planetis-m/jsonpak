@@ -1,16 +1,36 @@
 # Ignore all root files
 /*
-# Exclude source code files in subdirectories
-!/*.nim
+# Exclude doc files in root directory
+!/LICENSE
+!/README.md
+!/jsonpak.nimble
 !/*.nims
-!/*.rst
 # Exclude root directories
-!/*/
+!/src/
+!/tests/
+!/bench/
+!/docs/
 # Include all files in subdirectories
 /*/*
 # Exclude source code files in subdirectories
 !/*/*.nim
 !/*/*.nims
-# Exclude doc files in subdirectory
+!/*/*.cfg
+# Exclude doc files in docs directory
 !/docs/*.html
 !/docs/*.css
+!/docs/dochack.js
+# Exclude /src/jsonpak directory
+!/src/jsonpak
+# Include all files in /src/jsonpak directory
+/src/jsonpak/*
+# Exclude source code files in /src/jsonpak directory
+!/src/jsonpak/*.nim
+!/src/jsonpak/*.nims
+# Exclude /src/jsonpak/private directory
+!/src/jsonpak/private
+# Include all files in /src/jsonpak/private directory
+/src/jsonpak/private/*
+# Exclude source code files in /src/jsonpak/private directory
+!/src/jsonpak/private/*.nim
+!/src/jsonpak/private/*.nims

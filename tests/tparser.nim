@@ -19,9 +19,11 @@ proc main =
       """{"a": undefined, "b": NaN, "c": Infinity}"""
     ]
     for data in items(invalid):
-      assert:
-        try: (discard parseJson(data); false)
-        except JsonParsingError: true
+      try:
+        discard parseJson(data)
+        assert false, "Expected PathError"
+      except JsonParsingError:
+        assert true
 
     let valid = [
       "\"a\"", "[]", "{}", "[[{}]]", "false",

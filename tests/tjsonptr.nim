@@ -15,15 +15,22 @@ proc main =
   #   assert getArrayIndex("0") == 0
   #   assert getArrayIndex("123") == 123
   #   assert getArrayIndex("-") == -1
-  #   assert:
-  #     try: (discard getArrayIndex(""); false)
-  #     except SyntaxError: true
-  #   assert:
-  #     try: (discard getArrayIndex("01"); false)
-  #     except SyntaxError: true
-  #   assert:
-  #     try: (discard getArrayIndex("-1"); false)
-  #     except SyntaxError: true
+  #
+  #   try:
+  #     discard getArrayIndex("")
+  #     assert false, "Expected SyntaxError"
+  #   except SyntaxError:
+  #     assert true
+  #   try:
+  #     discard getArrayIndex("01")
+  #     assert false, "Expected SyntaxError"
+  #   except SyntaxError:
+  #     assert true
+  #   try:
+  #     discard getArrayIndex("-1")
+  #     assert false, "Expected SyntaxError"
+  #   except SyntaxError:
+  #     assert true
 
   block:
     let tree = %*{"foo": {"bar": nil}, "arr": [1, 2]}

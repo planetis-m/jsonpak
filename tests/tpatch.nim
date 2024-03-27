@@ -30,9 +30,11 @@ proc main =
   block: # replace a non-existing path
     var tree = tree
     var newValue = %*"New York"
-    assert:
-      try: (tree.replace(JsonPtr"/address", newValue); false)
-      except PathError: true
+    try:
+      tree.replace(JsonPtr"/address", newValue)
+      assert false, "Expected PathError"
+    except PathError:
+      assert true
 
   block: # replace an object
     var tree = tree
@@ -75,9 +77,11 @@ proc main =
   block:
     var tree = tree
     var newValue = %*5
-    assert:
-      try: (tree.replace(JsonPtr"/e/-", newValue); false)
-      except PathError: true
+    try:
+      tree.replace(JsonPtr"/e/-", newValue)
+      assert false, "Expected PathError"
+    except PathError:
+      assert true
 
   block:
     var tree = tree
@@ -118,9 +122,11 @@ proc main =
       "e": [4, 6]
     }
 
-    assert:
-      try: (tree.remove(JsonPtr"/x"); false)
-      except PathError: true
+    try:
+      tree.remove(JsonPtr"/x")
+      assert false, "Expected PathError"
+    except PathError:
+      assert true
 
     tree.remove(JsonPtr"/e")
     assert tree == %*{
@@ -213,7 +219,7 @@ proc main =
     block: # copy existing node to the root
       var tree = tree
       tree.copy(JsonPtr"/a", JsonPtr"")
-      assert tree.test(JsonPtr"", %*{"x": 24, "y": 25}) == true
+      assert tree == %*{"x": 24, "y": 25}
 
     block: # copy a child node to its parent
       var tree = tree
@@ -252,36 +258,36 @@ proc main =
     block: # move existing node to the root
       var tree = tree
       tree.move(JsonPtr"/a", JsonPtr"")
-      assert tree.test(JsonPtr"", %*{"x": 24, "y": 25}) == true
+      assert tree == %*{"x": 24, "y": 25}
 
     block: # move a child node to its parent
       var tree = tree
       tree.move(JsonPtr"/a/x", JsonPtr"/a")
-      assert tree.test(JsonPtr"", %*{"a":24,"b":{"c":3,"d":4,"e":5},"arr":[1,2,3,4],"str":"hello"})
+      assert tree == %*{"a":24,"b":{"c":3,"d":4,"e":5},"arr":[1,2,3,4],"str":"hello"}
 
     block: # move array element to a new location
       var tree = tree
       tree.move(JsonPtr"/arr/0", JsonPtr"/copied_element")
-      assert tree.test(JsonPtr"",
-        %*{"a":{"x":24,"y":25},"b":{"c":3,"d":4,"e":5},"arr":[2,3,4],"str":"hello","copied_element":1})
+      assert tree ==
+        %*{"a":{"x":24,"y":25},"b":{"c":3,"d":4,"e":5},"arr":[2,3,4],"str":"hello","copied_element":1}
 
     block: # move existing node to the end of an array
       var tree = tree
       tree.move(JsonPtr"/a", JsonPtr"/arr/-")
-      assert tree.test(JsonPtr"",
-        %*{"b":{"c":3,"d":4,"e":5},"arr":[1,2,3,4,{"x":24,"y":25}],"str":"hello"})
+      assert tree ==
+        %*{"b":{"c":3,"d":4,"e":5},"arr":[1,2,3,4,{"x":24,"y":25}],"str":"hello"}
 
     block: # move existing node to replace another node
       var tree = tree
       tree.move(JsonPtr"/b", JsonPtr"/a/x")
-      assert tree.test(JsonPtr"",
-        %*{"a":{"x":{"c":3,"d":4,"e":5},"y":25},"arr":[1,2,3,4],"str":"hello"})
+      assert tree ==
+        %*{"a":{"x":{"c":3,"d":4,"e":5},"y":25},"arr":[1,2,3,4],"str":"hello"}
 
     block: # move existing node to replace another node
       var tree = tree
       tree.move(JsonPtr"/b/e", JsonPtr"/a/y")
-      assert tree.test(JsonPtr"",
-        %*{"a":{"x":24,"y":5},"b":{"c":3,"d":4},"arr":[1,2,3,4],"str":"hello"})
+      assert tree ==
+        %*{"a":{"x":24,"y":5},"b":{"c":3,"d":4},"arr":[1,2,3,4],"str":"hello"}
 
 static: main()
 main()

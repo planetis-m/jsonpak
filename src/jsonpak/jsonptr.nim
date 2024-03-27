@@ -122,7 +122,7 @@ proc findNode*(tree: JsonTree, path: string): NodePos =
     of opcodeArray:
       if cur == "-" and last < len(path):
         raiseSyntaxError("Invalid usage of '-'")
-      var i = getArrayIndex(cur)
+      let i = getArrayIndex(cur)
       if i < 0 or i >= len(tree, n):
         return nilNodeId
       var pos = n.int + 1
@@ -169,7 +169,7 @@ proc findNodeMut*(tree: JsonTree, path: string): PathResult =
         if last < len(path):
           raiseSyntaxError("Invalid usage of '-'")
         return PathResult(node: nilNodeId, parents: parents)
-      var i = getArrayIndex(cur)
+      let i = getArrayIndex(cur)
       if i >= len(tree, n):
         raisePathError(path)
       var pos = n.int + 1
