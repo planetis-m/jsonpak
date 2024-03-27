@@ -1,6 +1,4 @@
-import
-  private/[jsontree, jsonnode, rawops], jsonptr, dollar,
-  std/[importutils, assertions]
+import private/[jsontree, jsonnode, rawops], jsonptr, dollar, std/importutils
 
 proc dump*(tree: JsonTree, path: JsonPtr): string =
   ## Dumps the JSON `tree` to a string.
@@ -15,6 +13,7 @@ proc extract*(tree: JsonTree; path: JsonPtr): JsonTree =
   let n = findNode(tree, path.string)
   if n.isNil:
     raisePathError(path.string)
+  result = JsonTree()
   rawExtract(result, tree, n)
 
 proc contains*(tree: JsonTree, path: JsonPtr): bool {.inline.} =

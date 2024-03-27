@@ -93,4 +93,5 @@ macro `%*`*(x: untyped): untyped =
 
 proc toJson*[T](x: T): JsonTree =
   ## Convert `x` to a JsonTree.
+  result = JsonTree()
   toJson(x, result)

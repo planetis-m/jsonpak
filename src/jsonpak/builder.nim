@@ -98,6 +98,7 @@ proc fromJson*[T](tree: JsonTree; path: JsonPtr; t: typedesc[T]): T =
   let n = findNode(tree, path.string)
   if n.isNil:
     raisePathError(path.string)
+  result = T()
   initFromJson(result, tree, n)
 
 iterator items*[T](tree: JsonTree; path: JsonPtr; t: typedesc[T]): T =
