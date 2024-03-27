@@ -1,4 +1,4 @@
-import private/bitabs, jsontree, jsonnode, std/importutils
+import bitabs, jsonnode, jsontree, std/importutils
 
 proc rawGet*(tree: JsonTree, n: NodePos, name: string): NodePos =
   privateAccess(JsonTree)
@@ -90,7 +90,7 @@ proc rawReplace*(result: var JsonTree, src, dest: NodePos) =
   let diff = L - span(result, dest.int)
   let oldfull = result.nodes.len
   let endpos = dest.int + span(result, dest.int)
-  if diff >= 0:
+  if diff > 0:
     # Expand the nodes sequence if the new value is larger
     setLen(result.nodes, oldfull+diff)
     for i in countdown(oldfull-1, endpos):
@@ -107,6 +107,9 @@ proc rawReplace*(result: var JsonTree, src, dest: NodePos) =
     for i in countup(endpos, oldfull-1):
       result.nodes[i+diff] = result.nodes[i]
     setLen(result.nodes, oldfull+diff)
+  else:
+    for i in 0..<L:
+      result.nodes[dest.int+i] = result.nodes[src.int+i]
 
 proc rawReplace*(result: var JsonTree, tree: JsonTree, n: NodePos) =
   privateAccess(JsonTree)
@@ -170,84 +173,3 @@ proc rawTest*(a, b: JsonTree, na, nb: NodePos): bool =
         return false
     return true
   else: discard
-
-proc `==`*(a, b: JsonTree): bool {.inline.} =
-  privateAccess(JsonTree)
-  if a.nodes.len != b.nodes.len:
-    return false
-  rawTest(a, b, rootNodeId, rootNodeId)
-
-proc extract*(tree: JsonTree): JsonTree =
-  rawExtract(result, tree, rootNodeId)
-
-when isMainModule:
-  import jsonmapper
-
-  proc main =
-    block: # nested objects
-      let data = %*{"a": {"x": 24, "y": 25}, "b": {"c": 3, "d": 4}}
-      var tree: JsonTree
-      rawExtract(tree, data, NodePos 0)
-      assert tree == %*{"a": {"x": 24, "y": 25}, "b": {"c": 3, "d": 4}}
-      rawExtract(tree, data, NodePos 2)
-      assert tree == %*{"x": 24, "y": 25}
-      rawExtract(tree, data, NodePos 8)
-      assert tree == %*{"c": 3, "d": 4}
-
-    # Hard to test effectively on it's own
-    # block: # rawAdd
-    #   var tree1 = %*{"a": 1, "b": 2}
-    #   var tree2 = %*{"c": 3, "d": 4}
-    #   rawAdd(tree1, tree2, NodePos 0)
-    #   assert tree1 == tree2
-    #   var tree3 = %*5
-    #   rawAdd(tree1, tree3, NodePos 4)
-    #   assert tree1 == %*{"c": 3, "d": 5}
-    #   reset(tree1)
-    #   rawAdd(tree1, tree2, NodePos 0)
-    #   assert tree1 == tree2
-
-    block:
-      let tree = %*{
-        "a": 1,
-        "b": {"c": 2, "d": 3},
-        "e": [4, 5, 6],
-        "f": nil,
-        "g": true
-      }
-      # get existing key
-      var n = tree.rawGet(rootNodeId, "a")
-      assert n.kind == opcodeInt
-      assert n.str == "1"
-      # get non-existing key
-      n = tree.rawGet(rootNodeId, "x")
-      assert n == nilNodeId
-      # get key in nested object
-      var parent = tree.rawGet(rootNodeId, "b")
-      n = tree.rawGet(parent, "c")
-      assert n.kind == opcodeInt
-      assert n.str == "2"
-      # get key in array
-      parent = tree.rawGet(rootNodeId, "e")
-      n = tree.rawGet(parent, "0")
-      assert n == nilNodeId
-      # get null value
-      n = tree.rawGet(rootNodeId, "f")
-      assert n.kind == opcodeNull
-      # get bool value"
-      n = tree.rawGet(rootNodeId, "g")
-      assert n.kind == opcodeBool
-      assert n.bval == true
-
-    block: # comparing equal trees
-      let tree1 = %*{"b": {"d": 4, "c": 3}, "a": {"y": 25, "x": 24}}
-      let tree2 = %*{"a": {"x": 24, "y": 25}, "b": {"c": 3, "d": 4}}
-      assert tree1 == tree2
-
-    block: # comparing unequal trees
-      let tree1 = %*{"a": 1, "b": 2}
-      let tree2 = %*{"a": 1, "b": 3}
-      assert tree1 != tree2
-
-  static: main()
-  main()
