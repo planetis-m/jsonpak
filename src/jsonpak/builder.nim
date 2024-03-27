@@ -98,7 +98,7 @@ proc fromJson*[T](tree: JsonTree; path: JsonPtr; t: typedesc[T]): T =
   let n = findNode(tree, path.string)
   if n.isNil:
     raisePathError(path.string)
-  result = T()
+  result = default(T)
   initFromJson(result, tree, n)
 
 iterator items*[T](tree: JsonTree; path: JsonPtr; t: typedesc[T]): T =
@@ -107,7 +107,7 @@ iterator items*[T](tree: JsonTree; path: JsonPtr; t: typedesc[T]): T =
   if n.isNil:
     raisePathError(path.string)
   assert n.kind == opcodeArray
-  var item: T
+  var item = default(T)
   for x in sonsReadonly(tree, n):
     initFromJson(item, tree, x)
     yield item
@@ -118,7 +118,7 @@ iterator pairs*[T](tree: JsonTree; path: JsonPtr; t: typedesc[T]): (lent string,
   if n.isNil:
     raisePathError(path.string)
   assert n.kind == opcodeObject
-  var item: T
+  var item = default(T)
   for x in sonsReadonlySkip1(tree, n):
     initFromJson(item, tree, x.firstSon)
     yield (x.str, item)
