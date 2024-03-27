@@ -1,4 +1,4 @@
-import std/assertions, jsonpak, jsonpak/parser
+import std/assertions, jsonpak, jsonpak/[parser, dollar]
 
 proc main =
   let tests = [
