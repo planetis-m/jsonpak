@@ -45,7 +45,7 @@ proc remove*(tree: var JsonTree, path: JsonPtr) =
   ## specified index are shifted one position to the left.
   privateAccess(JsonTree)
   # Find the target node
-  var res = findNodeMut(tree, path.string)
+  let res = findNodeMut(tree, path.string)
   if res.node.isNil:
     raisePathError(path.string)
   # Remove the target node
@@ -77,7 +77,7 @@ proc add*(tree: var JsonTree, path: JsonPtr, value: JsonTree) =
   ## `value` specifies the value to be added.
   privateAccess(JsonTree)
   # Find the target node
-  var res = findNodeMut(tree, path.string)
+  let res = findNodeMut(tree, path.string)
   var diff = 0
   if res.node.isNil:
     # Add a new node
