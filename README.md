@@ -191,6 +191,6 @@ various operations on a JSON document containing 1,000 entries.
 | jsonpak  | 0.0035 | 0.0036  | 0.0124 | 0.0035 | 0.0120 | 0.0212 |
 | std/json | 0.0005 | 0.0006  | 0.0009 | 0.0006 | 0.0007 | 0.0011 |
 
-However, the standard library's representation occupies approximately 8MiB,
-whereas ours only takes up 1.7MiB. Therefore, this library aims to optimize
+However, the standard library's representation occupies approximately 13.4MiB,
+whereas ours only takes up 2.8MiB. Therefore, this library aims to optimize
 for space, and further improvements are planned.

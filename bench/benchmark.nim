@@ -69,5 +69,6 @@ proc main() =
     t["records"][500]["location"] = t["records"][0]["city"]
     t["records"][0].delete("city")
 
+  echo "used Mem: ", formatSize getOccupiedMem()
+
 main()
-echo "used Mem: ", formatSize getOccupiedMem()
