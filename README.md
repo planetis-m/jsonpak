@@ -114,8 +114,7 @@ proc test(x: JsonTree; path: JsonPtr, value: JsonTree): bool
 
 ```
 
-Tests that the specified value is set in the document. If the test fails, then the patch
-as a whole should not apply.
+Tests that the specified value is set in the document.
 
 #### Misc
 

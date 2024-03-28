@@ -1,6 +1,13 @@
 import private/[jsontree, jsonnode, rawops], jsonptr, std/[algorithm, sequtils, importutils]
 
 proc test*(tree: JsonTree; path: JsonPtr, value: JsonTree): bool =
+  ## Tests that a value at the target location is
+  ## equal to a specified value.
+  ##
+  ## `value` conveys the value to be compared to the `path`'s value.
+  ##
+  ## The `path`'s value must be equal to `value` for the
+  ## operation to be considered successful.
   privateAccess(JsonTree)
   let n = findNode(tree, path.string)
   if n.isNil:
@@ -10,6 +17,14 @@ proc test*(tree: JsonTree; path: JsonPtr, value: JsonTree): bool =
   rawTest(tree, value, n, rootNodeId)
 
 proc replace*(tree: var JsonTree, path: JsonPtr, value: JsonTree) =
+  ## Replaces the value at the target location with a new value.
+  ## `value` specifies the replacement value.
+  ##
+  ## `path` must exist for the operation to be successful.
+  ##
+  ## This operation is functionally identical to a `remove`,
+  ## followed immediately by an `add` at the same
+  ## location with the replacement value.
   privateAccess(JsonTree)
   # Find the target node
   let res = findNodeMut(tree, path.string)
@@ -22,6 +37,12 @@ proc replace*(tree: var JsonTree, path: JsonPtr, value: JsonTree) =
   rawUpdateParents(tree, res.parents, diff)
 
 proc remove*(tree: var JsonTree, path: JsonPtr) =
+  ## Removes the value at the target location.
+  ##
+  ## `path` must exist for the operation to be successful.
+  ##
+  ## If removing an element from an array, any elements above the
+  ## specified index are shifted one position to the left.
   privateAccess(JsonTree)
   # Find the target node
   var res = findNodeMut(tree, path.string)
@@ -41,6 +62,19 @@ proc remove*(tree: var JsonTree, path: JsonPtr) =
   rawUpdateParents(tree, res.parents, diff)
 
 proc add*(tree: var JsonTree, path: JsonPtr, value: JsonTree) =
+  ## Performs one of the following functions,
+  ## depending upon what the target location references:
+  ##
+  ## - If `path` specifies an array index, a new value is
+  ##   inserted into the array at the specified index.
+  ##
+  ## - If `path` specifies an object member that does not
+  ##   already exist, a new member is added to the object.
+  ##
+  ## - If `path` specifies an object member that does exist,
+  ##   that member's value is replaced.
+  ##
+  ## `value` specifies the value to be added.
   privateAccess(JsonTree)
   # Find the target node
   var res = findNodeMut(tree, path.string)
@@ -69,6 +103,15 @@ proc add*(tree: var JsonTree, path: JsonPtr, value: JsonTree) =
   rawUpdateParents(tree, res.parents, diff)
 
 proc copy*(tree: var JsonTree, `from`, path: JsonPtr) =
+  ## Copies the value at a specified location to the
+  ## target location.
+  ##
+  ## `from` references the location in `tree` to copy the value from.
+  ##
+  ## The `from` location must exist for the operation to be successful.
+  ##
+  ## This operation is functionally identical to an `add` at the
+  ## `path` using the value specified in `from`.
   privateAccess(JsonTree)
   # Find the source node
   let srcNode = findNode(tree, `from`.string)
@@ -106,6 +149,19 @@ proc copy*(tree: var JsonTree, `from`, path: JsonPtr) =
   rawUpdateParents(tree, res.parents, diff)
 
 proc move*(tree: var JsonTree, `from`, path: JsonPtr) =
+  ## Removes the value at a specified location and
+  ## adds it to the target location.
+  ##
+  ## `from` references the location in the `tree` to move the value from.
+  ##
+  ## The `from` location must exist for the operation to be successful.
+  ##
+  ## This operation is functionally identical to a `remove` operation on
+  ## `from`, followed immediately by an `add` operation at
+  ## the `path` with the value that was just removed.
+  ##
+  ## `from` must not be a proper prefix of the `path`;
+  ## i.e., a location cannot be moved into one of its children.
   privateAccess(JsonTree)
   # Find the source node
   var src = findNodeMut(tree, `from`.string)

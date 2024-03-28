@@ -108,9 +108,14 @@
     <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">UsageError</span><span class="Other">,</span> <span class="Identifier">SyntaxError</span><span class="Other">,</span> <span class="Identifier">PathError</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
-    
-    <a href="https://github.com/planetis-m/jsonpak/tree/main/src/jsonpak/patch.nim#L43" class="link-seesrc" target="_blank">Source</a>&nbsp;&nbsp;
-<a href="https://github.com/planetis-m/jsonpak/edit/main/src/jsonpak/patch.nim#L43" class="link-seesrc" target="_blank" >Edit</a>&nbsp;&nbsp;
+    Performs one of the following functions, depending upon what the target location references:<ul class="simple"><li>If <tt class="docutils literal"><span class="pre"><span class="Identifier">path</span></span></tt> specifies an array index, a new value is inserted into the array at the specified index.</li>
+<li>If <tt class="docutils literal"><span class="pre"><span class="Identifier">path</span></span></tt> specifies an object member that does not already exist, a new member is added to the object.</li>
+<li>If <tt class="docutils literal"><span class="pre"><span class="Identifier">path</span></span></tt> specifies an object member that does exist, that member's value is replaced.</li>
+</ul>
+<p><tt class="docutils literal"><span class="pre"><span class="Identifier">value</span></span></tt> specifies the value to be added.</p>
+
+    <a href="https://github.com/planetis-m/jsonpak/tree/main/src/jsonpak/patch.nim#L64" class="link-seesrc" target="_blank">Source</a>&nbsp;&nbsp;
+<a href="https://github.com/planetis-m/jsonpak/edit/main/src/jsonpak/patch.nim#L64" class="link-seesrc" target="_blank" >Edit</a>&nbsp;&nbsp;
 
   </dd>
 </div>
@@ -122,9 +127,13 @@
     <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">UsageError</span><span class="Other">,</span> <span class="Identifier">SyntaxError</span><span class="Other">,</span> <span class="Identifier">PathError</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
-    
-    <a href="https://github.com/planetis-m/jsonpak/tree/main/src/jsonpak/patch.nim#L71" class="link-seesrc" target="_blank">Source</a>&nbsp;&nbsp;
-<a href="https://github.com/planetis-m/jsonpak/edit/main/src/jsonpak/patch.nim#L71" class="link-seesrc" target="_blank" >Edit</a>&nbsp;&nbsp;
+    <p>Copies the value at a specified location to the target location.</p>
+<p><tt class="docutils literal"><span class="pre"><span class="Keyword">from</span></span></tt> references the location in <tt class="docutils literal"><span class="pre"><span class="Identifier">tree</span></span></tt> to copy the value from.</p>
+<p>The <tt class="docutils literal"><span class="pre"><span class="Keyword">from</span></span></tt> location must exist for the operation to be successful.</p>
+<p>This operation is functionally identical to an <tt class="docutils literal"><span class="pre"><span class="Identifier">add</span></span></tt> at the <tt class="docutils literal"><span class="pre"><span class="Identifier">path</span></span></tt> using the value specified in <tt class="docutils literal"><span class="pre"><span class="Keyword">from</span></span></tt>.</p>
+
+    <a href="https://github.com/planetis-m/jsonpak/tree/main/src/jsonpak/patch.nim#L105" class="link-seesrc" target="_blank">Source</a>&nbsp;&nbsp;
+<a href="https://github.com/planetis-m/jsonpak/edit/main/src/jsonpak/patch.nim#L105" class="link-seesrc" target="_blank" >Edit</a>&nbsp;&nbsp;
 
   </dd>
 </div>
@@ -136,9 +145,14 @@
     <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">UsageError</span><span class="Other">,</span> <span class="Identifier">SyntaxError</span><span class="Other">,</span> <span class="Identifier">PathError</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
-    
-    <a href="https://github.com/planetis-m/jsonpak/tree/main/src/jsonpak/patch.nim#L108" class="link-seesrc" target="_blank">Source</a>&nbsp;&nbsp;
-<a href="https://github.com/planetis-m/jsonpak/edit/main/src/jsonpak/patch.nim#L108" class="link-seesrc" target="_blank" >Edit</a>&nbsp;&nbsp;
+    <p>Removes the value at a specified location and adds it to the target location.</p>
+<p><tt class="docutils literal"><span class="pre"><span class="Keyword">from</span></span></tt> references the location in the <tt class="docutils literal"><span class="pre"><span class="Identifier">tree</span></span></tt> to move the value from.</p>
+<p>The <tt class="docutils literal"><span class="pre"><span class="Keyword">from</span></span></tt> location must exist for the operation to be successful.</p>
+<p>This operation is functionally identical to a <tt class="docutils literal"><span class="pre"><span class="Identifier">remove</span></span></tt> operation on <tt class="docutils literal"><span class="pre"><span class="Keyword">from</span></span></tt>, followed immediately by an <tt class="docutils literal"><span class="pre"><span class="Identifier">add</span></span></tt> operation at the <tt class="docutils literal"><span class="pre"><span class="Identifier">path</span></span></tt> with the value that was just removed.</p>
+<p><tt class="docutils literal"><span class="pre"><span class="Keyword">from</span></span></tt> must not be a proper prefix of the <tt class="docutils literal"><span class="pre"><span class="Identifier">path</span></span></tt>; i.e., a location cannot be moved into one of its children.</p>
+
+    <a href="https://github.com/planetis-m/jsonpak/tree/main/src/jsonpak/patch.nim#L151" class="link-seesrc" target="_blank">Source</a>&nbsp;&nbsp;
+<a href="https://github.com/planetis-m/jsonpak/edit/main/src/jsonpak/patch.nim#L151" class="link-seesrc" target="_blank" >Edit</a>&nbsp;&nbsp;
 
   </dd>
 </div>
@@ -150,9 +164,12 @@
     <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">UsageError</span><span class="Other">,</span> <span class="Identifier">SyntaxError</span><span class="Other">,</span> <span class="Identifier">PathError</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
-    
-    <a href="https://github.com/planetis-m/jsonpak/tree/main/src/jsonpak/patch.nim#L24" class="link-seesrc" target="_blank">Source</a>&nbsp;&nbsp;
-<a href="https://github.com/planetis-m/jsonpak/edit/main/src/jsonpak/patch.nim#L24" class="link-seesrc" target="_blank" >Edit</a>&nbsp;&nbsp;
+    <p>Removes the value at the target location.</p>
+<p><tt class="docutils literal"><span class="pre"><span class="Identifier">path</span></span></tt> must exist for the operation to be successful.</p>
+<p>If removing an element from an array, any elements above the specified index are shifted one position to the left.</p>
+
+    <a href="https://github.com/planetis-m/jsonpak/tree/main/src/jsonpak/patch.nim#L39" class="link-seesrc" target="_blank">Source</a>&nbsp;&nbsp;
+<a href="https://github.com/planetis-m/jsonpak/edit/main/src/jsonpak/patch.nim#L39" class="link-seesrc" target="_blank" >Edit</a>&nbsp;&nbsp;
 
   </dd>
 </div>
@@ -164,9 +181,12 @@
     <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">UsageError</span><span class="Other">,</span> <span class="Identifier">SyntaxError</span><span class="Other">,</span> <span class="Identifier">PathError</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
-    
-    <a href="https://github.com/planetis-m/jsonpak/tree/main/src/jsonpak/patch.nim#L12" class="link-seesrc" target="_blank">Source</a>&nbsp;&nbsp;
-<a href="https://github.com/planetis-m/jsonpak/edit/main/src/jsonpak/patch.nim#L12" class="link-seesrc" target="_blank" >Edit</a>&nbsp;&nbsp;
+    <p>Replaces the value at the target location with a new value. <tt class="docutils literal"><span class="pre"><span class="Identifier">value</span></span></tt> specifies the replacement value.</p>
+<p><tt class="docutils literal"><span class="pre"><span class="Identifier">path</span></span></tt> must exist for the operation to be successful.</p>
+<p>This operation is functionally identical to a <tt class="docutils literal"><span class="pre"><span class="Identifier">remove</span></span></tt>, followed immediately by an <tt class="docutils literal"><span class="pre"><span class="Identifier">add</span></span></tt> at the same location with the replacement value.</p>
+
+    <a href="https://github.com/planetis-m/jsonpak/tree/main/src/jsonpak/patch.nim#L19" class="link-seesrc" target="_blank">Source</a>&nbsp;&nbsp;
+<a href="https://github.com/planetis-m/jsonpak/edit/main/src/jsonpak/patch.nim#L19" class="link-seesrc" target="_blank" >Edit</a>&nbsp;&nbsp;
 
   </dd>
 </div>
@@ -178,7 +198,10 @@
     <span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">UsageError</span><span class="Other">,</span> <span class="Identifier">SyntaxError</span><span class="Other">,</span> <span class="Identifier">PathError</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
-    
+    <p>Tests that a value at the target location is equal to a specified value.</p>
+<p><tt class="docutils literal"><span class="pre"><span class="Identifier">value</span></span></tt> conveys the value to be compared to the <tt class="docutils literal"><span class="pre"><span class="Identifier">path</span></span></tt>'s value.</p>
+<p>The <tt class="docutils literal"><span class="pre"><span class="Identifier">path</span></span></tt>'s value must be equal to <tt class="docutils literal"><span class="pre"><span class="Identifier">value</span></span></tt> for the operation to be considered successful.</p>
+
     <a href="https://github.com/planetis-m/jsonpak/tree/main/src/jsonpak/patch.nim#L3" class="link-seesrc" target="_blank">Source</a>&nbsp;&nbsp;
 <a href="https://github.com/planetis-m/jsonpak/edit/main/src/jsonpak/patch.nim#L3" class="link-seesrc" target="_blank" >Edit</a>&nbsp;&nbsp;
 
@@ -196,7 +219,7 @@
       <div class="twelve-columns footer">
         <span class="nim-sprite"></span>
         <br>
-        <small style="color: var(--hint);">Made with Nim. Generated: 2024-03-27 21:29:19 UTC</small>
+        <small style="color: var(--hint);">Made with Nim. Generated: 2024-03-28 07:48:27 UTC</small>
       </div>
     </div>
   </div>
