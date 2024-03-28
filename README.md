@@ -1,4 +1,4 @@
-## jsonpak - Yet another JSON library
+# jsonpak - Yet another JSON library
 
 jsonpak is JSON library that implements the JSON Patch RFC which is specified in
 [RFC 6902](https://datatracker.ietf.org/doc/html/rfc5789/) from the IETF.
@@ -6,11 +6,11 @@ jsonpak is JSON library that implements the JSON Patch RFC which is specified in
 It uses Packed ASTs for compact and efficient JSON representation. Based on Araq's
 [idea](https://github.com/planetis-m/jsonecs/issues/8).
 
-### Documentation
+## Documentation
 
 For more information visit: <https://jsonpatch.com/> or the linked RFC documents.
 
-#### JSON Pointer
+### JSON Pointer
 
 ```nim
 
@@ -51,9 +51,9 @@ Finally, if you need to refer to the end of an array you can use `-` instead of 
 index. For example, to refer to the end of the array above you would use
 `/a/-`. This is useful when you need to insert a value at the end of an array.
 
-#### Operations
+### Operations
 
-##### Add
+#### Add
 
 ```nim
 
@@ -65,7 +65,7 @@ Adds a value to an object or inserts it into an array. In the case of an array, 
 is inserted before the given index. The `-` character can be used instead of an index to
 insert at the end of an array.
 
-##### Remove
+#### Remove
 
 ```nim
 
@@ -75,7 +75,7 @@ proc remove(x: var JsonTree; path: JsonPtr)
 
 Removes a value from an object or array.
 
-##### Replace
+#### Replace
 
 ```nim
 
@@ -85,7 +85,7 @@ proc replace(x: var JsonTree; path: JsonPtr, value: JsonTree)
 
 Replaces a value. Equivalent to a `remove` followed by an `add`.
 
-##### Copy
+#### Copy
 
 ```nim
 
@@ -96,7 +96,7 @@ proc copy(x: var JsonTree; `from`, path: JsonPtr)
 Copies a value from one location to another within the JSON document. Both `from` and
 `path` are JSON Pointers.
 
-##### Move
+#### Move
 
 ```nim
 
@@ -106,7 +106,7 @@ proc move(x: var JsonTree; `from`, path: JsonPtr)
 
 Moves a value from one location to the other. Both `from` and `path` are JSON Pointers.
 
-##### Test
+#### Test
 
 ```nim
 
@@ -116,7 +116,7 @@ proc test(x: JsonTree; path: JsonPtr, value: JsonTree): bool
 
 Tests that the specified value is set in the document.
 
-#### Misc
+### Misc
 
 ```nim
 
@@ -135,7 +135,7 @@ iterator pairs(x: JsonTree; path: JsonPtr; t: typedesc[T]): (lent string, T)
 
 ```
 
-#### Examples
+### Examples
 
 ```nim
 
@@ -180,3 +180,22 @@ for k, v in pairs(x, JsonPtr"/d", JsonTree): echo (k, v), " "
 # ("e", [7, 8]) ("f", 9)
 
 ```
+
+## Benchmarks
+
+Operations run on a thousand entries json document.
+
+| Operation          | Library  | Average Time (ms) |
+|--------------------|----------|-------------------|
+| test               | jsonpak  | 0.0035            |
+| replace            | jsonpak  | 0.0036            |
+| remove             | jsonpak  | 0.0124            |
+| add                | jsonpak  | 0.0035            |
+| copy               | jsonpak  | 0.0120            |
+| move               | jsonpak  | 0.0212            |
+| stdlib - contains  | std/json | 0.0005            |
+| stdlib - replace   | std/json | 0.0006            |
+| stdlib - delete    | std/json | 0.0009            |
+| stdlib - add       | std/json | 0.0006            |
+| stdlib - copy      | std/json | 0.0007            |
+| stdlib - move      | std/json | 0.0011            |

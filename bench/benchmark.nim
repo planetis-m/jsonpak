@@ -32,34 +32,42 @@ proc main() =
     tree = parser.parseJson(JsonData)
 
   bench "test", tree:
-    discard test(t, JsonPtr"/records/0/age", %*30)
+    discard test(t, JsonPtr"/records/500/age", %*30)
 
   bench "replace", tree:
-    replace(t, JsonPtr"/records/0/age", %*31)
+    replace(t, JsonPtr"/records/500/age", %*31)
 
   bench "remove", tree:
-    remove(t, JsonPtr"/records/0/city")
+    remove(t, JsonPtr"/records/500/city")
 
   bench "add", tree:
-    add(t, JsonPtr"/records/0/email", %*"john@example.com")
+    add(t, JsonPtr"/records/500/email", %*"john@example.com")
 
   bench "copy", tree:
-    copy(t, JsonPtr"/records/0/age", JsonPtr"/records/0/newAge")
+    copy(t, JsonPtr"/records/500/age", JsonPtr"/records/0/newAge")
 
   bench "move", tree:
-    move(t, JsonPtr"/records/0/city", JsonPtr"/records/0/location")
+    move(t, JsonPtr"/records/500/city", JsonPtr"/records/0/location")
 
   # Benchmarks for std/json module
   bench "stdlib - contains", stdTree:
-    discard t.contains("age")
+    discard t["records"][500].contains("age")
 
   bench "stdlib - replace", stdTree:
-    t["records"][0]["age"] = %31
+    t["records"][500]["age"] = %31
 
   bench "stdlib - delete", stdTree:
-    t["records"][0].delete("city")
+    t["records"][500].delete("city")
 
   bench "stdlib - add", stdTree:
-    t["records"][0]["email"] = %"john@example.com"
+    t["records"][500]["email"] = %"john@example.com"
+
+  bench "stdlib - copy", stdTree:
+    t["records"][500]["newAge"] = t["records"][0]["age"]
+
+  bench "stdlib - move", stdTree:
+    t["records"][500]["location"] = t["records"][0]["city"]
+    t["records"][0].delete("city")
 
 main()
+echo "used Mem: ", formatSize getOccupiedMem()
