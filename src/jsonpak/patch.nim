@@ -106,12 +106,12 @@ proc copy*(tree: var JsonTree, `from`, path: JsonPtr) =
   ## Copies the value at a specified location to the
   ## target location.
   ##
-  ## `from` references the location in `tree` to copy the value from.
+  ## ``from`` references the location in `tree` to copy the value from.
   ##
-  ## The `from` location must exist for the operation to be successful.
+  ## The ``from`` location must exist for the operation to be successful.
   ##
   ## This operation is functionally identical to an `add` at the
-  ## `path` using the value specified in `from`.
+  ## `path` using the value specified in ``from``.
   privateAccess(JsonTree)
   # Find the source node
   let srcNode = findNode(tree, `from`.string)
@@ -152,15 +152,15 @@ proc move*(tree: var JsonTree, `from`, path: JsonPtr) =
   ## Removes the value at a specified location and
   ## adds it to the target location.
   ##
-  ## `from` references the location in the `tree` to move the value from.
+  ## ``from`` references the location in the `tree` to move the value from.
   ##
-  ## The `from` location must exist for the operation to be successful.
+  ## The ``from`` location must exist for the operation to be successful.
   ##
   ## This operation is functionally identical to a `remove` operation on
-  ## `from`, followed immediately by an `add` operation at
+  ## ``from``, followed immediately by an `add` operation at
   ## the `path` with the value that was just removed.
   ##
-  ## `from` must not be a proper prefix of the `path`;
+  ## ``from`` must not be a proper prefix of the `path`;
   ## i.e., a location cannot be moved into one of its children.
   privateAccess(JsonTree)
   # Find the source node

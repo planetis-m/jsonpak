@@ -128,9 +128,9 @@
   <dd>
     
     <p>Copies the value at a specified location to the target location.</p>
-<p><tt class="docutils literal"><span class="pre"><span class="Keyword">from</span></span></tt> references the location in <tt class="docutils literal"><span class="pre"><span class="Identifier">tree</span></span></tt> to copy the value from.</p>
-<p>The <tt class="docutils literal"><span class="pre"><span class="Keyword">from</span></span></tt> location must exist for the operation to be successful.</p>
-<p>This operation is functionally identical to an <tt class="docutils literal"><span class="pre"><span class="Identifier">add</span></span></tt> at the <tt class="docutils literal"><span class="pre"><span class="Identifier">path</span></span></tt> using the value specified in <tt class="docutils literal"><span class="pre"><span class="Keyword">from</span></span></tt>.</p>
+<p><tt class="docutils literal"><span class="pre">from</span></tt> references the location in <tt class="docutils literal"><span class="pre"><span class="Identifier">tree</span></span></tt> to copy the value from.</p>
+<p>The <tt class="docutils literal"><span class="pre">from</span></tt> location must exist for the operation to be successful.</p>
+<p>This operation is functionally identical to an <tt class="docutils literal"><span class="pre"><span class="Identifier">add</span></span></tt> at the <tt class="docutils literal"><span class="pre"><span class="Identifier">path</span></span></tt> using the value specified in <tt class="docutils literal"><span class="pre">from</span></tt>.</p>
 
     <a href="https://github.com/planetis-m/jsonpak/tree/main/src/jsonpak/patch.nim#L105" class="link-seesrc" target="_blank">Source</a>&nbsp;&nbsp;
 <a href="https://github.com/planetis-m/jsonpak/edit/main/src/jsonpak/patch.nim#L105" class="link-seesrc" target="_blank" >Edit</a>&nbsp;&nbsp;
@@ -146,10 +146,10 @@
   <dd>
     
     <p>Removes the value at a specified location and adds it to the target location.</p>
-<p><tt class="docutils literal"><span class="pre"><span class="Keyword">from</span></span></tt> references the location in the <tt class="docutils literal"><span class="pre"><span class="Identifier">tree</span></span></tt> to move the value from.</p>
-<p>The <tt class="docutils literal"><span class="pre"><span class="Keyword">from</span></span></tt> location must exist for the operation to be successful.</p>
-<p>This operation is functionally identical to a <tt class="docutils literal"><span class="pre"><span class="Identifier">remove</span></span></tt> operation on <tt class="docutils literal"><span class="pre"><span class="Keyword">from</span></span></tt>, followed immediately by an <tt class="docutils literal"><span class="pre"><span class="Identifier">add</span></span></tt> operation at the <tt class="docutils literal"><span class="pre"><span class="Identifier">path</span></span></tt> with the value that was just removed.</p>
-<p><tt class="docutils literal"><span class="pre"><span class="Keyword">from</span></span></tt> must not be a proper prefix of the <tt class="docutils literal"><span class="pre"><span class="Identifier">path</span></span></tt>; i.e., a location cannot be moved into one of its children.</p>
+<p><tt class="docutils literal"><span class="pre">from</span></tt> references the location in the <tt class="docutils literal"><span class="pre"><span class="Identifier">tree</span></span></tt> to move the value from.</p>
+<p>The <tt class="docutils literal"><span class="pre">from</span></tt> location must exist for the operation to be successful.</p>
+<p>This operation is functionally identical to a <tt class="docutils literal"><span class="pre"><span class="Identifier">remove</span></span></tt> operation on <tt class="docutils literal"><span class="pre">from</span></tt>, followed immediately by an <tt class="docutils literal"><span class="pre"><span class="Identifier">add</span></span></tt> operation at the <tt class="docutils literal"><span class="pre"><span class="Identifier">path</span></span></tt> with the value that was just removed.</p>
+<p><tt class="docutils literal"><span class="pre">from</span></tt> must not be a proper prefix of the <tt class="docutils literal"><span class="pre"><span class="Identifier">path</span></span></tt>; i.e., a location cannot be moved into one of its children.</p>
 
     <a href="https://github.com/planetis-m/jsonpak/tree/main/src/jsonpak/patch.nim#L151" class="link-seesrc" target="_blank">Source</a>&nbsp;&nbsp;
 <a href="https://github.com/planetis-m/jsonpak/edit/main/src/jsonpak/patch.nim#L151" class="link-seesrc" target="_blank" >Edit</a>&nbsp;&nbsp;
@@ -219,7 +219,7 @@
       <div class="twelve-columns footer">
         <span class="nim-sprite"></span>
         <br>
-        <small style="color: var(--hint);">Made with Nim. Generated: 2024-03-28 07:48:27 UTC</small>
+        <small style="color: var(--hint);">Made with Nim. Generated: 2024-03-28 07:55:22 UTC</small>
       </div>
     </div>
   </div>
