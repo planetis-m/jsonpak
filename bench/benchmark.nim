@@ -56,7 +56,7 @@ proc main() =
   bench "stdlib - replace", stdTree:
     t["records"][500]["age"] = %31
 
-  bench "stdlib - delete", stdTree:
+  bench "stdlib - remove", stdTree:
     t["records"][500].delete("city")
 
   bench "stdlib - add", stdTree:
