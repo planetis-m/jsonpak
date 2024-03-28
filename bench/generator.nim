@@ -1,8 +1,8 @@
 import std/[json, random, strutils, os]
 
 const
-  NumRecords = 50
-  OutputFile = "large.json"
+  NumRecords = 1_000
+  OutputFile = "test.json"
 
 var data = newJArray()
 for i in 1..NumRecords:
@@ -21,4 +21,4 @@ let jsonData = newJObject()
 jsonData["records"] = data
 
 writeFile(OutputFile, $(jsonData))
-echo "Large JSON file generated: ", OutputFile
+echo "JSON file generated: ", OutputFile
