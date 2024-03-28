@@ -50,8 +50,8 @@ proc main() =
     move(t, JsonPtr"/records/500/city", JsonPtr"/records/0/location")
 
   # Benchmarks for std/json module
-  bench "stdlib - contains", stdTree:
-    discard t["records"][500].contains("age")
+  bench "stdlib - test", stdTree:
+    discard t["records"][500]["age"] == %30
 
   bench "stdlib - replace", stdTree:
     t["records"][500]["age"] = %31

@@ -183,19 +183,10 @@ for k, v in pairs(x, JsonPtr"/d", JsonTree): echo (k, v), " "
 
 ## Benchmarks
 
-Operations run on a thousand entries json document.
+This section details the average time (in milliseconds) it takes to perform
+various operations on a JSON document containing 1.000 entries.
 
-| Operation          | Library  | Average Time (ms) |
-|--------------------|----------|-------------------|
-| test               | jsonpak  | 0.0035            |
-| replace            | jsonpak  | 0.0036            |
-| remove             | jsonpak  | 0.0124            |
-| add                | jsonpak  | 0.0035            |
-| copy               | jsonpak  | 0.0120            |
-| move               | jsonpak  | 0.0212            |
-| stdlib - contains  | std/json | 0.0005            |
-| stdlib - replace   | std/json | 0.0006            |
-| stdlib - delete    | std/json | 0.0009            |
-| stdlib - add       | std/json | 0.0006            |
-| stdlib - copy      | std/json | 0.0007            |
-| stdlib - move      | std/json | 0.0011            |
+| Library  | Test   | Replace | Remove | Add    | Copy   | Move   |
+|----------|--------|---------|--------|--------|--------|--------|
+| jsonpak  | 0.0035 | 0.0036  | 0.0124 | 0.0035 | 0.0120 | 0.0212 |
+| std/json | 0.0005 | 0.0006  | 0.0009 | 0.0006 | 0.0007 | 0.0011 |
