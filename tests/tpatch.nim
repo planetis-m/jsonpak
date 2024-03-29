@@ -7,6 +7,20 @@ proc main =
     "numbers": [1, 2, 3]
   }
 
+  # block: # empty tree
+  #   var tree = JsonTree()
+  #   let tmp = tree.copy()
+  #   try:
+  #     tree.add(JsonPtr"/0", %*5)
+  #     assert false, "Expected PathError"
+  #   except PathError:
+  #     assert true
+  #   try:
+  #     tree.add(JsonPtr"/age", %*5)
+  #     assert false, "Expected PathError"
+  #   except PathError:
+  #     assert true
+
   block: # replace a string value
     var tree = tree
     var newValue = %*"Jane"

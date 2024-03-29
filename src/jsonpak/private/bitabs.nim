@@ -55,9 +55,9 @@ proc enlarge[T](t: var BiTable[T]) =
       t.keys[j] = move n[i]
 
 proc getKeyId*[T](t: BiTable[T]; v: T): LitId =
-  let origH = hash(v)
-  var h = origH and maxHash(t)
-  if t.keys.len != 0:
+  if t.keys.len > 0:
+    let origH = hash(v)
+    var h = origH and maxHash(t)
     while true:
       let litId = t.keys[h].key
       if not isFilled(litId): break
@@ -69,7 +69,7 @@ proc getKeyId*[T](t: BiTable[T]; v: T): LitId =
 proc getOrIncl*[T](t: var BiTable[T]; v: T): LitId =
   let origH = hash(v)
   var h = origH and maxHash(t)
-  if t.keys.len != 0:
+  if t.keys.len > 0:
     while true:
       let litId = t.keys[h].key
       if not isFilled(litId): break

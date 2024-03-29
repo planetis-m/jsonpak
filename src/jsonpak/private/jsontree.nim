@@ -23,7 +23,7 @@ proc nextChild*(tree: JsonTree; pos: var int) {.inline.} =
   else:
     inc pos
 
-proc toNodeAtom*(tree: var JsonTree; kind: uint32, str: string): Node {.inline.} =
+proc toAtomNode*(tree: var JsonTree; kind: uint32, str: string): Node {.inline.} =
   toNode(kind, uint32 getOrIncl(tree.atoms, str))
 
 type
@@ -104,7 +104,7 @@ proc storeAtom*(tree: var JsonTree; kind: uint32) {.inline.} =
   tree.nodes.add Node(kind)
 
 proc storeAtom*(tree: var JsonTree; kind: uint32; data: string) {.inline.} =
-  tree.nodes.add toNodeAtom(tree, kind, data)
+  tree.nodes.add toAtomNode(tree, kind, data)
 
 proc storeEmpty*(tree: var JsonTree; kind: uint32) {.inline.} =
   tree.nodes.add toNode(kind, 1)
