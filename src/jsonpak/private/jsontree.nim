@@ -73,9 +73,9 @@ proc parentImpl*(tree: JsonTree; n: NodePos): NodePos =
 
 template parent*(n: NodePos): NodePos = parentImpl(tree, n)
 
-template kind*(n: NodePos): uint = tree.nodes[n.int].kind
+template kind*(n: NodePos): uint32 = tree.nodes[n.int].kind
 template litId*(n: NodePos): LitId = LitId operand(tree.nodes[n.int])
-template operand*(n: NodePos): uint = tree.nodes[n.int].operand
+template operand*(n: NodePos): uint32 = tree.nodes[n.int].operand
 
 template str*(n: NodePos): string = tree.atoms[litId(n)]
 template bval*(n: NodePos): bool = n.operand == 1
@@ -87,21 +87,21 @@ proc `<`*(a, b: PatchPos): bool {.borrow.}
 proc `<=`*(a, b: PatchPos): bool {.borrow.}
 proc `==`*(a, b: PatchPos): bool {.borrow.}
 
-proc prepare*(tree: var JsonTree; kind: uint): PatchPos =
+proc prepare*(tree: var JsonTree; kind: uint32): PatchPos =
   result = PatchPos tree.nodes.len
   tree.nodes.add Node kind
 
 proc patch*(tree: var JsonTree; pos: PatchPos) =
   let pos = pos.int
   assert tree.nodes[pos].kind > opcodeString
-  let distance = uint(tree.nodes.len - pos)
-  tree.nodes[pos] = toNode(tree.nodes[pos].uint, distance)
+  let distance = uint32(tree.nodes.len - pos)
+  tree.nodes[pos] = toNode(tree.nodes[pos].uint32, distance)
 
-proc storeAtom*(tree: var JsonTree; kind: uint) {.inline.} =
+proc storeAtom*(tree: var JsonTree; kind: uint32) {.inline.} =
   tree.nodes.add Node(kind)
 
-proc storeAtom*(tree: var JsonTree; kind: uint; data: string) {.inline.} =
-  tree.nodes.add toNode(kind, uint getOrIncl(tree.atoms, data))
+proc storeAtom*(tree: var JsonTree; kind: uint32; data: string) {.inline.} =
+  tree.nodes.add toNode(kind, uint32 getOrIncl(tree.atoms, data))
 
-proc storeEmpty*(tree: var JsonTree; kind: uint) {.inline.} =
+proc storeEmpty*(tree: var JsonTree; kind: uint32) {.inline.} =
   tree.nodes.add toNode(kind, 1)

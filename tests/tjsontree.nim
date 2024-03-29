@@ -10,7 +10,7 @@ proc main =
     assert tree.isEmpty
     tree.nodes = @[
       toNode(opcodeArray, 2),
-      toNode(opcodeString, uint getOrIncl(tree.atoms, "hello"))
+      toNode(opcodeString, uint32 getOrIncl(tree.atoms, "hello"))
     ]
     assert not tree.isEmpty
     assert tree.len(NodePos 0) == 1
@@ -21,8 +21,8 @@ proc main =
     var tree = JsonTree(atoms: BiTable[string]())
     tree.nodes = @[
       toNode(opcodeArray, 4),
-      toNode(opcodeString, uint getOrIncl(tree.atoms, "hello")),
-      toNode(opcodeInt, uint getOrIncl(tree.atoms, "42")),
+      toNode(opcodeString, uint32 getOrIncl(tree.atoms, "hello")),
+      toNode(opcodeInt, uint32 getOrIncl(tree.atoms, "42")),
       toNode(opcodeNull, 0)
     ]
     assert tree.span(0) == 4
@@ -34,12 +34,12 @@ proc main =
     var tree = JsonTree(atoms: BiTable[string]())
     tree.nodes = @[
       toNode(opcodeObject, 6),
-      toNode(opcodeString, uint getOrIncl(tree.atoms, "key1")),
-      toNode(opcodeInt, uint getOrIncl(tree.atoms, "10")),
-      toNode(opcodeString, uint getOrIncl(tree.atoms, "key2")),
+      toNode(opcodeString, uint32 getOrIncl(tree.atoms, "key1")),
+      toNode(opcodeInt, uint32 getOrIncl(tree.atoms, "10")),
+      toNode(opcodeString, uint32 getOrIncl(tree.atoms, "key2")),
       toNode(opcodeArray, 3),
-      toNode(opcodeString, uint getOrIncl(tree.atoms, "value1")),
-      toNode(opcodeString, uint getOrIncl(tree.atoms, "value2"))
+      toNode(opcodeString, uint32 getOrIncl(tree.atoms, "value1")),
+      toNode(opcodeString, uint32 getOrIncl(tree.atoms, "value2"))
     ]
     var sons: seq[NodePos] = @[]
     for son in sonsReadonly(tree, NodePos 0):
@@ -59,10 +59,10 @@ proc main =
     tree.nodes = @[
       toNode(opcodeArray, 6),
       toNode(opcodeObject, 5),
-      toNode(opcodeString, uint getOrIncl(tree.atoms, "key1")),
-      toNode(opcodeInt, uint getOrIncl(tree.atoms, "10")),
-      toNode(opcodeString, uint getOrIncl(tree.atoms, "key2")),
-      toNode(opcodeString, uint getOrIncl(tree.atoms, "value"))
+      toNode(opcodeString, uint32 getOrIncl(tree.atoms, "key1")),
+      toNode(opcodeInt, uint32 getOrIncl(tree.atoms, "10")),
+      toNode(opcodeString, uint32 getOrIncl(tree.atoms, "key2")),
+      toNode(opcodeString, uint32 getOrIncl(tree.atoms, "value"))
     ]
     assert parentImpl(tree, NodePos 0) == nilNodeId
     assert parentImpl(tree, NodePos 1) == NodePos 0
@@ -80,9 +80,9 @@ proc main =
     tree.storeAtom(opcodeBool, "true")
     assert tree.nodes[1] == toNode(opcodeBool, 1)
     tree.storeAtom(opcodeInt, "42")
-    assert tree.nodes[2] == toNode(opcodeInt, uint getOrIncl(tree.atoms, "42"))
+    assert tree.nodes[2] == toNode(opcodeInt, uint32 getOrIncl(tree.atoms, "42"))
     tree.storeAtom(opcodeString, "hello")
-    assert tree.nodes[3] == toNode(opcodeString, uint getOrIncl(tree.atoms, "hello"))
+    assert tree.nodes[3] == toNode(opcodeString, uint32 getOrIncl(tree.atoms, "hello"))
 
   block:
     var tree = JsonTree(nodes: @[], atoms: BiTable[string]())
