@@ -13,8 +13,8 @@ proc rawGet*(tree: JsonTree, n: NodePos, name: string): NodePos =
 proc rawUpdateParents*(tree: var JsonTree, parents: seq[PatchPos], diff: int) =
   privateAccess(JsonTree)
   for parent in parents:
-    let distance = tree.nodes[parent.int].operand + diff
-    tree.nodes[parent.int] = toNode(tree.nodes[parent.int].kind, distance.int32)
+    let distance = tree.nodes[parent.int].rawSpan + diff
+    tree.nodes[parent.int] = toNode(tree.nodes[parent.int].kind, distance.uint)
 
 proc rawExtract*(result: var JsonTree, tree: JsonTree, n: NodePos) =
   privateAccess(JsonTree)
@@ -24,7 +24,7 @@ proc rawExtract*(result: var JsonTree, tree: JsonTree, n: NodePos) =
     let n = NodePos(i+n.int) # careful
     case n.kind
     of opcodeInt, opcodeFloat, opcodeString:
-      result.nodes[i] = toNode(n.kind, int32 getOrIncl(result.atoms, n.str))
+      result.nodes[i] = toNode(n.kind, uint getOrIncl(result.atoms, n.str))
     else:
       result.nodes[i] = tree.nodes[n.int]
 
@@ -51,7 +51,7 @@ proc rawAdd*(result: var JsonTree, tree: JsonTree, n: NodePos) =
     let m = NodePos(i)
     case m.kind
     of opcodeInt, opcodeFloat, opcodeString:
-      result.nodes[i+n.int] = toNode(m.kind, int32 getOrIncl(result.atoms, m.str))
+      result.nodes[i+n.int] = toNode(m.kind, uint getOrIncl(result.atoms, m.str))
     else:
       result.nodes[i+n.int] = tree.nodes[i]
 
@@ -62,7 +62,7 @@ proc rawAddKeyValuePair*(result: var JsonTree, src, dest: NodePos, key: string) 
   setLen(result.nodes, oldfull+L)
   for i in countdown(oldfull-1, dest.int):
     result.nodes[i+L] = result.nodes[i]
-  result.nodes[dest.int] = toNode(opcodeString, int32 getOrIncl(result.atoms, key))
+  result.nodes[dest.int] = toNode(opcodeString, uint getOrIncl(result.atoms, key))
   let src =
     if src >= dest: NodePos(src.int+L) else: src
   for i in 0..<L-1:
@@ -75,12 +75,12 @@ proc rawAddKeyValuePair*(result: var JsonTree, tree: JsonTree, n: NodePos, key: 
   setLen(result.nodes, oldfull+L)
   for i in countdown(oldfull-1, n.int):
     result.nodes[i+L] = result.nodes[i]
-  result.nodes[n.int] = toNode(opcodeString, int32 getOrIncl(result.atoms, key))
+  result.nodes[n.int] = toNode(opcodeString, uint getOrIncl(result.atoms, key))
   for i in 0..<L-1:
     let m = NodePos(i)
     case m.kind
     of opcodeInt, opcodeFloat, opcodeString:
-      result.nodes[i+n.int+1] = toNode(m.kind, int32 getOrIncl(result.atoms, m.str))
+      result.nodes[i+n.int+1] = toNode(m.kind, uint getOrIncl(result.atoms, m.str))
     else:
       result.nodes[i+n.int+1] = tree.nodes[i]
 
@@ -132,7 +132,7 @@ proc rawReplace*(result: var JsonTree, tree: JsonTree, n: NodePos) =
     let m = NodePos(i)
     case m.kind
     of opcodeInt, opcodeFloat, opcodeString:
-      result.nodes[i+n.int] = toNode(m.kind, int32 getOrIncl(result.atoms, m.str))
+      result.nodes[i+n.int] = toNode(m.kind, uint getOrIncl(result.atoms, m.str))
     else:
       result.nodes[i+n.int] = tree.nodes[i]
 

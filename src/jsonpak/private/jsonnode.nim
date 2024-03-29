@@ -1,5 +1,5 @@
 type
-  Node* = distinct int32
+  Node* = distinct uint
   JsonNodeKind* = enum ## possible JSON node types
     JNull,
     JBool,
@@ -10,24 +10,24 @@ type
     JArray
 
 const
-  opcodeBits = 3
+  opcodeBits = 3'u
 
-  opcodeNull* = ord JNull
-  opcodeBool* = ord JBool
+  opcodeNull* = uint JNull
+  opcodeBool* = uint JBool
   opcodeFalse* = opcodeBool
   opcodeTrue* = opcodeBool or 0b0000_1000
-  opcodeInt* = ord JInt
-  opcodeFloat* = ord JFloat
-  opcodeString* = ord JString
-  opcodeObject* = ord JObject
-  opcodeArray* = ord JArray
+  opcodeInt* = uint JInt
+  opcodeFloat* = uint JFloat
+  opcodeString* = uint JString
+  opcodeObject* = uint JObject
+  opcodeArray* = uint JArray
 
-  opcodeMask = 0b111
+  opcodeMask = (1'u shl opcodeBits) - 1'u
 
-template kind*(n: Node): int32 = n.int32 and opcodeMask
-template operand*(n: Node): int32 = int32(n.uint32 shr opcodeBits.int32)
+template kind*(n: Node): uint = n.uint and opcodeMask
+template operand*(n: Node): uint = n.uint shr opcodeBits.uint
 
-template toNode*(kind, operand: int32): Node =
-  Node(operand shl opcodeBits.int32 or kind)
+template toNode*(kind, operand: uint): Node =
+  Node(operand shl opcodeBits.uint or kind)
 
 proc `==`*(a, b: Node): bool {.borrow.}

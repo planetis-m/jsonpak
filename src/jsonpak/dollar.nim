@@ -8,7 +8,7 @@ type
     tosEnd: int
     pos: int
 
-template tosEnd(n: NodePos): int = n.int + n.operand
+template tosEnd(n: NodePos): int = n.int + int(n.operand)
 
 proc initJsonIter(tree: JsonTree, n: NodePos): JsonIter =
   result = JsonIter(stack: @[], tos: n, tosEnd: n.tosEnd, pos: n.int+1)

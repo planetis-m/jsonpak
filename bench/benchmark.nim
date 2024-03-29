@@ -15,7 +15,7 @@ proc printStats(name: string, stats: RunningStat, dur: float) =
   Max     time: {stats.max * 1000:>4.4f} ms"""
 
 template bench(name, tree, code: untyped) =
-  var stats: RunningStat
+  var stats = RunningStat()
   let globalStart = cpuTime()
   for i in 1..NumIters:
     var t {.inject.} = copy(tree)

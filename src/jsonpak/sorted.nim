@@ -29,7 +29,7 @@ proc sorted*(tree: JsonTree, n: NodePos): SortedJsonTree =
       for i in countdown(items.high, 0):
         stack.add items[i].NodePos
     of opcodeInt, opcodeFloat, opcodeString:
-      nodes.add toNode(curr.kind, int32 getOrIncl(atoms, curr.str))
+      nodes.add toNode(curr.kind, uint getOrIncl(atoms, curr.str))
     else:
       nodes.add tree.nodes[curr.int]
   result = JsonTree(nodes: nodes, atoms: atoms).SortedJsonTree

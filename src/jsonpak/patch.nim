@@ -82,7 +82,7 @@ proc add*(tree: var JsonTree, path: JsonPtr, value: JsonTree) =
   if res.node.isNil:
     # Add a new node
     let parent = res.parents[^1].NodePos
-    let startPos = parent.int + parent.operand
+    let startPos = parent.int + int(parent.operand)
     if parent.kind == opcodeObject:
       # Add a new key-value pair to an object
       diff = 1 + span(value, 0)
@@ -128,7 +128,7 @@ proc copy*(tree: var JsonTree, `from`, path: JsonPtr) =
   if res.node.isNil:
     # Copy to a new node
     let parent = res.parents[^1].NodePos
-    let startPos = parent.int + parent.operand
+    let startPos = parent.int + int(parent.operand)
     if parent.kind == opcodeObject:
       # Copy to a new key-value pair in an object
       diff = 1 + span(tree, srcNode.int)
@@ -178,7 +178,7 @@ proc move*(tree: var JsonTree, `from`, path: JsonPtr) =
   if dest.node.isNil:
     # Copy to a new node
     let parent = dest.parents[^1].NodePos
-    startPos = parent.int + parent.operand
+    startPos = parent.int + int(parent.operand)
     if parent.kind == opcodeObject:
       # Copy to a new key-value pair in an object
       diff = 1 + span(tree, src.node.int)

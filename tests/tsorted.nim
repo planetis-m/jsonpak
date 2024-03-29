@@ -29,7 +29,6 @@ proc main =
   block: # nested arrays
     let data = %*[[3, 1, 2], [6, 4, 5]]
     let tree = sorted(data)
-    echo tree.JsonTree
     assert tree == SortedJsonTree(%*[[3, 1, 2], [6, 4, 5]])
 
   block: # object with array
