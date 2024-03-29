@@ -31,6 +31,9 @@ proc main() =
     stdTree = json.parseJson(JsonData)
     tree = parser.parseJson(JsonData)
 
+  bench "parse", JsonTree():
+    t = parser.parseJson(JsonData)
+
   bench "test", tree:
     discard test(t, JsonPtr"/records/500/age", %*30)
 
@@ -50,6 +53,9 @@ proc main() =
     move(t, JsonPtr"/records/500/city", JsonPtr"/records/0/location")
 
   # Benchmarks for std/json module
+  bench "stdlib - parse", JsonNode():
+    t = json.parseJson(JsonData)
+
   bench "stdlib - test", stdTree:
     discard t["records"][500]["age"] == %30
 
