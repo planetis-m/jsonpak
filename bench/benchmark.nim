@@ -31,7 +31,10 @@ proc main() =
     stdTree = json.parseJson(JsonData)
     tree = parser.parseJson(JsonData)
 
-  bench "parse", JsonTree():
+  bench "extract", newEmptyTree():
+    t = tree.copy()
+
+  bench "parse", newEmptyTree():
     t = parser.parseJson(JsonData)
 
   bench "test", tree:
@@ -53,6 +56,9 @@ proc main() =
     move(t, JsonPtr"/records/500/city", JsonPtr"/records/0/location")
 
   # Benchmarks for std/json module
+  bench "stdlib - extract", JsonNode():
+    t = stdTree.copy()
+
   bench "stdlib - parse", JsonNode():
     t = json.parseJson(JsonData)
 
