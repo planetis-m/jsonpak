@@ -136,8 +136,8 @@ proc extract(tree: JsonTree; path: JsonPtr): JsonTree
 proc dump(tree: JsonTree; path: JsonPtr): string
 # (de)serialize
 proc fromJson[T](tree: JsonTree; path: JsonPtr; t: typedesc[T]): T
-proc toJson[T](tree: T): JsonTree
-macro `%*`(tree: untyped): JsonTree
+proc toJson[T](x: T): JsonTree
+macro `%*`(x: untyped): JsonTree
 # iterators
 iterator items(tree: JsonTree; path: JsonPtr; t: typedesc[T]): T
 iterator pairs(tree: JsonTree; path: JsonPtr; t: typedesc[T]): (lent string, T)
