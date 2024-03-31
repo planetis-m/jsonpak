@@ -8,6 +8,8 @@ It uses Packed ASTs for compact and efficient JSON representation. Based on Araq
 
 ## Documentation
 
+API [documentation](https://planetis-m.github.io/jsonpak/)
+
 For more information visit: <https://jsonpatch.com/> or the linked RFC documents.
 
 ### JSON Pointer
@@ -120,6 +122,10 @@ Tests that the specified value is set in the document.
 
 ```nim
 
+# JsonTree type
+proc `==`*(a, b: JsonTree): bool
+proc newEmptyTree*(): JsonTree
+proc copy*(tree: JsonTree): JsonTree
 # basic usage
 proc len(x: JsonTree; path: JsonPtr): int
 proc kind(x: JsonTree; path: JsonPtr): JsonNodeKind
