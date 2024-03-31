@@ -123,9 +123,10 @@ Tests that the specified value is set in the document.
 ```nim
 
 # JsonTree type
-proc `==`*(a, b: JsonTree): bool
-proc newEmptyTree*(): JsonTree
-proc copy*(tree: JsonTree): JsonTree
+proc `==`(a, b: JsonTree): bool
+proc isEmpty(tree: JsonTree): bool
+proc newEmptyTree(): JsonTree
+proc copy(tree: JsonTree): JsonTree
 # basic usage
 proc len(x: JsonTree; path: JsonPtr): int
 proc kind(x: JsonTree; path: JsonPtr): JsonNodeKind
