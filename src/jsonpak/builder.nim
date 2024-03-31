@@ -1,6 +1,6 @@
 ## Provides procedures for deserializing JSON data into Nim data types.
 
-import private/[jsonnode, jsontree], jsonptr, std/[macros, tables, options, strutils]
+import private/[jsonnode, jsontree, rawops], jsonptr, std/[macros, tables, options, strutils]
 from std/parsejson import JsonKindError
 export JsonKindError
 
@@ -24,8 +24,8 @@ proc initFromJson*(dst: var bool; tree: JsonTree; n: NodePos) =
   verifyJsonKind(tree, n, {JBool})
   dst = n.bval
 
-# proc initFromJson*(dst: var JsonTree; tree: JsonTree; n: NodePos) =
-#   rawExtract(dst, tree, n)
+proc initFromJson*(dst: var JsonTree; tree: JsonTree; n: NodePos) =
+  rawExtract(dst, tree, n)
 
 proc initFromJson*[T: SomeInteger](dst: var T; tree: JsonTree; n: NodePos) =
   verifyJsonKind(tree, n, {JInt})

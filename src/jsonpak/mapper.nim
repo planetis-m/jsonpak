@@ -1,6 +1,6 @@
 ## Provides procs for serializing Nim data types to JSON format.
 
-import private/[jsonnode, jsontree], std/[macros, tables, options]
+import private/[jsonnode, jsontree, rawops], std/[macros, tables, options, importutils]
 
 proc toJson*(s: string; tree: var JsonTree) =
   storeAtom(tree, opcodeString, s)
@@ -36,9 +36,9 @@ proc toJson*[T](o: ref T; tree: var JsonTree) =
 proc toJson*[T: enum](o: T; tree: var JsonTree) =
   toJson($o, tree)
 
-# proc toJson*(value: JsonTree; tree: var JsonTree) =
-#   privateAccess(JsonTree)
-#   rawAdd(tree, value, NodePos tree.nodes.len)
+proc toJson*(value: JsonTree; tree: var JsonTree) =
+  privateAccess(JsonTree)
+  rawAdd(tree, value, NodePos tree.nodes.len)
 
 proc toJson*[T](table: Table[string, T]|OrderedTable[string, T]; tree: var JsonTree) =
   let patchPos = tree.prepare(opcodeObject)

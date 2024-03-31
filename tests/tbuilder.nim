@@ -1,5 +1,5 @@
 import
-  jsonpak/[builder, parser, mapper, jsonptr], jsonpak/private/jsontree,
+  jsonpak/[builder, parser, mapper, jsonptr], jsonpak/private/[jsontree, rawops],
   std/[assertions, tables, options]
 
 type
@@ -19,6 +19,18 @@ proc main =
     "arr": [1, 2, 3, 4],
     "str": "hello"
   }
+
+  block:
+    let tree = tree
+    var tmp: JsonTree
+    initFromJson(tmp, tree, NodePos 2)
+    assert rawTest(tmp, tree, rootNodeId, NodePos 2)
+    tmp.reset()
+    initFromJson(tmp, tree, NodePos 14)
+    assert rawTest(tmp, tree, rootNodeId, NodePos 14)
+    tmp.reset()
+    initFromJson(tmp, tree, NodePos 20)
+    assert rawTest(tmp, tree, rootNodeId, NodePos 20)
 
   block:
     let jsonStr = """{"name": "John", "age": 30, "height": 1.75, "isStudent": false}"""

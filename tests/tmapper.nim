@@ -71,10 +71,14 @@ proc main =
     let tree = nilRef.toJson
     assert NodePos(0).kind == opcodeNull
 
-  # block:
-  #   let data = %*{"message":"Hello"}
-  #   var tree = toJson(data)
-  #   assert tree == data
+  block:
+    let data = %*{"message":"Hello"}
+    var tree = toJson(data)
+    assert not tree.isEmpty
+    assert NodePos(0).kind == opcodeObject
+    assert NodePos(1).kind == opcodeString
+    assert NodePos(2).kind == opcodeString
+    assert len(tree, NodePos(0)) == 3
 
 static: main()
 main()
