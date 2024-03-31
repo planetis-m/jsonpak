@@ -122,25 +122,25 @@ Tests that the specified value is set in the document.
 
 ```nim
 
-# JsonTree type
+# JsonTree type (import jsonpak, jsonpak/dollar)
 proc `==`(a, b: JsonTree): bool
 proc isEmpty(tree: JsonTree): bool
 proc newEmptyTree(): JsonTree
 proc copy(tree: JsonTree): JsonTree
 proc `$`(tree: JsonTree): string
-# basic usage
+# basic usage (import jsonpak/extra)
 proc len(tree: JsonTree; path: JsonPtr): int
 proc kind(tree: JsonTree; path: JsonPtr): JsonNodeKind
 proc contains(tree: JsonTree; path: JsonPtr): bool
 proc extract(tree: JsonTree; path: JsonPtr): JsonTree
 proc dump(tree: JsonTree; path: JsonPtr): string
-# (de)serialize
+# (de)serialize (import jsonpak/[builder, mapper])
 proc fromJson[T](tree: JsonTree; path: JsonPtr; t: typedesc[T]): T
 proc toJson[T](x: T): JsonTree
 macro `%*`(x: untyped): JsonTree
-# iterators
-iterator items(tree: JsonTree; path: JsonPtr; t: typedesc[T]): T
-iterator pairs(tree: JsonTree; path: JsonPtr; t: typedesc[T]): (lent string, T)
+# iterators (import jsonpak/builder)
+iterator items[T](tree: JsonTree; path: JsonPtr; t: typedesc[T]): T
+iterator pairs[T](tree: JsonTree; path: JsonPtr; t: typedesc[T]): (lent string, T)
 
 ```
 
