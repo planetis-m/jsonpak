@@ -59,7 +59,7 @@ index. For example, to refer to the end of the array above you would use
 
 ```nim
 
-proc add(x: var JsonTree; path: JsonPtr; value: JsonTree)
+proc add(tree: var JsonTree; path: JsonPtr; value: JsonTree)
 
 ```
 
@@ -71,7 +71,7 @@ insert at the end of an array.
 
 ```nim
 
-proc remove(x: var JsonTree; path: JsonPtr)
+proc remove(tree: var JsonTree; path: JsonPtr)
 
 ```
 
@@ -81,7 +81,7 @@ Removes a value from an object or array.
 
 ```nim
 
-proc replace(x: var JsonTree; path: JsonPtr, value: JsonTree)
+proc replace(tree: var JsonTree; path: JsonPtr, value: JsonTree)
 
 ```
 
@@ -91,7 +91,7 @@ Replaces a value. Equivalent to a `remove` followed by an `add`.
 
 ```nim
 
-proc copy(x: var JsonTree; `from`, path: JsonPtr)
+proc copy(tree: var JsonTree; `from`, path: JsonPtr)
 
 ```
 
@@ -102,7 +102,7 @@ Copies a value from one location to another within the JSON document. Both `from
 
 ```nim
 
-proc move(x: var JsonTree; `from`, path: JsonPtr)
+proc move(tree: var JsonTree; `from`, path: JsonPtr)
 
 ```
 
@@ -112,7 +112,7 @@ Moves a value from one location to the other. Both `from` and `path` are JSON Po
 
 ```nim
 
-proc test(x: JsonTree; path: JsonPtr, value: JsonTree): bool
+proc test(tree: JsonTree; path: JsonPtr, value: JsonTree): bool
 
 ```
 
@@ -127,18 +127,20 @@ proc `==`(a, b: JsonTree): bool
 proc isEmpty(tree: JsonTree): bool
 proc newEmptyTree(): JsonTree
 proc copy(tree: JsonTree): JsonTree
+proc `$`(tree: JsonTree): string
 # basic usage
-proc len(x: JsonTree; path: JsonPtr): int
-proc kind(x: JsonTree; path: JsonPtr): JsonNodeKind
-proc contains(x: JsonTree; path: JsonPtr): bool
-proc extract(x: JsonTree; path: JsonPtr): JsonTree
+proc len(tree: JsonTree; path: JsonPtr): int
+proc kind(tree: JsonTree; path: JsonPtr): JsonNodeKind
+proc contains(tree: JsonTree; path: JsonPtr): bool
+proc extract(tree: JsonTree; path: JsonPtr): JsonTree
+proc dump(tree: JsonTree; path: JsonPtr): string
 # (de)serialize
-proc fromJson[T](x: JsonTree; path: JsonPtr; t: typedesc[T]): T
-proc toJson[T](x: T): JsonTree
-macro %*(x: untyped): JsonTree
+proc fromJson[T](tree: JsonTree; path: JsonPtr; t: typedesc[T]): T
+proc toJson[T](tree: T): JsonTree
+macro `%*`(tree: untyped): JsonTree
 # iterators
-iterator items(x: JsonTree; path: JsonPtr; t: typedesc[T]): T
-iterator pairs(x: JsonTree; path: JsonPtr; t: typedesc[T]): (lent string, T)
+iterator items(tree: JsonTree; path: JsonPtr; t: typedesc[T]): T
+iterator pairs(tree: JsonTree; path: JsonPtr; t: typedesc[T]): (lent string, T)
 
 ```
 
