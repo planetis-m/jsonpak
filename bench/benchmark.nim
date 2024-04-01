@@ -52,6 +52,9 @@ proc main() =
   bench "fromJson", tree:
     discard fromJson(t, JsonPtr"/records/500", UserRecord)
 
+  bench "toJson", newEmptyTree():
+    t = toJson(UserRecord(id:1,name:"User1",email:"user1@example.com",age:65,city:"Sydney",balance:37341,active:false))
+
   bench "test", tree:
     discard test(t, JsonPtr"/records/500/age", %*30)
 
@@ -80,8 +83,11 @@ proc main() =
   bench "stdlib - toString", stdTree:
     discard $t
 
-  bench "fromJson", stdTree:
+  bench "stdlib - fromJson", stdTree:
     discard t["records"][500].to(UserRecord)
+
+  bench "stdlib - toJson", JsonNode():
+    t = %UserRecord(id:1,name:"User1",email:"user1@example.com",age:65,city:"Sydney",balance:37341,active:false)
 
   bench "stdlib - test", stdTree:
     discard t["records"][500]["age"] == %30
