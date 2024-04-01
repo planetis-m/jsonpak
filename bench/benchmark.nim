@@ -1,6 +1,6 @@
 import std/[times, strutils, strformat, stats]
 import std/json except `%*`
-import jsonpak, jsonpak/[patch, parser, jsonptr, mapper]
+import jsonpak, jsonpak/[extra, patch, parser, jsonptr, mapper, builder]
 
 const
   JsonData = readFile("test.json")
@@ -26,16 +26,31 @@ template bench(name, tree, code: untyped) =
   let globalDuration = cpuTime() - globalStart
   printStats(name, stats, globalDuration)
 
+type
+  UserRecord = object
+    id: int
+    name, email: string
+    age: int
+    city: string
+    balance: int
+    active: bool
+
 proc main() =
   var
     stdTree = json.parseJson(JsonData)
     tree = parser.parseJson(JsonData)
 
   bench "extract", newEmptyTree():
-    t = tree.copy()
+    t = extract(tree, JsonPtr"")
 
   bench "parse", newEmptyTree():
     t = parser.parseJson(JsonData)
+
+  bench "toString", tree:
+    discard $t
+
+  bench "fromJson", tree:
+    discard fromJson(t, JsonPtr"/records/500", UserRecord)
 
   bench "test", tree:
     discard test(t, JsonPtr"/records/500/age", %*30)
@@ -61,6 +76,12 @@ proc main() =
 
   bench "stdlib - parse", JsonNode():
     t = json.parseJson(JsonData)
+
+  bench "stdlib - toString", stdTree:
+    discard $t
+
+  bench "fromJson", stdTree:
+    discard t["records"][500].to(UserRecord)
 
   bench "stdlib - test", stdTree:
     discard t["records"][500]["age"] == %30

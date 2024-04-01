@@ -179,14 +179,14 @@ move x, JsonPtr"/c", JsonPtr"/b"
 
 # Comparing, copying, deserializing
 assert test(x, JsonPtr"/d", %*{"e": [7], "f": "foo"})
-assert $extract(x, JsonPtr"/d") == """{"e":[7,8],"f":9}"""
-assert fromJson(x, JsonPtr"/d/e", seq[int]) == @[7, 8]
-assert toJson(@[1, 2, 3]) == extract(x, JsonPtr"/a")
+assert $extract(x, JsonPtr"/d") == """{"e":[7],"f":"foo"}"""
+assert fromJson(x, JsonPtr"/a/3", seq[int]) == @[5, 6]
+assert toJson(@[5, 6]) == extract(x, JsonPtr"/b")
 # Iterating
-for x in items(x, JsonPtr"/a", int): echo x, " "
-# 1 2 3
+for x in items(x, JsonPtr"/b", int): echo x, " "
+# 5 6
 for k, v in pairs(x, JsonPtr"/d", JsonTree): echo (k, v), " "
-# ("e", [7, 8]) ("f", 9)
+# ("e", [7]) ("f", "foo")
 
 ```
 

@@ -303,5 +303,11 @@ proc main =
       assert tree ==
         %*{"a":{"x":24,"y":5},"b":{"c":3,"d":4},"arr":[1,2,3,4],"str":"hello"}
 
+    block: # move existing node to replace another node
+      var tree = tree
+      tree.move(JsonPtr"/arr/0", JsonPtr"/arr/-")
+      assert tree ==
+        %*{"a":{"x":24,"y":25},"b":{"c":3,"d":4,"e":5},"arr":[2,3,4,1],"str":"hello"}
+
 static: main()
 main()
