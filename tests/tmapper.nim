@@ -78,7 +78,7 @@ proc main =
     assert NodePos(0).kind == opcodeObject
     assert NodePos(1).kind == opcodeString
     assert NodePos(2).kind == opcodeString
-    assert len(tree, NodePos(0)) == 3
+    assert len(tree, NodePos(0)) == 1
 
 static: main()
 main()

@@ -50,7 +50,7 @@ proc main =
       sons.add son
     assert sons == @[NodePos 5, NodePos 6]
     sons = @[]
-    for son in sonsReadonlySkip1(tree, NodePos 0):
+    for son in fields(tree, NodePos 0):
       sons.add son
     assert sons == @[NodePos 1, NodePos 3]
 

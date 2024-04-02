@@ -49,7 +49,7 @@ iterator sonsReadonly*(tree: JsonTree; n: NodePos): NodePos =
     yield NodePos(pos)
     nextChild tree, pos
 
-iterator sonsReadonlySkip1*(tree: JsonTree; n: NodePos): NodePos =
+iterator fields*(tree: JsonTree; n: NodePos): NodePos =
   var pos = n.int
   assert tree.nodes[pos].kind == opcodeObject
   let last = pos + tree.nodes[pos].rawSpan

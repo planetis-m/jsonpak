@@ -66,7 +66,7 @@ proc initFromJson*[S, T](dst: var array[S, T]; tree: JsonTree; n: NodePos) =
 
 proc initFromJson*[T](dst: var (Table[string, T]|OrderedTable[string, T]); tree: JsonTree; n: NodePos) =
   verifyJsonKind(tree, n, {JObject})
-  for x in sonsReadonlySkip1(tree, n):
+  for x in fields(tree, n):
     initFromJson(mgetOrPut(dst, x.str, default(T)), tree, x.firstSon)
 
 proc initFromJson*[T](dst: var ref T; tree: JsonTree; n: NodePos) =
@@ -87,7 +87,7 @@ proc initFromJson*[T](dst: var Option[T]; tree: JsonTree; n: NodePos) =
 
 proc initFromJson*[T: object|tuple](dst: var T; tree: JsonTree; n: NodePos) =
   verifyJsonKind(tree, n, {JObject})
-  for x in sonsReadonlySkip1(tree, n):
+  for x in fields(tree, n):
     block outer:
       for k, v in dst.fieldPairs:
         if x.str == k:
@@ -119,6 +119,6 @@ iterator pairs*[T](tree: JsonTree; path: JsonPtr; t: typedesc[T]): (lent string,
     raisePathError(path.string)
   assert n.kind == opcodeObject
   var item = default(T)
-  for x in sonsReadonlySkip1(tree, n):
+  for x in fields(tree, n):
     initFromJson(item, tree, x.firstSon)
     yield (x.str, item)
