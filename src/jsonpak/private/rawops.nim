@@ -5,7 +5,7 @@ proc rawGet*(tree: JsonTree, n: NodePos, name: string): NodePos =
   let litId = tree.atoms.getKeyId(name)
   if litId == LitId(0):
     return nilNodeId
-  for x in fields(tree, n):
+  for x in keys(tree, n):
     if x.litId == litId:
       return x.firstSon
   return nilNodeId
@@ -165,7 +165,7 @@ proc rawTest*(a, b: JsonTree, na, nb: NodePos): bool =
     let lenB = len(b, nb)
     if lenA != lenB:
       return false
-    for keyA in fields(a, na):
+    for keyA in keys(a, na):
       let valA = keyA.firstSon
       let keyStrA = a.atoms[LitId a.nodes[keyA.int].operand]
       let valB = b.rawGet(nb, keyStrA)

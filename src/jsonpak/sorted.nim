@@ -14,7 +14,7 @@ proc sorted*(tree: JsonTree, n: NodePos): SortedJsonTree =
     of opcodeObject:
       nodes.add tree.nodes[curr.int]
       var pairs: seq[(string, PatchPos)] = @[]
-      for n in fields(tree, curr):
+      for n in keys(tree, curr):
         pairs.add (n.str, n.PatchPos)
       sort(pairs, proc (a, b: (string, PatchPos)): int = cmp(a[0], b[0]))
       for i in countdown(pairs.high, 0):
