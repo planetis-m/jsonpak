@@ -195,10 +195,19 @@ for k, v in pairs(x, JsonPtr"/d", JsonTree): echo (k, v), " "
 This section details the average time (in milliseconds) it takes to perform
 various operations on a JSON document containing 1,000 entries.
 
-| Library  | Extract | toString | fromJson | toJson  | Parse   | Test   | Replace | Remove | Add    | Copy   | Move   |
-|----------|---------|----------|----------|---------|---------|--------|---------|--------|--------|--------|--------|
-| jsonpak  | 0.2805  | 0.8243   | 0.0033   | 0.0007  | 1.5065  | 0.0035 | 0.0036  | 0.0124 | 0.0035 | 0.0120 | 0.0212 |
-| std/json | 0.7552  | 0.6683   | 0.0009   | 0.0005  | 1.7205  | 0.0005 | 0.0006  | 0.0009 | 0.0006 | 0.0007 | 0.0011 |
+| Op       | jsonpak  | std/json |
+|----------|----------|----------|
+| Extract  | 0.2805   | 0.7552   |
+| toString | 0.8243   | 0.6683   |
+| fromJson | 0.0033   | 0.0009   |
+| toJson   | 0.0007   | 0.0005   |
+| Parse    | 1.5065   | 1.7205   |
+| Test     | 0.0035   | 0.0005   |
+| Replace  | 0.0036   | 0.0006   |
+| Remove   | 0.0124   | 0.0009   |
+| Add      | 0.0035   | 0.0006   |
+| Copy     | 0.0120   | 0.0007   |
+| Move     | 0.0212   | 0.0011   |
 
 However, the standard library's representation occupies approximately 13.4MiB,
 whereas ours only takes up 2.8MiB. Therefore, this library aims to optimize
