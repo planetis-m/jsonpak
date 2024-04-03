@@ -33,14 +33,14 @@ proc main =
     assert rawTest(tmp, tree, rootNodeId, NodePos 20)
 
   block:
-    let jsonStr = """{"name": "John", "age": 30, "height": 1.75, "isStudent": false}"""
+    let jsonStr = """{"age": 30, "isStudent": true, "name": "John", "height": 1.75}"""
     let tree = jsonStr.parseJson
     var p: Person
     initFromJson(p, tree, rootNodeId)
     assert p.name == "John"
     assert p.age == 30
     assert p.height == 1.75
-    assert p.isStudent == false
+    assert p.isStudent == true
 
   block:
     let jsonStr = """{"color": "Green"}"""

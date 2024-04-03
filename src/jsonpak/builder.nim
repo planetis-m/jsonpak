@@ -88,11 +88,10 @@ proc initFromJson*[T](dst: var Option[T]; tree: JsonTree; n: NodePos) =
 proc initFromJson*[T: object|tuple](dst: var T; tree: JsonTree; n: NodePos) =
   verifyJsonKind(tree, n, {JObject})
   for x in keys(tree, n):
-    block outer:
-      for k, v in dst.fieldPairs:
-        if x.str == k:
-          initFromJson(v, tree, x.firstSon)
-          break outer
+    for k, v in dst.fieldPairs:
+      if x.str == k:
+        initFromJson(v, tree, x.firstSon)
+        break
 
 proc fromJson*[T](tree: JsonTree; path: JsonPtr; t: typedesc[T]): T =
   let n = findNode(tree, path.string)
