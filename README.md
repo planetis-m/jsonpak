@@ -195,7 +195,7 @@ for k, v in pairs(x, JsonPtr"/d", JsonTree): echo (k, v), " "
 This section details the average time (in milliseconds) it takes to perform
 various operations on a JSON document containing 1,000 entries.
 
-| Op       | jsonpak  | std/json |
+| Op \ Lib | jsonpak  | std/json |
 |----------|----------|----------|
 | Extract  | 0.2805   | 0.7552   |
 | toString | 0.8243   | 0.6683   |
