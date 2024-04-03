@@ -183,7 +183,7 @@ assert $extract(x, JsonPtr"/d") == """{"e":[7],"f":"foo"}"""
 assert fromJson(x, JsonPtr"/a/3", seq[int]) == @[5, 6]
 assert toJson(@[5, 6]) == extract(x, JsonPtr"/b")
 # Iterating
-for x in items(x, JsonPtr"/b", int): echo x, " "
+for i in items(x, JsonPtr"/b", int): echo i, " "
 # 5 6
 for k, v in pairs(x, JsonPtr"/d", JsonTree): echo (k, v), " "
 # ("e", [7]) ("f", "foo")
@@ -195,7 +195,7 @@ for k, v in pairs(x, JsonPtr"/d", JsonTree): echo (k, v), " "
 This section details the average time (in milliseconds) it takes to perform
 various operations on a JSON document containing 1,000 entries.
 
-| Op \ Lib | jsonpak  | std/json |
+| Op\Lib   | jsonpak  | std/json |
 |----------|----------|----------|
 | Extract  | 0.2805   | 0.7552   |
 | toString | 0.8243   | 0.6683   |

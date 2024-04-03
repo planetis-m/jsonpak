@@ -33,7 +33,7 @@ assert $extract(x, JsonPtr"/d") == """{"e":[7],"f":"foo"}"""
 assert fromJson(x, JsonPtr"/a/3", seq[int]) == @[5, 6]
 assert toJson(@[5, 6]) == extract(x, JsonPtr"/b")
 # Iterating
-for x in items(x, JsonPtr"/b", int): echo x, " "
+for i in items(x, JsonPtr"/b", int): echo i, " "
 # 5 6
 for k, v in pairs(x, JsonPtr"/d", JsonTree): echo (k, v), " "
 # ("e", [7]) ("f", "foo")

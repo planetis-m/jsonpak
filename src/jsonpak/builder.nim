@@ -91,7 +91,7 @@ proc initFromJson*[T: object|tuple](dst: var T; tree: JsonTree; n: NodePos) =
     for k, v in dst.fieldPairs:
       if x.str == k:
         initFromJson(v, tree, x.firstSon)
-        break
+        break # emulate elif
 
 proc fromJson*[T](tree: JsonTree; path: JsonPtr; t: typedesc[T]): T =
   let n = findNode(tree, path.string)
