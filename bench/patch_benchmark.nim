@@ -1,7 +1,7 @@
 import std/[times, strutils, random, options]
 import jsonpak, jsonpak/[patch, jsonptr, builder, mapper]
 
-const iterations = 10_000
+const NumIters = 10_000
 
 type
   User = object
@@ -95,12 +95,12 @@ proc applyPatch(tree: var JsonTree, patch: JsonTree) =
 proc applyPatchToUser(patch: JsonTree, user: User): User =
   var jsonUser = user.toJson()
   applyPatch(jsonUser, patch)
-  result = jsonUser.fromJson(JsonPtr"", User)
+  fromJson(jsonUser, JsonPtr"", User)
 
 proc applyPatchToPost(patch: JsonTree, post: Post): Post =
   var jsonPost = post.toJson()
   applyPatch(jsonPost, patch)
-  result = jsonPost.fromJson(JsonPtr"", Post)
+  fromJson(jsonPost, JsonPtr"", Post)
 
 proc updateUserEndpoint(id: int, patch: JsonTree): string =
   try:
@@ -109,9 +109,9 @@ proc updateUserEndpoint(id: int, patch: JsonTree): string =
       return "User not found"
     let patched = applyPatchToUser(patch, user.get())
     updateUser(patched)
-    return "User updated successfully"
+    "User updated successfully"
   except JsonPatchError:
-    return "Internal Server Error"
+    "Internal Server Error"
 
 proc updatePostEndpoint(id: int, patch: JsonTree): string =
   try:
@@ -126,7 +126,7 @@ proc updatePostEndpoint(id: int, patch: JsonTree): string =
 
 proc main =
   var totalTime: float64 = 0
-  for i in 1..iterations:
+  for i in 1..NumIters:
     let
       userId = rand(1..100)
       postId = rand(1..200)
@@ -143,7 +143,7 @@ proc main =
     discard updatePostEndpoint(postId, postPatch)
     let endTime = cpuTime()
     totalTime += endTime - startTime
-  let avgTime = totalTime / iterations.float64
+  let avgTime = totalTime / NumIters.float64
   echo "Average time per patch application: ", avgTime.formatFloat(ffDecimal, 6), " seconds"
 
 main()
