@@ -73,21 +73,21 @@ proc applyPatch(tree: var JsonTree, patch: JsonTree) =
     case op
     of "add":
       let value = fromJson(operation, JsonPtr"/value", JsonTree)
-      tree.add(path, value)
+      add(tree, path, value)
     of "remove":
-      tree.remove(path)
+      remove(tree, path)
     of "replace":
       let value = fromJson(operation, JsonPtr"/value", JsonTree)
-      tree.replace(path, value)
+      replace(tree, path, value)
     of "move":
       let fromPath = fromJson(operation, JsonPtr"/from", string).JsonPtr
-      tree.move(fromPath, path)
+      move(tree, fromPath, path)
     of "copy":
       let fromPath = fromJson(operation, JsonPtr"/from", string).JsonPtr
-      tree.copy(fromPath, path)
+      copy(tree, fromPath, path)
     of "test":
       let expected = fromJson(operation, JsonPtr"/value", JsonTree)
-      if not tree.test(path, expected):
+      if not test(tree, path, expected):
         raise newException(JsonPatchError, "Test operation failed")
     else:
       raise newException(JsonPatchError, "Invalid operation: " & op)
@@ -95,12 +95,12 @@ proc applyPatch(tree: var JsonTree, patch: JsonTree) =
 proc applyPatchToUser(patch: JsonTree, user: User): User =
   var jsonUser = user.toJson()
   applyPatch(jsonUser, patch)
-  fromJson(jsonUser, JsonPtr"", User)
+  result = fromJson(jsonUser, JsonPtr"", User)
 
 proc applyPatchToPost(patch: JsonTree, post: Post): Post =
   var jsonPost = post.toJson()
   applyPatch(jsonPost, patch)
-  fromJson(jsonPost, JsonPtr"", Post)
+  result = fromJson(jsonPost, JsonPtr"", Post)
 
 proc updateUserEndpoint(id: int, patch: JsonTree): string =
   try:
