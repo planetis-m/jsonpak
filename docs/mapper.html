@@ -57,6 +57,7 @@
       <ul class="simple nested-toc-section">toJson
   <li><a class="reference" href="#toJson%2Cbool%2CJsonTree" title="toJson(b: bool; tree: var JsonTree)">toJson(b: bool; tree: var JsonTree)</a></li>
 <li><a class="reference" href="#toJson%2Cstring%2CJsonTree" title="toJson(s: string; tree: var JsonTree)">toJson(s: string; tree: var JsonTree)</a></li>
+<li><a class="reference" href="#toJson%2CJsonTree%2CJsonTree" title="toJson(value: JsonTree; tree: var JsonTree)">toJson(value: JsonTree; tree: var JsonTree)</a></li>
 <li><a class="reference" href="#toJson%2CT%2CJsonTree_4" title="toJson[T: enum](o: T; tree: var JsonTree)">toJson[T: enum](o: T; tree: var JsonTree)</a></li>
 <li><a class="reference" href="#toJson%2CT%2CJsonTree_3" title="toJson[T: object](o: T; tree: var JsonTree)">toJson[T: object](o: T; tree: var JsonTree)</a></li>
 <li><a class="reference" href="#toJson%2CT%2CJsonTree_2" title="toJson[T: SomeFloat](n: T; tree: var JsonTree)">toJson[T: SomeFloat](n: T; tree: var JsonTree)</a></li>
@@ -98,7 +99,7 @@
     <div class="section" id="6">
   <h1><a class="toc-backref" href="#6">Imports</a></h1>
   <dl class="item">
-    <a class="reference external" href="jsonnode.html">jsonnode</a>, <a class="reference external" href="jsontree.html">jsontree</a>
+    <a class="reference external" href="jsonnode.html">jsonnode</a>, <a class="reference external" href="jsontree.html">jsontree</a>, <a class="reference external" href="rawops.html">rawops</a>
   </dl>
 </div>
 <div class="section" id="12">
@@ -122,6 +123,17 @@
     
     <a href="https://github.com/planetis-m/jsonpak/tree/main/src/jsonpak/mapper.nim#L5" class="link-seesrc" target="_blank">Source</a>&nbsp;&nbsp;
 <a href="https://github.com/planetis-m/jsonpak/edit/main/src/jsonpak/mapper.nim#L5" class="link-seesrc" target="_blank" >Edit</a>&nbsp;&nbsp;
+
+  </dd>
+</div>
+<div id="toJson,JsonTree,JsonTree">
+  <dt><pre><span class="Keyword">proc</span> <a href="#toJson%2CJsonTree%2CJsonTree"><span class="Identifier">toJson</span></a><span class="Other">(</span><span class="Identifier">value</span><span class="Other">:</span> <a href="jsontree.html#JsonTree"><span class="Identifier">JsonTree</span></a><span class="Other">;</span> <span class="Identifier">tree</span><span class="Other">:</span> <span class="Keyword">var</span> <a href="jsontree.html#JsonTree"><span class="Identifier">JsonTree</span></a><span class="Other">)</span> {.<span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
+    <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
+  <dd>
+    
+    
+    <a href="https://github.com/planetis-m/jsonpak/tree/main/src/jsonpak/mapper.nim#L39" class="link-seesrc" target="_blank">Source</a>&nbsp;&nbsp;
+<a href="https://github.com/planetis-m/jsonpak/edit/main/src/jsonpak/mapper.nim#L39" class="link-seesrc" target="_blank" >Edit</a>&nbsp;&nbsp;
 
   </dd>
 </div>
@@ -247,7 +259,7 @@
       <div class="twelve-columns footer">
         <span class="nim-sprite"></span>
         <br>
-        <small style="color: var(--hint);">Made with Nim. Generated: 2024-03-29 11:24:26 UTC</small>
+        <small style="color: var(--hint);">Made with Nim. Generated: 2024-04-05 12:50:26 UTC</small>
       </div>
     </div>
   </div>

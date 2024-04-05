@@ -60,6 +60,7 @@
 </ul>
 <ul class="simple nested-toc-section">initFromJson
   <li><a class="reference" href="#initFromJson%2Cbool%2CJsonTree%2CNodePos" title="initFromJson(dst: var bool; tree: JsonTree; n: NodePos)">initFromJson(dst: var bool; tree: JsonTree; n: NodePos)</a></li>
+<li><a class="reference" href="#initFromJson%2CJsonTree%2CJsonTree%2CNodePos" title="initFromJson(dst: var JsonTree; tree: JsonTree; n: NodePos)">initFromJson(dst: var JsonTree; tree: JsonTree; n: NodePos)</a></li>
 <li><a class="reference" href="#initFromJson%2Cstring%2CJsonTree%2CNodePos" title="initFromJson(dst: var string; tree: JsonTree; n: NodePos)">initFromJson(dst: var string; tree: JsonTree; n: NodePos)</a></li>
 <li><a class="reference" href="#initFromJson%2Carray%5BS%2CT%5D%2CJsonTree%2CNodePos" title="initFromJson[S, T](dst: var array[S, T]; tree: JsonTree; n: NodePos)">initFromJson[S, T](dst: var array[S, T]; tree: JsonTree; n: NodePos)</a></li>
 <li><a class="reference" href="#initFromJson%2CT%2CJsonTree%2CNodePos_3" title="initFromJson[T: enum](dst: var T; tree: JsonTree; n: NodePos)">initFromJson[T: enum](dst: var T; tree: JsonTree; n: NodePos)</a></li>
@@ -124,7 +125,7 @@
     <div class="section" id="6">
   <h1><a class="toc-backref" href="#6">Imports</a></h1>
   <dl class="item">
-    <a class="reference external" href="jsonnode.html">jsonnode</a>, <a class="reference external" href="jsontree.html">jsontree</a>, <a class="reference external" href="jsonptr.html">jsonptr</a>
+    <a class="reference external" href="jsonnode.html">jsonnode</a>, <a class="reference external" href="jsontree.html">jsontree</a>, <a class="reference external" href="rawops.html">rawops</a>, <a class="reference external" href="jsonptr.html">jsonptr</a>
   </dl>
 </div>
 <div class="section" id="12">
@@ -136,8 +137,8 @@
   <dd>
     
     
-    <a href="https://github.com/planetis-m/jsonpak/tree/main/src/jsonpak/builder.nim#L97" class="link-seesrc" target="_blank">Source</a>&nbsp;&nbsp;
-<a href="https://github.com/planetis-m/jsonpak/edit/main/src/jsonpak/builder.nim#L97" class="link-seesrc" target="_blank" >Edit</a>&nbsp;&nbsp;
+    <a href="https://github.com/planetis-m/jsonpak/tree/main/src/jsonpak/builder.nim#L96" class="link-seesrc" target="_blank">Source</a>&nbsp;&nbsp;
+<a href="https://github.com/planetis-m/jsonpak/edit/main/src/jsonpak/builder.nim#L96" class="link-seesrc" target="_blank" >Edit</a>&nbsp;&nbsp;
 
   </dd>
 </div>
@@ -152,6 +153,17 @@
     
     <a href="https://github.com/planetis-m/jsonpak/tree/main/src/jsonpak/builder.nim#L23" class="link-seesrc" target="_blank">Source</a>&nbsp;&nbsp;
 <a href="https://github.com/planetis-m/jsonpak/edit/main/src/jsonpak/builder.nim#L23" class="link-seesrc" target="_blank" >Edit</a>&nbsp;&nbsp;
+
+  </dd>
+</div>
+<div id="initFromJson,JsonTree,JsonTree,NodePos">
+  <dt><pre><span class="Keyword">proc</span> <a href="#initFromJson%2CJsonTree%2CJsonTree%2CNodePos"><span class="Identifier">initFromJson</span></a><span class="Other">(</span><span class="Identifier">dst</span><span class="Other">:</span> <span class="Keyword">var</span> <a href="jsontree.html#JsonTree"><span class="Identifier">JsonTree</span></a><span class="Other">;</span> <span class="Identifier">tree</span><span class="Other">:</span> <a href="jsontree.html#JsonTree"><span class="Identifier">JsonTree</span></a><span class="Other">;</span> <span class="Identifier">n</span><span class="Other">:</span> <a href="jsontree.html#NodePos"><span class="Identifier">NodePos</span></a><span class="Other">)</span> {.<span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
+    <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
+  <dd>
+    
+    
+    <a href="https://github.com/planetis-m/jsonpak/tree/main/src/jsonpak/builder.nim#L27" class="link-seesrc" target="_blank">Source</a>&nbsp;&nbsp;
+<a href="https://github.com/planetis-m/jsonpak/edit/main/src/jsonpak/builder.nim#L27" class="link-seesrc" target="_blank" >Edit</a>&nbsp;&nbsp;
 
   </dd>
 </div>
@@ -285,8 +297,8 @@
   <dd>
     
     Iterator for the items of <tt class="docutils literal"><span class="pre"><span class="Identifier">x</span></span></tt>. <tt class="docutils literal"><span class="pre"><span class="Identifier">x</span></span></tt> has to be a JArray.
-    <a href="https://github.com/planetis-m/jsonpak/tree/main/src/jsonpak/builder.nim#L104" class="link-seesrc" target="_blank">Source</a>&nbsp;&nbsp;
-<a href="https://github.com/planetis-m/jsonpak/edit/main/src/jsonpak/builder.nim#L104" class="link-seesrc" target="_blank" >Edit</a>&nbsp;&nbsp;
+    <a href="https://github.com/planetis-m/jsonpak/tree/main/src/jsonpak/builder.nim#L103" class="link-seesrc" target="_blank">Source</a>&nbsp;&nbsp;
+<a href="https://github.com/planetis-m/jsonpak/edit/main/src/jsonpak/builder.nim#L103" class="link-seesrc" target="_blank" >Edit</a>&nbsp;&nbsp;
 
   </dd>
 </div>
@@ -299,8 +311,8 @@
   <dd>
     
     Iterator for the pairs of <tt class="docutils literal"><span class="pre"><span class="Identifier">x</span></span></tt>. <tt class="docutils literal"><span class="pre"><span class="Identifier">x</span></span></tt> has to be a JObject.
-    <a href="https://github.com/planetis-m/jsonpak/tree/main/src/jsonpak/builder.nim#L115" class="link-seesrc" target="_blank">Source</a>&nbsp;&nbsp;
-<a href="https://github.com/planetis-m/jsonpak/edit/main/src/jsonpak/builder.nim#L115" class="link-seesrc" target="_blank" >Edit</a>&nbsp;&nbsp;
+    <a href="https://github.com/planetis-m/jsonpak/tree/main/src/jsonpak/builder.nim#L114" class="link-seesrc" target="_blank">Source</a>&nbsp;&nbsp;
+<a href="https://github.com/planetis-m/jsonpak/edit/main/src/jsonpak/builder.nim#L114" class="link-seesrc" target="_blank" >Edit</a>&nbsp;&nbsp;
 
   </dd>
 </div>
@@ -335,7 +347,7 @@
       <div class="twelve-columns footer">
         <span class="nim-sprite"></span>
         <br>
-        <small style="color: var(--hint);">Made with Nim. Generated: 2024-03-29 11:24:24 UTC</small>
+        <small style="color: var(--hint);">Made with Nim. Generated: 2024-04-05 12:50:24 UTC</small>
       </div>
     </div>
   </div>
