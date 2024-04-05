@@ -54,6 +54,6 @@ proc rawTest*(tree, value: JsonTree, n: NodePos): bool =
 
 proc `==`*(a, b: SortedJsonTree): bool {.inline.} =
   privateAccess(JsonTree)
-  if a.nodes.len != b.nodes.len:
+  if JsonTree(a).nodes.len != JsonTree(b).nodes.len:
     return false
   rawTest(JsonTree(a), JsonTree(b), rootNodeId)
