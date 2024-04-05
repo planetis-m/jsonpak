@@ -1,4 +1,4 @@
-import private/[bitabs, jsontree, jsonnode], std/[algorithm, importutils]
+import private/[bitabs, jsontree, jsonnode], std/[algorithm, importutils], ssostrings
 
 type
   SortedJsonTree* = distinct JsonTree
@@ -7,16 +7,16 @@ proc sorted*(tree: JsonTree, n: NodePos): SortedJsonTree =
   privateAccess(JsonTree)
   var stack = @[n]
   var nodes: seq[Node] = @[]
-  var atoms = BiTable[string]()
+  var atoms = BiTable[String]()
   while stack.len > 0:
     let curr = stack.pop()
     case curr.kind
     of opcodeObject:
       nodes.add tree.nodes[curr.int]
-      var pairs: seq[(string, PatchPos)] = @[]
+      var pairs: seq[(String, PatchPos)] = @[]
       for n in keys(tree, curr):
         pairs.add (n.str, n.PatchPos)
-      sort(pairs, proc (a, b: (string, PatchPos)): int = cmp(a[0], b[0]))
+      sort(pairs, proc (a, b: (String, PatchPos)): int = cmp(a[0], b[0]))
       for i in countdown(pairs.high, 0):
         let n = pairs[i][1].NodePos
         stack.add n.firstSon

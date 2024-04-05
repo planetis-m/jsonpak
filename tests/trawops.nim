@@ -1,4 +1,4 @@
-import jsonpak/mapper, jsonpak/private/[bitabs, rawops, jsonnode, jsontree]
+import jsonpak/mapper, jsonpak/private/[bitabs, rawops, jsonnode, jsontree], ssostrings
 from jsonpak import `==`
 
 proc main =
@@ -34,26 +34,26 @@ proc main =
       "g": true
     }
     # get existing key
-    var n = tree.rawGet(rootNodeId, "a")
+    var n = tree.rawGet(rootNodeId, toStr"a")
     assert n.kind == opcodeInt
-    assert n.str == "1"
+    assert n.str == toStr"1"
     # get non-existing key
-    n = tree.rawGet(rootNodeId, "x")
+    n = tree.rawGet(rootNodeId, toStr"x")
     assert n == nilNodeId
     # get key in nested object
-    var parent = tree.rawGet(rootNodeId, "b")
-    n = tree.rawGet(parent, "c")
+    var parent = tree.rawGet(rootNodeId, toStr"b")
+    n = tree.rawGet(parent, toStr"c")
     assert n.kind == opcodeInt
-    assert n.str == "2"
+    assert n.str == toStr"2"
     # get key in array
-    parent = tree.rawGet(rootNodeId, "e")
-    n = tree.rawGet(parent, "0")
+    parent = tree.rawGet(rootNodeId, toStr"e")
+    n = tree.rawGet(parent, toStr"0")
     assert n == nilNodeId
     # get null value
-    n = tree.rawGet(rootNodeId, "f")
+    n = tree.rawGet(rootNodeId, toStr"f")
     assert n.kind == opcodeNull
     # get bool value"
-    n = tree.rawGet(rootNodeId, "g")
+    n = tree.rawGet(rootNodeId, toStr"g")
     assert n.kind == opcodeBool
     assert n.bval == true
 
@@ -67,5 +67,4 @@ proc main =
     let tree2 = %*{"a": 1, "b": 3}
     assert tree1 != tree2
 
-static: main()
 main()

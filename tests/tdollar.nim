@@ -15,5 +15,4 @@ proc main =
     assert not tree.isEmpty
     assert $tree == data
 
-static: main()
 main()

@@ -1,6 +1,6 @@
 import std/[times, strutils, strformat, stats]
 import std/json except `%*`
-import jsonpak, jsonpak/[extra, patch, parser, jsonptr, mapper, builder]
+import jsonpak, jsonpak/[extra, patch, parser, jsonptr, mapper, builder, dollar]
 
 const
   JsonData = readFile("test.json")

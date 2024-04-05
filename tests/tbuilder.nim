@@ -1,6 +1,6 @@
 import
   jsonpak/[builder, parser, mapper, jsonptr], jsonpak/private/[jsontree, rawops],
-  std/[assertions, tables, options]
+  std/[assertions, tables, options], ssostrings
 
 type
   Person = object
@@ -121,11 +121,9 @@ proc main =
     assert values == @[1, 2, 3, 4]
 
   block:
-    var pairs: seq[(string, int)]
+    var pairs: seq[(String, int)]
     for key, value in tree.pairs(JsonPtr"/b", int):
       pairs.add((key, value))
-    assert pairs == @[("c", 3), ("d", 4)]
+    assert pairs == @[(toStr"c", 3), (toStr"d", 4)]
 
-static: main()
 main()
-

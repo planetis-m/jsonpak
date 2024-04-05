@@ -45,5 +45,4 @@ proc main =
     let tree = parseJson(data)
     assert tree.isEmpty
 
-static: main()
 main()

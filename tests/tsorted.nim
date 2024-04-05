@@ -60,5 +60,4 @@ proc main =
     let tree2 = sorted(data2)
     assert tree1 != tree2
 
-static: main()
 main()

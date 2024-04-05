@@ -1,4 +1,4 @@
-import std/strutils, private/[jsontree, jsonnode, rawops]
+import ssostrings, private/[jsontree, jsonnode, rawops, parsers]
 
 type
   JsonPtr* = distinct string
@@ -34,10 +34,13 @@ proc raisePathError*(path: string) {.noinline.} =
 proc raiseSyntaxError*(token: string) {.noinline.} =
   raise newException(SyntaxError, "invalid JSON pointer: " & token)
 
-proc raiseUsageError*(token: string) {.noinline.} =
-  raise newException(UsageError, "invalid use of unescapeJsonPtr on string with '/': " & token)
+proc raiseSyntaxError*(token: String) {.noinline.} =
+  raise newException(SyntaxError, "invalid JSON pointer: " & token.toNimStr)
 
-func unescapeJsonPtr*(token: var string) =
+proc raiseUsageError*(token: String) {.noinline.} =
+  raise newException(UsageError, "invalid use of unescapeJsonPtr on string with '/': " & token.toNimStr)
+
+proc unescapeJsonPtr*(token: var String) =
   ## Unescapes a string `s`.
   ##
   ## This complements `escapeJsonPtr func<#escape,string>`_
@@ -77,11 +80,11 @@ func unescapeJsonPtr*(token: var string) =
     inc(q)
   token.setLen(p)
 
-proc getArrayIndex(token: string): int =
+proc getArrayIndex(token: String): int =
   result = 0
   if len(token) == 0:
     raiseSyntaxError(token)
-  if token == "-":
+  if token[0] == '-' and len(token) == 1:
     return -1
   if token[0] == '0' and len(token) > 1:
     raiseSyntaxError(token)
@@ -99,11 +102,11 @@ template copyTokenToBuffer(buf, src, first, last) =
       buf[i] = src[i+first]
   else:
     if first < last:
-      copyMem(cstring(buf), addr src[first], buf.len)
+      copyMem(toCStr(buf), addr src[first], buf.len)
 
 proc findNode*(tree: JsonTree, path: string): NodePos =
   var
-    cur = ""
+    cur = toStr""
     last = 1
     n = rootNodeId
 
@@ -120,7 +123,7 @@ proc findNode*(tree: JsonTree, path: string): NodePos =
       if n.isNil:
         return nilNodeId
     of opcodeArray:
-      if cur == "-" and last < len(path):
+      if cur[0] == '-' and len(cur) == 1 and last < len(path):
         raiseSyntaxError("Invalid usage of '-'")
       let i = getArrayIndex(cur)
       if i < 0 or i >= len(tree, n):
@@ -139,11 +142,11 @@ type
   PathResult* = object
     node*: NodePos
     parents*: seq[PatchPos]
-    key*: string
+    key*: String
 
 proc findNodeMut*(tree: JsonTree, path: string): PathResult =
   var
-    cur = ""
+    cur = toStr""
     last = 1
     n = rootNodeId
     parents: seq[PatchPos] = @[]
@@ -165,7 +168,7 @@ proc findNodeMut*(tree: JsonTree, path: string): PathResult =
         return PathResult(node: nilNodeId, parents: parents, key: cur)
     of opcodeArray:
       parents.add(n.PatchPos)
-      if cur == "-":
+      if cur[0] == '-' and len(cur) == 1:
         if last < len(path):
           raiseSyntaxError("Invalid usage of '-'")
         return PathResult(node: nilNodeId, parents: parents)

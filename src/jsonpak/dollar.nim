@@ -1,5 +1,5 @@
 from std/json import escapeJsonUnquoted, escapeJson
-import private/[bitabs, jsonnode, jsontree], std/importutils
+import private/[bitabs, jsonnode, jsontree], std/importutils, ssostrings
 
 type
   JsonIter = object
@@ -45,7 +45,7 @@ proc currentAndNext(it: var JsonIter, tree: JsonTree): (NodePos, LitId, Action) 
 
 proc toUgly*(result: var string, tree: JsonTree, n: NodePos) =
   privateAccess(JsonTree)
-  template key: string = tree.atoms[keyId]
+  template key: String = tree.atoms[keyId]
   case n.kind
   of opcodeArray, opcodeObject:
     if n.kind == opcodeArray:
@@ -69,7 +69,7 @@ proc toUgly*(result: var string, tree: JsonTree, n: NodePos) =
           result.add ","
           pendingComma = false
         if action == actionKeyVal:
-          key.escapeJson(result)
+          toNimStr(key).escapeJson(result)
           result.add ":"
         case child.kind
         of opcodeArray:
@@ -81,10 +81,10 @@ proc toUgly*(result: var string, tree: JsonTree, n: NodePos) =
           it.push child
           pendingComma = false
         of opcodeInt, opcodeFloat:
-          result.add child.str
+          result.add toNimStr(child.str)
           pendingComma = true
         of opcodeString:
-          escapeJson(child.str, result)
+          escapeJson(toNimStr(child.str), result)
           pendingComma = true
         of opcodeBool:
           result.add(if child.bval: "true" else: "false")
@@ -98,9 +98,9 @@ proc toUgly*(result: var string, tree: JsonTree, n: NodePos) =
     else:
       result.add "}"
   of opcodeString:
-    escapeJson(n.str, result)
+    escapeJson(toNimStr(n.str), result)
   of opcodeInt, opcodeFloat:
-    result.add n.str
+    result.add toNimStr(n.str)
   of opcodeBool:
     result.add(if n.bval: "true" else: "false")
   of opcodeNull:

@@ -1,9 +1,9 @@
-import bitabs, jsonnode, std/assertions
+import bitabs, jsonnode, std/assertions, ssostrings
 
 type
   JsonTree* = object
     nodes: seq[Node]
-    atoms: BiTable[string]
+    atoms: BiTable[String]
 
 proc isEmpty*(tree: JsonTree): bool {.inline.} =
   tree.nodes.len == 0 or tree.nodes.len == 1 and tree.nodes[0].kind == opcodeNull
@@ -23,7 +23,7 @@ proc nextChild*(tree: JsonTree; pos: var int) {.inline.} =
   else:
     inc pos
 
-proc toAtomNode*(tree: var JsonTree; kind: uint32, str: string): Node {.inline.} =
+proc toAtomNode*(tree: var JsonTree; kind: uint32, str: String): Node {.inline.} =
   toNode(kind, uint32 getOrIncl(tree.atoms, str))
 
 type
@@ -80,7 +80,7 @@ template kind*(n: NodePos): uint32 = tree.nodes[n.int].kind
 template litId*(n: NodePos): LitId = LitId operand(tree.nodes[n.int])
 template operand*(n: NodePos): uint32 = tree.nodes[n.int].operand
 
-template str*(n: NodePos): string = tree.atoms[litId(n)]
+template str*(n: NodePos): String = tree.atoms[litId(n)]
 template bval*(n: NodePos): bool = n.operand == 1
 
 type
@@ -104,7 +104,7 @@ proc storeAtom*(tree: var JsonTree; kind: uint32) {.inline.} =
   tree.nodes.add Node(kind)
 
 proc storeAtom*(tree: var JsonTree; kind: uint32; data: string) {.inline.} =
-  tree.nodes.add toAtomNode(tree, kind, data)
+  tree.nodes.add toAtomNode(tree, kind, data.toStr)
 
 proc storeEmpty*(tree: var JsonTree; kind: uint32) {.inline.} =
   tree.nodes.add toNode(kind, 1)

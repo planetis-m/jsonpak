@@ -18,5 +18,4 @@ proc main =
   assert Node(opcodeNull) != Node(opcodeFalse)
   assert Node(opcodeFalse) != Node(opcodeTrue)
 
-static: main()
 main()

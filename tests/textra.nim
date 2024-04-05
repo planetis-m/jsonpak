@@ -32,6 +32,4 @@ proc main =
     assert tree.len(JsonPtr"/a") == 2
     assert tree.len(JsonPtr"/arr") == 4
 
-static: main()
 main()
-

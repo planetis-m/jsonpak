@@ -1,4 +1,4 @@
-import std/assertions, jsonpak/[mapper, jsonptr], jsonpak/private/jsontree
+import ssostrings, std/assertions, jsonpak/[mapper, jsonptr], jsonpak/private/jsontree
 
 proc main =
   block:
@@ -7,9 +7,9 @@ proc main =
     assert s == "hello~0world~1foo"
 
   block:
-    var s = "hello~0world~1foo"
+    var s = toStr"hello~0world~1foo"
     unescapeJsonPtr(s)
-    assert s == "hello~world/foo"
+    assert s == toStr"hello~world/foo"
 
   # block:
   #   assert getArrayIndex("0") == 0
@@ -49,9 +49,8 @@ proc main =
     res = findNodeMut(tree, "/arr/-")
     assert res.node == nilNodeId
     assert res.parents == @[PatchPos(0), PatchPos(6)]
-    assert res.key == ""
+    assert res.key == toStr""
     res = findNodeMut(tree, "/foo/baz")
-    assert res.key == "baz"
+    assert res.key == toStr"baz"
 
-static: main()
 main()

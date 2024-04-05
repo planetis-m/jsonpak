@@ -1,6 +1,6 @@
 import
   jsonpak/[mapper, dollar], jsonpak/private/[jsonnode, jsontree],
-  std/[assertions, tables, options]
+  std/[assertions, tables, options], ssostrings
 
 type
   Person = object
@@ -14,7 +14,7 @@ type
 
 proc main =
   block:
-    const tree = %*{
+    let tree = %*{
       "a": [1, 2, 3],
       "b": 4,
       "c": [5, 6],
@@ -35,24 +35,24 @@ proc main =
     assert NodePos(0).kind == opcodeObject
     assert len(tree, NodePos(0)) == 4
     assert NodePos(2).kind == opcodeString
-    assert NodePos(2).str == "John"
+    assert NodePos(2).str == toStr"John"
     assert NodePos(4).kind == opcodeInt
-    assert NodePos(4).str == "30"
+    assert NodePos(4).str == toStr"30"
     assert NodePos(6).kind == opcodeFloat
-    assert NodePos(6).str == "1.75"
+    assert NodePos(6).str == toStr"1.75"
     assert NodePos(8).kind == opcodeFalse
 
   block:
     let color = Color.Green
     let tree = color.toJson
     assert NodePos(0).kind == opcodeString
-    assert NodePos(0).str == "Green"
+    assert NodePos(0).str == toStr"Green"
 
   block:
     let opt1 = some(42)
     var tree = opt1.toJson
     assert NodePos(0).kind == opcodeInt
-    assert NodePos(0).str == "42"
+    assert NodePos(0).str == toStr"42"
     let opt2 = none(int)
     tree = opt2.toJson
     assert NodePos(0).kind == opcodeNull
@@ -64,7 +64,7 @@ proc main =
     assert len(tree, NodePos(0)) == 5
     for i, num in arr:
       assert NodePos(i+1).kind == opcodeInt
-      assert NodePos(i+1).str == $num
+      assert NodePos(i+1).str == toStr($num)
 
   block:
     let nilRef: ref int = nil
@@ -80,5 +80,4 @@ proc main =
     assert NodePos(2).kind == opcodeString
     assert len(tree, NodePos(0)) == 1
 
-static: main()
 main()

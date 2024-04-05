@@ -1,6 +1,6 @@
-import bitabs, jsonnode, jsontree, std/importutils
+import bitabs, jsonnode, jsontree, std/importutils, ssostrings
 
-proc rawGet*(tree: JsonTree, n: NodePos, name: string): NodePos =
+proc rawGet*(tree: JsonTree, n: NodePos, name: String): NodePos =
   privateAccess(JsonTree)
   let litId = tree.atoms.getKeyId(name)
   if litId == LitId(0):
@@ -55,7 +55,7 @@ proc rawAdd*(result: var JsonTree, tree: JsonTree, n: NodePos) =
     else:
       result.nodes[i+n.int] = tree.nodes[i]
 
-proc rawAddKeyValuePair*(result: var JsonTree, src, dest: NodePos, key: string) =
+proc rawAddKeyValuePair*(result: var JsonTree, src, dest: NodePos, key: String) =
   privateAccess(JsonTree)
   let L = span(result, src.int) + 1
   let oldfull = result.nodes.len
@@ -68,7 +68,7 @@ proc rawAddKeyValuePair*(result: var JsonTree, src, dest: NodePos, key: string) 
   for i in 0..<L-1:
     result.nodes[dest.int+i+1] = result.nodes[src.int+i]
 
-proc rawAddKeyValuePair*(result: var JsonTree, tree: JsonTree, n: NodePos, key: string) =
+proc rawAddKeyValuePair*(result: var JsonTree, tree: JsonTree, n: NodePos, key: String) =
   privateAccess(JsonTree)
   let L = span(tree, 0) + 1
   let oldfull = result.nodes.len

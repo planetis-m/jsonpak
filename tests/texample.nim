@@ -1,4 +1,4 @@
-import jsonpak, jsonpak/[patch, jsonptr, extra, builder, mapper, dollar]
+import jsonpak, jsonpak/[patch, jsonptr, extra, builder, mapper, dollar], ssostrings
 
 var x = %*{
   "a": [1, 2, 3],
@@ -35,5 +35,5 @@ assert toJson(@[5, 6]) == extract(x, JsonPtr"/b")
 # Iterating
 for i in items(x, JsonPtr"/b", int): echo i, " "
 # 5 6
-for k, v in pairs(x, JsonPtr"/d", JsonTree): echo (k, v), " "
+for k, v in pairs(x, JsonPtr"/d", JsonTree): echo (k.toNimStr, v), " "
 # ("e", [7]) ("f", "foo")

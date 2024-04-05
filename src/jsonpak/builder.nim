@@ -1,7 +1,8 @@
 ## Provides procedures for deserializing JSON data into Nim data types.
 
-import private/[jsonnode, jsontree, rawops], jsonptr, std/[macros, tables, options, strutils]
+import private/[jsonnode, jsontree, rawops, parsers], jsonptr, std/[macros, tables, options], ssostrings
 from std/parsejson import JsonKindError
+from std/strutils import format, parseEnum
 export JsonKindError
 
 proc raiseJsonKindError*(kind: JsonNodeKind, kinds: set[JsonNodeKind]) {.noinline.} =
@@ -18,7 +19,7 @@ proc initFromJson*(dst: var string; tree: JsonTree; n: NodePos) =
   if n.kind == opcodeNull:
     dst = ""
   else:
-    dst = n.str
+    dst = toNimStr(n.str)
 
 proc initFromJson*(dst: var bool; tree: JsonTree; n: NodePos) =
   verifyJsonKind(tree, n, {JBool})
@@ -47,7 +48,7 @@ proc initFromJson*[T: SomeFloat](dst: var T; tree: JsonTree; n: NodePos) =
 
 proc initFromJson*[T: enum](dst: var T; tree: JsonTree; n: NodePos) =
   verifyJsonKind(tree, n, {JString})
-  dst = parseEnum[T](n.str)
+  dst = parseEnum[T](toNimStr(n.str))
 
 proc initFromJson*[T](dst: var seq[T]; tree: JsonTree; n: NodePos) =
   verifyJsonKind(tree, n, {JArray})
@@ -67,7 +68,7 @@ proc initFromJson*[S, T](dst: var array[S, T]; tree: JsonTree; n: NodePos) =
 proc initFromJson*[T](dst: var (Table[string, T]|OrderedTable[string, T]); tree: JsonTree; n: NodePos) =
   verifyJsonKind(tree, n, {JObject})
   for x in keys(tree, n):
-    initFromJson(mgetOrPut(dst, x.str, default(T)), tree, x.firstSon)
+    initFromJson(mgetOrPut(dst, x.str.toNimStr, default(T)), tree, x.firstSon)
 
 proc initFromJson*[T](dst: var ref T; tree: JsonTree; n: NodePos) =
   verifyJsonKind(tree, n, {JObject, JNull})
@@ -89,7 +90,7 @@ proc initFromJson*[T: object|tuple](dst: var T; tree: JsonTree; n: NodePos) =
   verifyJsonKind(tree, n, {JObject})
   for x in keys(tree, n):
     for k, v in dst.fieldPairs:
-      if x.str == k:
+      if x.str == k.toStr:
         initFromJson(v, tree, x.firstSon)
         break # emulate elif
 
@@ -111,7 +112,7 @@ iterator items*[T](tree: JsonTree; path: JsonPtr; t: typedesc[T]): T =
     initFromJson(item, tree, x)
     yield item
 
-iterator pairs*[T](tree: JsonTree; path: JsonPtr; t: typedesc[T]): (lent string, T) =
+iterator pairs*[T](tree: JsonTree; path: JsonPtr; t: typedesc[T]): (lent String, T) =
   ## Iterator for the pairs of `x`. `x` has to be a JObject.
   let n = findNode(tree, path.string)
   if n.isNil:
