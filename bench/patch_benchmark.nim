@@ -110,7 +110,7 @@ proc updateUserEndpoint(id: int, patch: JsonTree): string =
     let patched = applyPatchToUser(patch, user.get())
     updateUser(patched)
     "User updated successfully"
-  except JsonPatchError:
+  except JsonPatchError, JsonPtrError:
     "Internal Server Error"
 
 proc updatePostEndpoint(id: int, patch: JsonTree): string =
@@ -121,7 +121,7 @@ proc updatePostEndpoint(id: int, patch: JsonTree): string =
     let patched = applyPatchToPost(patch, post.get())
     updatePost(patched)
     "Post updated successfully"
-  except JsonPatchError:
+  except JsonPatchError, JsonPtrError:
     "Internal Server Error"
 
 proc main =
