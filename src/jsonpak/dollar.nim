@@ -1,5 +1,35 @@
-from std/json import escapeJsonUnquoted, escapeJson
+from std/strutils import toHex
 import private/[bitabs, jsonnode, jsontree], std/importutils, ssostrings
+
+proc escapeJsonUnquoted(s: String; result: var string) =
+  ## Converts a string `s` to its JSON representation without quotes.
+  ## Appends to `result`.
+  for c in s:
+    case c
+    of '\L': result.add("\\n")
+    of '\b': result.add("\\b")
+    of '\f': result.add("\\f")
+    of '\t': result.add("\\t")
+    of '\v': result.add("\\u000b")
+    of '\r': result.add("\\r")
+    of '"': result.add("\\\"")
+    of '\0'..'\7': result.add("\\u000" & $ord(c))
+    of '\14'..'\31': result.add("\\u00" & toHex(ord(c), 2))
+    of '\\': result.add("\\\\")
+    else: result.add(c)
+
+proc escapeJson(s: String; result: var string) =
+  ## Converts a string `s` to its JSON representation with quotes.
+  ## Appends to `result`.
+  result.add("\"")
+  escapeJsonUnquoted(s, result)
+  result.add("\"")
+
+proc add(dest: var string; src: String) {.inline.} =
+  setLen(dest, dest.len+src.len)
+  if src.len > 0:
+    # also copy the \0 terminator:
+    copyMem(addr dest[dest.len], toCstr(src), src.len+1)
 
 type
   JsonIter = object
@@ -69,7 +99,7 @@ proc toUgly*(result: var string, tree: JsonTree, n: NodePos) =
           result.add ","
           pendingComma = false
         if action == actionKeyVal:
-          toNimStr(key).escapeJson(result)
+          key.escapeJson(result)
           result.add ":"
         case child.kind
         of opcodeArray:
@@ -81,10 +111,10 @@ proc toUgly*(result: var string, tree: JsonTree, n: NodePos) =
           it.push child
           pendingComma = false
         of opcodeInt, opcodeFloat:
-          result.add toNimStr(child.str)
+          result.add child.str
           pendingComma = true
         of opcodeString:
-          escapeJson(toNimStr(child.str), result)
+          escapeJson(child.str, result)
           pendingComma = true
         of opcodeBool:
           result.add(if child.bval: "true" else: "false")
@@ -98,9 +128,9 @@ proc toUgly*(result: var string, tree: JsonTree, n: NodePos) =
     else:
       result.add "}"
   of opcodeString:
-    escapeJson(toNimStr(n.str), result)
+    escapeJson(n.str, result)
   of opcodeInt, opcodeFloat:
-    result.add toNimStr(n.str)
+    result.add n.str
   of opcodeBool:
     result.add(if n.bval: "true" else: "false")
   of opcodeNull:
