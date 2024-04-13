@@ -28,22 +28,37 @@ proc initFromJson*(dst: var JsonTree; tree: JsonTree; n: NodePos) =
   rawExtract(dst, tree, n)
 
 proc initFromJson*[T: SomeInteger](dst: var T; tree: JsonTree; n: NodePos) =
-  verifyJsonKind(tree, n, {JInt})
-  when T is BiggestUInt:
-    dst = parseBiggestUInt n.str
-  elif T is BiggestInt:
-    dst = parseBiggestInt n.str
-  elif T is SomeSignedInt:
-    dst = T(parseInt n.str)
+  when T is uint|uint64 or int.sizeof == 4:
+    verifyJsonKind(tree, n, {JInt, JRawNumber})
+    case n.kind
+    of opcodeRawNumber:
+      let x = parseBiggestUInt(n.str)
+      dst = cast[T](x)
+    else:
+      dst = T(n.num)
   else:
-    dst = T(parseUInt n.str)
+    verifyJsonKind(tree, n, {JInt})
+    dst = cast[T](n.num)
 
 proc initFromJson*[T: SomeFloat](dst: var T; tree: JsonTree; n: NodePos) =
-  verifyJsonKind(tree, n, {JInt, JFloat})
-  if n.kind == opcodeFloat:
-    dst = T(parseFloat n.str)
+  verifyJsonKind(tree, n, {JInt, JFloat, JRawNumber})
+  if n.kind == JRawNumber:
+    case n.str
+    of "nan":
+      let b = NaN
+      dst = T(b)
+    of "inf":
+      let b = Inf
+      dst = T(b)
+    of "-inf":
+      let b = -Inf
+      dst = T(b)
+    else: raise newException(JsonKindError, "expected 'nan|inf|-inf', got " & n.str)
   else:
-    dst = T(parseBiggestInt n.str)
+    if n.kind == opcodeFloat:
+      dst = cast[T](n.num)
+    else:
+      dst = T(n.num)
 
 proc initFromJson*[T: enum](dst: var T; tree: JsonTree; n: NodePos) =
   verifyJsonKind(tree, n, {JString})

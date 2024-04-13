@@ -7,7 +7,8 @@ proc sorted*(tree: JsonTree, n: NodePos): SortedJsonTree =
   privateAccess(JsonTree)
   var stack = @[n]
   var nodes: seq[Node] = @[]
-  var atoms = BiTable[string]()
+  var strings = BiTable[string]()
+  var numbers = BiTable[BiggestInt]()
   while stack.len > 0:
     let curr = stack.pop()
     case curr.kind
@@ -28,11 +29,13 @@ proc sorted*(tree: JsonTree, n: NodePos): SortedJsonTree =
         items.add n.PatchPos
       for i in countdown(items.high, 0):
         stack.add items[i].NodePos
-    of opcodeInt, opcodeFloat, opcodeString:
-      nodes.add toNode(curr.kind, uint32 getOrIncl(atoms, curr.str))
+    of opcodeInt, opcodeFloat:
+      nodes.add toNode(curr.kind, uint32 getOrIncl(numbers, curr.num))
+    of opcodeString, opcodeRawNumber:
+      nodes.add toNode(curr.kind, uint32 getOrIncl(strings, curr.str))
     else:
       nodes.add tree.nodes[curr.int]
-  result = JsonTree(nodes: nodes, atoms: atoms).SortedJsonTree
+  result = JsonTree(nodes: nodes, strings: strings, numbers: numbers).SortedJsonTree
 
 proc sorted*(tree: JsonTree): SortedJsonTree {.inline.} =
   result = sorted(tree, rootNodeId)
@@ -46,8 +49,10 @@ proc rawTest*(tree, value: JsonTree, n: NodePos): bool =
   for i in 0..<L:
     let n = NodePos(i+n.int) # careful
     case n.kind
-    of opcodeInt, opcodeFloat, opcodeString:
-      if value.atoms[LitId value.nodes[i].operand] != n.str: return false
+    of opcodeInt, opcodeFloat:
+      if value.numbers[LitId value.nodes[i].operand] != n.num: return false
+    of opcodeString, opcodeRawNumber:
+      if value.strings[LitId value.nodes[i].operand] != n.str: return false
     else:
       if value.nodes[i] != tree.nodes[n.int]: return false
   return true

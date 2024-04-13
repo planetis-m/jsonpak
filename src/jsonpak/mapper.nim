@@ -5,11 +5,29 @@ import private/[jsonnode, jsontree, rawops], std/[macros, tables, options, impor
 proc toJson*(s: string; tree: var JsonTree) =
   storeAtom(tree, opcodeString, s)
 
-proc toJson*[T: SomeInteger](n: T; tree: var JsonTree) =
-  storeAtom(tree, opcodeInt, $n)
+proc toJson*(n: int; tree: var JsonTree) =
+  storeAtom(tree, opcodeInt, n)
 
-proc toJson*[T: SomeFloat](n: T; tree: var JsonTree) =
-  storeAtom(tree, opcodeFloat, $n)
+proc toJson*(n: BiggestInt; tree: var JsonTree) =
+  storeAtom(tree, opcodeInt, n)
+
+proc toJson*(n: uint; tree: var JsonTree) =
+  if n > cast[uint](int.high):
+    storeAtom(tree, opcodeRawNumber, $n)
+  else:
+    storeAtom(tree, opcodeInt, BiggestInt(n))
+
+proc toJson*(n: BiggestUInt; tree: var JsonTree) =
+  if n > cast[BiggestUInt](BiggestInt.high):
+    storeAtom(tree, opcodeRawNumber, $n)
+  else:
+    storeAtom(tree, opcodeInt, BiggestInt(n))
+
+proc toJson*(n: float; tree: var JsonTree) =
+  if n != n: storeAtom(tree, opcodeString, "nan")
+  elif n == Inf: storeAtom(tree, opcodeString, "inf")
+  elif n == -Inf: storeAtom(tree, opcodeString, "-inf")
+  else: storeAtom(tree, opcodeFloat, cast[BiggestInt](n))
 
 proc toJson*(b: bool; tree: var JsonTree) =
   storeAtom(tree, if b: opcodeTrue else: opcodeFalse)

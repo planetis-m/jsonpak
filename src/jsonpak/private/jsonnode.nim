@@ -5,6 +5,7 @@ type
     JBool,
     JInt,
     JFloat,
+    JRawNumber,
     JString,
     JObject,
     JArray
@@ -18,6 +19,7 @@ const
   opcodeTrue* = opcodeBool or 0b0000_1000
   opcodeInt* = uint32 JInt
   opcodeFloat* = uint32 JFloat
+  opcodeRawNumber* = uint32 JRawNumber
   opcodeString* = uint32 JString
   opcodeObject* = uint32 JObject
   opcodeArray* = uint32 JArray

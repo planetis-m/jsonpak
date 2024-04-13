@@ -3,7 +3,8 @@ import bitabs, jsonnode, std/assertions
 type
   JsonTree* = object
     nodes: seq[Node]
-    atoms: BiTable[string]
+    strings: BiTable[string]
+    numbers: BiTable[BiggestInt]
 
 proc isEmpty*(tree: JsonTree): bool {.inline.} =
   tree.nodes.len == 0 or tree.nodes.len == 1 and tree.nodes[0].kind == opcodeNull
@@ -24,7 +25,13 @@ proc nextChild*(tree: JsonTree; pos: var int) {.inline.} =
     inc pos
 
 proc toAtomNode*(tree: var JsonTree; kind: uint32, str: string): Node {.inline.} =
-  toNode(kind, uint32 getOrIncl(tree.atoms, str))
+  toNode(kind, uint32 getOrIncl(tree.strings, str))
+
+proc toAtomNode*(tree: var JsonTree; kind: uint32, n: BiggestInt): Node {.inline.} =
+  toNode(kind, uint32 getOrIncl(tree.numbers, n))
+
+proc toAtomNode*(tree: var JsonTree; kind: uint32, n: float): Node {.inline.} =
+  toNode(kind, uint32 getOrIncl(tree.numbers, cast[BiggestInt](n)))
 
 type
   NodePos* = distinct int
@@ -80,7 +87,8 @@ template kind*(n: NodePos): uint32 = tree.nodes[n.int].kind
 template litId*(n: NodePos): LitId = LitId operand(tree.nodes[n.int])
 template operand*(n: NodePos): uint32 = tree.nodes[n.int].operand
 
-template str*(n: NodePos): string = tree.atoms[litId(n)]
+template str*(n: NodePos): string = tree.strings[litId(n)]
+template num*(n: NodePos): BiggestInt = tree.numbers[litId(n)]
 template bval*(n: NodePos): bool = n.operand == 1
 
 type
@@ -104,6 +112,9 @@ proc storeAtom*(tree: var JsonTree; kind: uint32) {.inline.} =
   tree.nodes.add Node(kind)
 
 proc storeAtom*(tree: var JsonTree; kind: uint32; data: string) {.inline.} =
+  tree.nodes.add toAtomNode(tree, kind, data)
+
+proc storeAtom*(tree: var JsonTree; kind: uint32; data: SomeNumber) {.inline.} =
   tree.nodes.add toAtomNode(tree, kind, data)
 
 proc storeEmpty*(tree: var JsonTree; kind: uint32) {.inline.} =

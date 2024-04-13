@@ -45,7 +45,7 @@ proc currentAndNext(it: var JsonIter, tree: JsonTree): (NodePos, LitId, Action) 
 
 proc toUgly*(result: var string, tree: JsonTree, n: NodePos) =
   privateAccess(JsonTree)
-  template key: string = tree.atoms[keyId]
+  template key: string = tree.strings[keyId]
   case n.kind
   of opcodeArray, opcodeObject:
     if n.kind == opcodeArray:
@@ -80,11 +80,17 @@ proc toUgly*(result: var string, tree: JsonTree, n: NodePos) =
           result.add "{"
           it.push child
           pendingComma = false
-        of opcodeInt, opcodeFloat:
-          result.add child.str
+        of opcodeInt:
+          result.addInt child.num
+          pendingComma = true
+        of opcodeFloat:
+          result.addFloat cast[BiggestFloat](child.num)
           pendingComma = true
         of opcodeString:
           escapeJson(child.str, result)
+          pendingComma = true
+        of opcodeRawNumber:
+          result.add child.str
           pendingComma = true
         of opcodeBool:
           result.add(if child.bval: "true" else: "false")
@@ -97,9 +103,13 @@ proc toUgly*(result: var string, tree: JsonTree, n: NodePos) =
       result.add "]"
     else:
       result.add "}"
+  of opcodeInt:
+    result.addInt n.num
+  of opcodeFloat:
+    result.addFloat cast[BiggestFloat](n.num)
   of opcodeString:
     escapeJson(n.str, result)
-  of opcodeInt, opcodeFloat:
+  of opcodeRawNumber:
     result.add n.str
   of opcodeBool:
     result.add(if n.bval: "true" else: "false")
