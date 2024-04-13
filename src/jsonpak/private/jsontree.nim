@@ -76,21 +76,41 @@ proc parentImpl*(tree: JsonTree; n: NodePos): NodePos =
 
 template parent*(n: NodePos): NodePos = parentImpl(tree, n)
 
-template isShort*(n: NodePos): bool = tree.nodes[n.int].isShort
 template kind*(n: NodePos): uint64 = tree.nodes[n.int].kind
 template litId*(n: NodePos): LitId = LitId operand(tree.nodes[n.int])
 template operand*(n: NodePos): uint64 = tree.nodes[n.int].operand
 template str*(n: NodePos): string = tree.atoms[litId(n)]
-template shortStr*(n: NodePos): string =
-  var data = newString(payloadBits div 8)
-  for i in 0 ..< data.len:
-    data[i] = chr(n.operand shr (i * 8) and 0xFF)
-  data
-template copyShortStr*(data: untyped, n: NodePos) =
-  for i in 0 ..< data.len:
-    data[i] = chr(n.operand shr (i * 8) and 0xFF)
-
 template bval*(n: NodePos): bool = n.operand == 1
+
+template isShort*(n: NodePos): bool = tree.nodes[n.int].isShort
+template get(n: NodePos; i: int): char = char(n.operand shr (i * 8) and 0xff)
+
+proc shortLenImpl*(tree: JsonTree; n: NodePos): int {.inline.} =
+  {.push rangeChecks: off.}
+  template doIndex(i: int) =
+    if get(n, i) == '\0':
+      return i
+  doIndex 6
+  doIndex 5
+  doIndex 4
+  doIndex 3
+  doIndex 2
+  doIndex 1
+  doIndex 0
+  {.pop.}
+
+template shortLen*(n: NodePos): int = shortLenImpl(tree, n)
+
+template shortStr*(n: NodePos): string =
+  var data = newString(n.shortLen)
+  for i in 0 ..< data.len:
+    data[i] = n.get(i)
+  data
+
+template copyShortStr*(data: untyped, n: NodePos) =
+  data.setLen(n.shortLen)
+  for i in 0 ..< data.len:
+    data[i] = n.get(i)
 
 type
   PatchPos* = distinct int32
@@ -119,7 +139,7 @@ proc storeShortAtom*[T: SomeInteger](tree: var JsonTree; kind: uint64, data: T) 
   tree.nodes.add toShortNode(kind, cast[uint64](data))
 
 proc storeAtom*(tree: var JsonTree; kind: uint64; data: string) {.inline.} =
-  if data.len <= payloadBits div 8:
+  if data[^1] != '\0' and data.len <= payloadBits div 8:
     tree.nodes.add toShortNode(kind, createPayload(data))
   else:
     tree.nodes.add toAtomNode(tree, kind, data)
