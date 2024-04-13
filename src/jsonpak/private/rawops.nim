@@ -9,8 +9,8 @@ proc rawGetShort*(tree: JsonTree, n: NodePos, name: uint64): NodePos =
 
 proc rawGet*(tree: JsonTree, n: NodePos, name: string): NodePos =
   privateAccess(JsonTree)
-  if name.len <= payloadBits div 8:
-    return rawGetShort(tree, n, toPayload(name))
+  if inShortStrRange(name):
+    rawGetShort(tree, n, toPayload(name))
   else:
     let litId = tree.atoms.getKeyId(name)
     if litId == LitId(0):
@@ -78,7 +78,7 @@ proc rawAddKeyValuePair*(result: var JsonTree, src, dest: NodePos, key: string) 
   setLen(result.nodes, oldfull+L)
   for i in countdown(oldfull-1, dest.int):
     result.nodes[i+L] = result.nodes[i]
-  if key.len <= payloadBits div 8:
+  if inShortStrRange(key):
     result.nodes[dest.int] = toShortNode(opcodeString, toPayload(key))
   else:
     result.nodes[dest.int] = toAtomNode(result, opcodeString, key)
@@ -94,7 +94,7 @@ proc rawAddKeyValuePair*(result: var JsonTree, tree: JsonTree, n: NodePos, key: 
   setLen(result.nodes, oldfull+L)
   for i in countdown(oldfull-1, n.int):
     result.nodes[i+L] = result.nodes[i]
-  if key.len <= payloadBits div 8:
+  if inShortStrRange(key):
     result.nodes[n.int] = toShortNode(opcodeString, toPayload(key))
   else:
     result.nodes[n.int] = toAtomNode(result, opcodeString, key)

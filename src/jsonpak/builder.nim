@@ -53,7 +53,7 @@ proc initFromJson*[T: SomeFloat](dst: var T; tree: JsonTree; n: NodePos) =
       dst = T(parseFloat n.str)
   else:
     if n.isShort:
-      dst = T(int64(n.operand))
+      dst = T(cast[int64](n.operand))
     else:
       dst = T(parseBiggestInt n.str)
 
@@ -81,7 +81,7 @@ proc initFromJson*[S, T](dst: var array[S, T]; tree: JsonTree; n: NodePos) =
 
 proc initFromJson*[T](dst: var (Table[string, T]|OrderedTable[string, T]); tree: JsonTree; n: NodePos) =
   verifyJsonKind(tree, n, {JObject})
-  var buf = newString(payloadBits div 8)
+  var buf = ""
   for x in keys(tree, n):
     if x.isShort:
       copyShortStr(buf, x)
@@ -107,7 +107,7 @@ proc initFromJson*[T](dst: var Option[T]; tree: JsonTree; n: NodePos) =
 
 proc initFromJson*[T: object|tuple](dst: var T; tree: JsonTree; n: NodePos) =
   verifyJsonKind(tree, n, {JObject})
-  var buf = newString(payloadBits div 8)
+  var buf = ""
   for x in keys(tree, n):
     for k, v in dst.fieldPairs:
       if x.isShort:
@@ -145,7 +145,7 @@ iterator pairs*[T](tree: JsonTree; path: JsonPtr; t: typedesc[T]): (lent string,
     raisePathError(path.string)
   assert n.kind == opcodeObject
   var item = default(T)
-  var buf = newString(payloadBits div 8)
+  var buf = ""
   for x in keys(tree, n):
     initFromJson(item, tree, x.firstSon)
     if x.isShort:

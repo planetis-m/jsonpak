@@ -44,7 +44,7 @@ proc currentAndNext(it: var JsonIter, tree: JsonTree): (NodePos, NodePos, Action
 
 proc toUgly*(result: var string, tree: JsonTree, n: NodePos) =
   privateAccess(JsonTree)
-  var buf = newString(payloadBits div 8)
+  var buf = ""
   case n.kind
   of opcodeArray, opcodeObject:
     if n.kind == opcodeArray:
