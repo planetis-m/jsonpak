@@ -25,22 +25,22 @@ type
   Action = enum
     actionElem, actionKeyVal, actionPop, actionEnd
 
-proc currentAndNext(it: var JsonIter, tree: JsonTree): (NodePos, NodePos, Action) =
+proc currentAndNext(it: var JsonIter, tree: JsonTree): (NodePos, Action) =
   if it.pos < it.tosEnd:
     if it.tos.kind == opcodeArray:
-      result = (NodePos it.pos, NodePos 0, actionElem)
+      result = (NodePos it.pos, actionElem)
     else:
-      result = (firstSon(NodePos it.pos), NodePos it.pos, actionKeyVal)
+      result = (firstSon(NodePos it.pos), actionKeyVal)
       inc it.pos
     nextChild tree, it.pos
   elif it.stack.len > 0:
-    result = (it.tos, NodePos 0, actionPop)
+    result = (it.tos, actionPop)
     let tmp = it.stack.pop()
     it.tos = tmp[0].NodePos
     it.pos = tmp[1]
     it.tosEnd = it.tos.tosEnd
   else:
-    result = (nilNodeId, NodePos 0, actionEnd)
+    result = (nilNodeId, actionEnd)
 
 proc toUgly*(result: var string, tree: JsonTree, n: NodePos) =
   privateAccess(JsonTree)
@@ -54,7 +54,7 @@ proc toUgly*(result: var string, tree: JsonTree, n: NodePos) =
     var it = initJsonIter(tree, n)
     var pendingComma = false
     while true:
-      let (child, key, action) = currentAndNext(it, tree)
+      let (child, action) = currentAndNext(it, tree)
       case action
       of actionPop:
         if child.kind == opcodeArray:
@@ -68,7 +68,7 @@ proc toUgly*(result: var string, tree: JsonTree, n: NodePos) =
           result.add ","
           pendingComma = false
         if action == actionKeyVal:
-          escapeJson(key.anyStrBuffered, result)
+          escapeJson((NodePos child.int-1).anyStrBuffer, result)
           result.add ":"
         case child.kind
         of opcodeArray:
@@ -86,10 +86,10 @@ proc toUgly*(result: var string, tree: JsonTree, n: NodePos) =
             result.add child.str
           pendingComma = true
         of opcodeFloat:
-          result.add child.anyStrBuffered
+          result.add child.anyStrBuffer
           pendingComma = true
         of opcodeString:
-          escapeJson(child.anyStrBuffered, result)
+          escapeJson(child.anyStrBuffer, result)
           pendingComma = true
         of opcodeBool:
           result.add(if child.bval: "true" else: "false")
@@ -103,14 +103,14 @@ proc toUgly*(result: var string, tree: JsonTree, n: NodePos) =
     else:
       result.add "}"
   of opcodeString:
-    escapeJson(n.anyStrBuffered, result)
+    escapeJson(n.anyStrBuffer, result)
   of opcodeInt:
     if n.isShort:
       result.addInt cast[int64](n.operand)
     else:
       result.add n.str
   of opcodeFloat:
-    result.add n.anyStrBuffered
+    result.add n.anyStrBuffer
   of opcodeBool:
     result.add(if n.bval: "true" else: "false")
   of opcodeNull:

@@ -74,7 +74,7 @@ proc initFromJson*[T](dst: var (Table[string, T]|OrderedTable[string, T]); tree:
   verifyJsonKind(tree, n, {JObject})
   var buf = ""
   for x in keys(tree, n):
-    initFromJson(mgetOrPut(dst, x.anyStrBuffered, default(T)), tree, x.firstSon)
+    initFromJson(mgetOrPut(dst, x.anyStrBuffer, default(T)), tree, x.firstSon)
 
 proc initFromJson*[T](dst: var ref T; tree: JsonTree; n: NodePos) =
   verifyJsonKind(tree, n, {JObject, JNull})
@@ -97,7 +97,7 @@ proc initFromJson*[T: object|tuple](dst: var T; tree: JsonTree; n: NodePos) =
   var buf = ""
   for x in keys(tree, n):
     for k, v in dst.fieldPairs:
-      if x.anyStrBuffered == k:
+      if x.anyStrBuffer == k:
         initFromJson(v, tree, x.firstSon)
         break # emulate elif
 
@@ -129,4 +129,4 @@ iterator pairs*[T](tree: JsonTree; path: JsonPtr; t: typedesc[T]): (lent string,
   var buf = ""
   for x in keys(tree, n):
     initFromJson(item, tree, x.firstSon)
-    yield (x.anyStrBuffered, item)
+    yield (x.anyStrBuffer, item)

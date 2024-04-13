@@ -100,7 +100,7 @@ template copyShortStr*(data: string, n: NodePos) =
 template anyStr*(n: NodePos): untyped =
   (if n.isShort: n.shortStr else: n.str)
 
-template anyStrBuffered*(x: NodePos): untyped =
+template anyStrBuffer*(x: NodePos): untyped =
   (if n.isShort: (copyShortStr(buf, n); buf) else: n.str)
 
 type
