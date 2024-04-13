@@ -84,6 +84,12 @@ template bval*(n: NodePos): bool = n.operand == 1
 
 template isShort*(n: NodePos): bool = tree.nodes[n.int].isShort
 template get(n: NodePos; i: int): char = char(n.operand shr (i * 8) and 0xff)
+template set(p: uint64; i: int; c: char) = p = p or (c.uint64 shl (i * 8))
+
+proc createPayload*(data: string): uint64 =
+  result = 0
+  for i in 0 ..< data.len:
+    set(result, i, data[i])
 
 proc shortLenImpl*(tree: JsonTree; n: NodePos): int {.inline.} =
   {.push rangeChecks: off.}
