@@ -23,8 +23,8 @@ proc nextChild*(tree: JsonTree; pos: var int) {.inline.} =
   else:
     inc pos
 
-proc toAtomNode*(tree: var JsonTree; kind: uint32, str: string): Node {.inline.} =
-  toNode(kind, uint32 getOrIncl(tree.atoms, str))
+proc toAtomNode*(tree: var JsonTree; kind: uint64, str: string): Node {.inline.} =
+  toNode(kind, uint64 getOrIncl(tree.atoms, str))
 
 type
   NodePos* = distinct int
@@ -76,12 +76,32 @@ proc parentImpl*(tree: JsonTree; n: NodePos): NodePos =
 
 template parent*(n: NodePos): NodePos = parentImpl(tree, n)
 
-template kind*(n: NodePos): uint32 = tree.nodes[n.int].kind
+template kind*(n: NodePos): uint64 = tree.nodes[n.int].kind
 template litId*(n: NodePos): LitId = LitId operand(tree.nodes[n.int])
-template operand*(n: NodePos): uint32 = tree.nodes[n.int].operand
-
+template operand*(n: NodePos): uint64 = tree.nodes[n.int].operand
 template str*(n: NodePos): string = tree.atoms[litId(n)]
 template bval*(n: NodePos): bool = n.operand == 1
+
+template isShort*(n: NodePos): bool = tree.nodes[n.int].isShort
+template shortLen*(n: NodePos): int = tree.nodes[n.int].shortLen
+template get*(n: NodePos; i: int): char = get(tree.nodes[n.int], i)
+
+template copyShortStrToBuffer*(data: string, n: NodePos) =
+  data.setLen(n.shortLen)
+  for i in 0 ..< data.len:
+    data[i] = get(n, i)
+
+template shortStr*(n: NodePos): string =
+  var data = newString(n.shortLen)
+  for i in 0 ..< data.len:
+    data[i] = get(n, i)
+  data
+
+template anyStr*(n: NodePos): untyped =
+  (if n.isShort: n.shortStr else: n.str)
+
+template anyStrBuffer*(x: NodePos): untyped =
+  (if n.isShort: (copyShortStrToBuffer(buf, n); buf) else: n.str)
 
 type
   PatchPos* = distinct int32
@@ -90,21 +110,27 @@ proc `<`*(a, b: PatchPos): bool {.borrow.}
 proc `<=`*(a, b: PatchPos): bool {.borrow.}
 proc `==`*(a, b: PatchPos): bool {.borrow.}
 
-proc prepare*(tree: var JsonTree; kind: uint32): PatchPos =
+proc prepare*(tree: var JsonTree; kind: uint64): PatchPos =
   result = PatchPos tree.nodes.len
   tree.nodes.add Node kind
 
 proc patch*(tree: var JsonTree; pos: PatchPos) =
   let pos = pos.int
   assert tree.nodes[pos].kind > opcodeString
-  let distance = uint32(tree.nodes.len - pos)
-  tree.nodes[pos] = toNode(tree.nodes[pos].uint32, distance)
+  let distance = uint64(tree.nodes.len - pos)
+  tree.nodes[pos] = toNode(tree.nodes[pos].uint64, distance)
 
-proc storeAtom*(tree: var JsonTree; kind: uint32) {.inline.} =
+proc storeEmpty*(tree: var JsonTree; kind: uint64) {.inline.} =
+  tree.nodes.add toNode(kind, 1)
+
+proc storeAtom*(tree: var JsonTree; kind: uint64) {.inline.} =
   tree.nodes.add Node(kind)
 
-proc storeAtom*(tree: var JsonTree; kind: uint32; data: string) {.inline.} =
-  tree.nodes.add toAtomNode(tree, kind, data)
+proc storeShortInt*[T: SomeInteger](tree: var JsonTree; data: T) {.inline.} =
+  tree.nodes.add toShortNode(opcodeInt, cast[uint64](data))
 
-proc storeEmpty*(tree: var JsonTree; kind: uint32) {.inline.} =
-  tree.nodes.add toNode(kind, 1)
+proc storeAtom*(tree: var JsonTree; kind: uint64; data: string) {.inline.} =
+  if inShortStrRange(data):
+    tree.nodes.add toShortNode(kind, toPayload(data))
+  else:
+    tree.nodes.add toAtomNode(tree, kind, data)

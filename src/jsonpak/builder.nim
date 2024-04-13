@@ -18,7 +18,7 @@ proc initFromJson*(dst: var string; tree: JsonTree; n: NodePos) =
   if n.kind == opcodeNull:
     dst = ""
   else:
-    dst = n.str
+    dst = n.anyStr
 
 proc initFromJson*(dst: var bool; tree: JsonTree; n: NodePos) =
   verifyJsonKind(tree, n, {JBool})
@@ -29,25 +29,31 @@ proc initFromJson*(dst: var JsonTree; tree: JsonTree; n: NodePos) =
 
 proc initFromJson*[T: SomeInteger](dst: var T; tree: JsonTree; n: NodePos) =
   verifyJsonKind(tree, n, {JInt})
-  when T is BiggestUInt:
-    dst = parseBiggestUInt n.str
-  elif T is BiggestInt:
-    dst = parseBiggestInt n.str
-  elif T is SomeSignedInt:
-    dst = T(parseInt n.str)
+  if n.isShort:
+    dst = cast[T](n.operand)
   else:
-    dst = T(parseUInt n.str)
+    when T is BiggestUInt:
+      dst = parseBiggestUInt n.str
+    elif T is BiggestInt:
+      dst = parseBiggestInt n.str
+    elif T is SomeSignedInt:
+      dst = T(parseInt n.str)
+    else:
+      dst = T(parseUInt n.str)
 
 proc initFromJson*[T: SomeFloat](dst: var T; tree: JsonTree; n: NodePos) =
   verifyJsonKind(tree, n, {JInt, JFloat})
   if n.kind == opcodeFloat:
-    dst = T(parseFloat n.str)
+    dst = T(parseFloat n.anyStr)
   else:
-    dst = T(parseBiggestInt n.str)
+    if n.isShort:
+      dst = T(cast[int64](n.operand))
+    else:
+      dst = T(parseBiggestInt n.str)
 
 proc initFromJson*[T: enum](dst: var T; tree: JsonTree; n: NodePos) =
   verifyJsonKind(tree, n, {JString})
-  dst = parseEnum[T](n.str)
+  dst = parseEnum[T](n.anyStr)
 
 proc initFromJson*[T](dst: var seq[T]; tree: JsonTree; n: NodePos) =
   verifyJsonKind(tree, n, {JArray})
@@ -66,8 +72,9 @@ proc initFromJson*[S, T](dst: var array[S, T]; tree: JsonTree; n: NodePos) =
 
 proc initFromJson*[T](dst: var (Table[string, T]|OrderedTable[string, T]); tree: JsonTree; n: NodePos) =
   verifyJsonKind(tree, n, {JObject})
+  var buf = ""
   for x in keys(tree, n):
-    initFromJson(mgetOrPut(dst, x.str, default(T)), tree, x.firstSon)
+    initFromJson(mgetOrPut(dst, x.anyStrBuffer, default(T)), tree, x.firstSon)
 
 proc initFromJson*[T](dst: var ref T; tree: JsonTree; n: NodePos) =
   verifyJsonKind(tree, n, {JObject, JNull})
@@ -87,9 +94,10 @@ proc initFromJson*[T](dst: var Option[T]; tree: JsonTree; n: NodePos) =
 
 proc initFromJson*[T: object|tuple](dst: var T; tree: JsonTree; n: NodePos) =
   verifyJsonKind(tree, n, {JObject})
+  var buf = ""
   for x in keys(tree, n):
     for k, v in dst.fieldPairs:
-      if x.str == k:
+      if x.anyStrBuffer == k:
         initFromJson(v, tree, x.firstSon)
         break # emulate elif
 
@@ -118,6 +126,7 @@ iterator pairs*[T](tree: JsonTree; path: JsonPtr; t: typedesc[T]): (lent string,
     raisePathError(path.string)
   assert n.kind == opcodeObject
   var item = default(T)
+  var buf = ""
   for x in keys(tree, n):
     initFromJson(item, tree, x.firstSon)
-    yield (x.str, item)
+    yield (x.anyStrBuffer, item)

@@ -29,7 +29,10 @@ proc sorted*(tree: JsonTree, n: NodePos): SortedJsonTree =
       for i in countdown(items.high, 0):
         stack.add items[i].NodePos
     of opcodeInt, opcodeFloat, opcodeString:
-      nodes.add toNode(curr.kind, uint32 getOrIncl(atoms, curr.str))
+      if curr.isShort:
+        nodes.add tree.nodes[curr.int]
+      else:
+        nodes.add toNode(curr.kind, uint32 getOrIncl(atoms, curr.str))
     else:
       nodes.add tree.nodes[curr.int]
   result = JsonTree(nodes: nodes, atoms: atoms).SortedJsonTree
@@ -47,7 +50,10 @@ proc rawTest*(tree, value: JsonTree, n: NodePos): bool =
     let n = NodePos(i+n.int) # careful
     case n.kind
     of opcodeInt, opcodeFloat, opcodeString:
-      if value.atoms[LitId value.nodes[i].operand] != n.str: return false
+      if n.isShort:
+        return n.operand == value.nodes[i.int].operand
+      else:
+        return n.str == value.atoms[LitId value.nodes[i.int].operand]
     else:
       if value.nodes[i] != tree.nodes[n.int]: return false
   return true

@@ -6,7 +6,10 @@ proc toJson*(s: string; tree: var JsonTree) =
   storeAtom(tree, opcodeString, s)
 
 proc toJson*[T: SomeInteger](n: T; tree: var JsonTree) =
-  storeAtom(tree, opcodeInt, $n)
+  if inShortIntRange(n):
+    storeShortInt(tree, n)
+  else:
+    storeAtom(tree, opcodeInt, $n)
 
 proc toJson*[T: SomeFloat](n: T; tree: var JsonTree) =
   storeAtom(tree, opcodeFloat, $n)

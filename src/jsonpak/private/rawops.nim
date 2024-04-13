@@ -1,18 +1,28 @@
 import bitabs, jsonnode, jsontree, std/importutils
 
-proc rawGet*(tree: JsonTree, n: NodePos, name: string): NodePos =
+proc rawGetShort*(tree: JsonTree, n: NodePos, name: uint64): NodePos =
   privateAccess(JsonTree)
-  let litId = tree.atoms.getKeyId(name)
-  if litId == LitId(0):
-    return nilNodeId
   for x in keys(tree, n):
-    if x.litId == litId:
+    if x.operand == name:
       return x.firstSon
   return nilNodeId
 
+proc rawGet*(tree: JsonTree, n: NodePos, name: string): NodePos =
+  privateAccess(JsonTree)
+  if inShortStrRange(name):
+    rawGetShort(tree, n, toPayload(name))
+  else:
+    let litId = tree.atoms.getKeyId(name)
+    if litId == LitId(0):
+      return nilNodeId
+    for x in keys(tree, n):
+      if x.litId == litId:
+        return x.firstSon
+    return nilNodeId
+
 proc rawUpdateParents*(tree: var JsonTree, parents: seq[PatchPos], diff: int) =
   privateAccess(JsonTree)
-  for parent in parents:
+  for parent in items(parents):
     let distance = tree.nodes[parent.int].rawSpan + diff
     tree.nodes[parent.int] = toNode(tree.nodes[parent.int].kind, distance.uint32)
 
@@ -24,7 +34,10 @@ proc rawExtract*(result: var JsonTree, tree: JsonTree, n: NodePos) =
     let n = NodePos(i+n.int) # careful
     case n.kind
     of opcodeInt, opcodeFloat, opcodeString:
-      result.nodes[i] = toAtomNode(result, n.kind, n.str)
+      if n.isShort:
+        result.nodes[i] = tree.nodes[n.int]
+      else:
+        result.nodes[i] = toAtomNode(result, n.kind, n.str)
     else:
       result.nodes[i] = tree.nodes[n.int]
 
@@ -51,7 +64,10 @@ proc rawAdd*(result: var JsonTree, tree: JsonTree, n: NodePos) =
     let m = NodePos(i)
     case m.kind
     of opcodeInt, opcodeFloat, opcodeString:
-      result.nodes[i+n.int] = toAtomNode(result, m.kind, m.str)
+      if m.isShort:
+        result.nodes[i+n.int] = tree.nodes[i]
+      else:
+        result.nodes[i+n.int] = toAtomNode(result, m.kind, m.str)
     else:
       result.nodes[i+n.int] = tree.nodes[i]
 
@@ -62,7 +78,10 @@ proc rawAddKeyValuePair*(result: var JsonTree, src, dest: NodePos, key: string) 
   setLen(result.nodes, oldfull+L)
   for i in countdown(oldfull-1, dest.int):
     result.nodes[i+L] = result.nodes[i]
-  result.nodes[dest.int] = toAtomNode(result, opcodeString, key)
+  if inShortStrRange(key):
+    result.nodes[dest.int] = toShortNode(opcodeString, toPayload(key))
+  else:
+    result.nodes[dest.int] = toAtomNode(result, opcodeString, key)
   let src =
     if src >= dest: NodePos(src.int+L) else: src
   for i in 0..<L-1:
@@ -75,12 +94,18 @@ proc rawAddKeyValuePair*(result: var JsonTree, tree: JsonTree, n: NodePos, key: 
   setLen(result.nodes, oldfull+L)
   for i in countdown(oldfull-1, n.int):
     result.nodes[i+L] = result.nodes[i]
-  result.nodes[n.int] = toAtomNode(result, opcodeString, key)
+  if inShortStrRange(key):
+    result.nodes[n.int] = toShortNode(opcodeString, toPayload(key))
+  else:
+    result.nodes[n.int] = toAtomNode(result, opcodeString, key)
   for i in 0..<L-1:
     let m = NodePos(i)
     case m.kind
     of opcodeInt, opcodeFloat, opcodeString:
-      result.nodes[i+n.int+1] = toAtomNode(result, m.kind, m.str)
+      if m.isShort:
+        result.nodes[i+n.int+1] = tree.nodes[i]
+      else:
+        result.nodes[i+n.int+1] = toAtomNode(result, m.kind, m.str)
     else:
       result.nodes[i+n.int+1] = tree.nodes[i]
 
@@ -132,7 +157,10 @@ proc rawReplace*(result: var JsonTree, tree: JsonTree, n: NodePos) =
     let m = NodePos(i)
     case m.kind
     of opcodeInt, opcodeFloat, opcodeString:
-      result.nodes[i+n.int] = toAtomNode(result, m.kind, m.str)
+      if m.isShort:
+        result.nodes[i+n.int] = tree.nodes[i]
+      else:
+        result.nodes[i+n.int] = toAtomNode(result, m.kind, m.str)
     else:
       result.nodes[i+n.int] = tree.nodes[i]
 
@@ -146,7 +174,10 @@ proc rawTest*(a, b: JsonTree, na, nb: NodePos): bool =
   of opcodeBool:
     return a.nodes[na.int].operand == b.nodes[nb.int].operand
   of opcodeInt, opcodeFloat, opcodeString:
-    return a.atoms[LitId a.nodes[na.int].operand] == b.atoms[LitId b.nodes[nb.int].operand]
+    if a.nodes[na.int].isShort:
+      return a.nodes[na.int].operand == b.nodes[nb.int].operand
+    else:
+      return a.atoms[LitId a.nodes[na.int].operand] == b.atoms[LitId b.nodes[nb.int].operand]
   of opcodeArray:
     let lenA = len(a, na)
     let lenB = len(b, nb)
@@ -167,8 +198,11 @@ proc rawTest*(a, b: JsonTree, na, nb: NodePos): bool =
       return false
     for keyA in keys(a, na):
       let valA = keyA.firstSon
-      let keyStrA = a.atoms[LitId a.nodes[keyA.int].operand]
-      let valB = b.rawGet(nb, keyStrA)
+      let valB = if a.nodes[keyA.int].isShort:
+          b.rawGetShort(nb, a.nodes[keyA.int].operand)
+        else:
+          let keyStrA = a.atoms[LitId a.nodes[keyA.int].operand]
+          b.rawGet(nb, keyStrA)
       if valB.isNil or not rawTest(a, b, valA, valB):
         return false
     return true
