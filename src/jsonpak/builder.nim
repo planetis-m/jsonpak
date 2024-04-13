@@ -107,11 +107,18 @@ proc initFromJson*[T](dst: var Option[T]; tree: JsonTree; n: NodePos) =
 
 proc initFromJson*[T: object|tuple](dst: var T; tree: JsonTree; n: NodePos) =
   verifyJsonKind(tree, n, {JObject})
+  var buf = newString(payloadBits div 8)
   for x in keys(tree, n):
     for k, v in dst.fieldPairs:
-      if x.str == k:
-        initFromJson(v, tree, x.firstSon)
-        break # emulate elif
+      if x.isShort:
+        copyShortStr(buf, x)
+        if buf == k:
+          initFromJson(v, tree, x.firstSon)
+          break
+      else:
+        if x.str == k:
+          initFromJson(v, tree, x.firstSon)
+          break # emulate elif
 
 proc fromJson*[T](tree: JsonTree; path: JsonPtr; t: typedesc[T]): T =
   let n = findNode(tree, path.string)
