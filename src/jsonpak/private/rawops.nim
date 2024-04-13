@@ -9,8 +9,8 @@ proc rawGetShort*(tree: JsonTree, n: NodePos, name: uint64): NodePos =
 
 proc rawGet*(tree: JsonTree, n: NodePos, name: string): NodePos =
   privateAccess(JsonTree)
-  if name.len <= payloadBits div 8:
-    return rawGetShort(tree, n, createPayload(name))
+  if name[^1] != '\0' and name.len <= payloadBits div 8:
+    return rawGetShort(tree, n, toPayload(name))
   else:
     let litId = tree.atoms.getKeyId(name)
     if litId == LitId(0):
@@ -22,7 +22,7 @@ proc rawGet*(tree: JsonTree, n: NodePos, name: string): NodePos =
 
 proc rawUpdateParents*(tree: var JsonTree, parents: seq[PatchPos], diff: int) =
   privateAccess(JsonTree)
-  for parent in parents:
+  for parent in items(parents):
     let distance = tree.nodes[parent.int].rawSpan + diff
     tree.nodes[parent.int] = toNode(tree.nodes[parent.int].kind, distance.uint32)
 
@@ -78,7 +78,10 @@ proc rawAddKeyValuePair*(result: var JsonTree, src, dest: NodePos, key: string) 
   setLen(result.nodes, oldfull+L)
   for i in countdown(oldfull-1, dest.int):
     result.nodes[i+L] = result.nodes[i]
-  result.nodes[dest.int] = toAtomNode(result, opcodeString, key)
+  if key[^1] != '\0' and key.len <= payloadBits div 8:
+    result.nodes[dest.int] = toShortNode(opcodeString, toPayload(key))
+  else:
+    result.nodes[dest.int] = toAtomNode(result, opcodeString, key)
   let src =
     if src >= dest: NodePos(src.int+L) else: src
   for i in 0..<L-1:
@@ -91,7 +94,10 @@ proc rawAddKeyValuePair*(result: var JsonTree, tree: JsonTree, n: NodePos, key: 
   setLen(result.nodes, oldfull+L)
   for i in countdown(oldfull-1, n.int):
     result.nodes[i+L] = result.nodes[i]
-  result.nodes[n.int] = toAtomNode(result, opcodeString, key)
+  if key[^1] != '\0' and key.len <= payloadBits div 8:
+    result.nodes[n.int] = toShortNode(opcodeString, toPayload(key))
+  else:
+    result.nodes[n.int] = toAtomNode(result, opcodeString, key)
   for i in 0..<L-1:
     let m = NodePos(i)
     case m.kind

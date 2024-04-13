@@ -53,7 +53,7 @@ proc initFromJson*[T: SomeFloat](dst: var T; tree: JsonTree; n: NodePos) =
       dst = T(parseFloat n.str)
   else:
     if n.isShort:
-      dst = T(cast[int64](n.operand))
+      dst = T(int64(n.operand))
     else:
       dst = T(parseBiggestInt n.str)
 

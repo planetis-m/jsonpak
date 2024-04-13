@@ -30,8 +30,7 @@ proc currentAndNext(it: var JsonIter, tree: JsonTree): (NodePos, uint64, Action)
     if it.tos.kind == opcodeArray:
       result = (NodePos it.pos, 0, actionElem)
     else:
-      let nodeId = (NodePos it.pos).operand
-      result = (firstSon(NodePos it.pos), nodeId, actionKeyVal)
+      result = (firstSon(NodePos it.pos), (NodePos it.pos).operand, actionKeyVal)
       inc it.pos
     nextChild tree, it.pos
   elif it.stack.len > 0:
@@ -50,7 +49,9 @@ proc toUgly*(result: var string, tree: JsonTree, n: NodePos) =
     if (NodePos keyId).isShort:
       copyShortStr(buf, keyId.NodePos)
       buf
-    else: tree.atoms[keyId.LitId]
+    else:
+      tree.atoms[keyId.LitId]
+
   case n.kind
   of opcodeArray, opcodeObject:
     if n.kind == opcodeArray:
@@ -87,13 +88,13 @@ proc toUgly*(result: var string, tree: JsonTree, n: NodePos) =
           pendingComma = false
         of opcodeInt:
           if child.isShort:
-            result.addInt cast[int64](child.operand)
+            result.addInt int64(child.operand)
           else:
             result.add child.str
           pendingComma = true
         of opcodeFloat:
           if child.isShort:
-            copyShortStr(buf, n)
+            copyShortStr(buf, child)
             result.add buf
           else:
             result.add child.str
@@ -124,7 +125,7 @@ proc toUgly*(result: var string, tree: JsonTree, n: NodePos) =
       escapeJson(n.str, result)
   of opcodeInt:
     if n.isShort:
-      result.addInt cast[int64](n.operand)
+      result.addInt int64(n.operand)
     else:
       result.add n.str
   of opcodeFloat:

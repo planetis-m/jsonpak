@@ -7,7 +7,7 @@ proc parseJsonAtom(tree: var JsonTree; p: var JsonParser) =
     storeAtom(tree, opcodeString, p.a)
     discard getTok(p)
   of tkInt:
-    let n = parseInt(p.a)
+    let n = parseBiggestInt(p.a)
     if n >= shortIntLow and n <= shortIntHigh:
       storeShortAtom(tree, opcodeInt, n)
     else:
