@@ -10,9 +10,11 @@ type
     JArray
 
 const
-  opcodeBits = 4
+  opcodeBits* = 4
   payloadBits* = sizeof(uint64) - opcodeBits
   shortBit = 0b0000_1000
+
+  shortLenMask = (1 shl opcodeBits) - 1
 
   shortIntLow* = -(1 shl payloadBits)
   shortIntHigh* = (1 shl payloadBits) - 1
@@ -32,6 +34,7 @@ const
 template kind*(n: Node): uint64 = n.uint64 and opcodeMask
 template operand*(n: Node): uint64 = n.uint64 shr opcodeBits.uint64
 template isShort*(n: Node): bool = (n.uint64 and shortBit) != 0
+template shortLen*(n: Node): int = int(n.uint64 shr opcodeBits.uint64 and shortLenMask)
 
 template toShortNode*(kind, operand: uint64): Node =
   Node(operand shl opcodeBits.uint64 or kind or shortBit.uint64)
