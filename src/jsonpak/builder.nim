@@ -29,14 +29,17 @@ proc initFromJson*(dst: var JsonTree; tree: JsonTree; n: NodePos) =
 
 proc initFromJson*[T: SomeInteger](dst: var T; tree: JsonTree; n: NodePos) =
   verifyJsonKind(tree, n, {JInt})
-  when T is BiggestUInt:
-    dst = parseBiggestUInt n.str
-  elif T is BiggestInt:
-    dst = parseBiggestInt n.str
-  elif T is SomeSignedInt:
-    dst = T(parseInt n.str)
+  if n.isShort:
+    dst = cast[T](n.operand)
   else:
-    dst = T(parseUInt n.str)
+    when T is BiggestUInt:
+      dst = parseBiggestUInt n.str
+    elif T is BiggestInt:
+      dst = parseBiggestInt n.str
+    elif T is SomeSignedInt:
+      dst = T(parseInt n.str)
+    else:
+      dst = T(parseUInt n.str)
 
 proc initFromJson*[T: SomeFloat](dst: var T; tree: JsonTree; n: NodePos) =
   verifyJsonKind(tree, n, {JInt, JFloat})

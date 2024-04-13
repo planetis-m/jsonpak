@@ -80,7 +80,13 @@ proc toUgly*(result: var string, tree: JsonTree, n: NodePos) =
           result.add "{"
           it.push child
           pendingComma = false
-        of opcodeInt, opcodeFloat:
+        of opcodeInt:
+          if child.isShort:
+            result.addInt cast[int64](child.operand)
+          else:
+            result.add child.str
+          pendingComma = true
+        of opcodeFloat:
           result.add child.str
           pendingComma = true
         of opcodeString:
@@ -99,7 +105,12 @@ proc toUgly*(result: var string, tree: JsonTree, n: NodePos) =
       result.add "}"
   of opcodeString:
     escapeJson(n.str, result)
-  of opcodeInt, opcodeFloat:
+  of opcodeInt:
+    if n.isShort:
+      result.addInt cast[int64](n.operand)
+    else:
+      result.add n.str
+  of opcodeFloat:
     result.add n.str
   of opcodeBool:
     result.add(if n.bval: "true" else: "false")
