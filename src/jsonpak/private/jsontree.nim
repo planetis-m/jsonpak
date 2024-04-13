@@ -92,10 +92,16 @@ template shortStr*(n: NodePos): string =
     data[i] = get(n, i)
   data
 
-template copyShortStr*(data: untyped, n: NodePos) =
+template copyShortStr*(data: string, n: NodePos) =
   data.setLen(n.shortLen)
   for i in 0 ..< data.len:
     data[i] = get(n, i)
+
+template anyStr*(n: NodePos): untyped =
+  (if n.isShort: n.shortStr else: n.str)
+
+template anyStrBuffered*(x: NodePos): untyped =
+  (if n.isShort: (copyShortStr(buf, n); buf) else: n.str)
 
 type
   PatchPos* = distinct int32

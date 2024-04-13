@@ -68,11 +68,7 @@ proc toUgly*(result: var string, tree: JsonTree, n: NodePos) =
           result.add ","
           pendingComma = false
         if action == actionKeyVal:
-          if key.isShort:
-            copyShortStr(buf, key)
-            escapeJson(buf, result)
-          else:
-            escapeJson(key.str, result)
+          escapeJson(key.anyStrBuffered, result)
           result.add ":"
         case child.kind
         of opcodeArray:
@@ -90,18 +86,10 @@ proc toUgly*(result: var string, tree: JsonTree, n: NodePos) =
             result.add child.str
           pendingComma = true
         of opcodeFloat:
-          if child.isShort:
-            copyShortStr(buf, child)
-            result.add buf
-          else:
-            result.add child.str
+          result.add child.anyStrBuffered
           pendingComma = true
         of opcodeString:
-          if child.isShort:
-            copyShortStr(buf, child)
-            escapeJson(buf, result)
-          else:
-            escapeJson(child.str, result)
+          escapeJson(child.anyStrBuffered, result)
           pendingComma = true
         of opcodeBool:
           result.add(if child.bval: "true" else: "false")
@@ -115,22 +103,14 @@ proc toUgly*(result: var string, tree: JsonTree, n: NodePos) =
     else:
       result.add "}"
   of opcodeString:
-    if n.isShort:
-      copyShortStr(buf, n)
-      escapeJson(buf, result)
-    else:
-      escapeJson(n.str, result)
+    escapeJson(n.anyStrBuffered, result)
   of opcodeInt:
     if n.isShort:
       result.addInt cast[int64](n.operand)
     else:
       result.add n.str
   of opcodeFloat:
-    if n.isShort:
-      copyShortStr(buf, n)
-      result.add buf
-    else:
-      result.add n.str
+    result.add n.anyStrBuffered
   of opcodeBool:
     result.add(if n.bval: "true" else: "false")
   of opcodeNull:

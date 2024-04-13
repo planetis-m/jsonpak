@@ -18,10 +18,7 @@ proc initFromJson*(dst: var string; tree: JsonTree; n: NodePos) =
   if n.kind == opcodeNull:
     dst = ""
   else:
-    if n.isShort:
-      dst = n.shortStr
-    else:
-      dst = n.str
+    dst = n.anyStr
 
 proc initFromJson*(dst: var bool; tree: JsonTree; n: NodePos) =
   verifyJsonKind(tree, n, {JBool})
@@ -47,10 +44,7 @@ proc initFromJson*[T: SomeInteger](dst: var T; tree: JsonTree; n: NodePos) =
 proc initFromJson*[T: SomeFloat](dst: var T; tree: JsonTree; n: NodePos) =
   verifyJsonKind(tree, n, {JInt, JFloat})
   if n.kind == opcodeFloat:
-    if n.isShort:
-      dst = T(parseFloat n.shortStr)
-    else:
-      dst = T(parseFloat n.str)
+    dst = T(parseFloat n.anyStr)
   else:
     if n.isShort:
       dst = T(cast[int64](n.operand))
@@ -59,10 +53,7 @@ proc initFromJson*[T: SomeFloat](dst: var T; tree: JsonTree; n: NodePos) =
 
 proc initFromJson*[T: enum](dst: var T; tree: JsonTree; n: NodePos) =
   verifyJsonKind(tree, n, {JString})
-  if n.isShort:
-    dst = parseEnum[T](n.shortStr)
-  else:
-    dst = parseEnum[T](n.str)
+  dst = parseEnum[T](n.anyStr)
 
 proc initFromJson*[T](dst: var seq[T]; tree: JsonTree; n: NodePos) =
   verifyJsonKind(tree, n, {JArray})
@@ -83,11 +74,7 @@ proc initFromJson*[T](dst: var (Table[string, T]|OrderedTable[string, T]); tree:
   verifyJsonKind(tree, n, {JObject})
   var buf = ""
   for x in keys(tree, n):
-    if x.isShort:
-      copyShortStr(buf, x)
-      initFromJson(mgetOrPut(dst, buf, default(T)), tree, x.firstSon)
-    else:
-      initFromJson(mgetOrPut(dst, x.str, default(T)), tree, x.firstSon)
+    initFromJson(mgetOrPut(dst, x.anyStrBuffered, default(T)), tree, x.firstSon)
 
 proc initFromJson*[T](dst: var ref T; tree: JsonTree; n: NodePos) =
   verifyJsonKind(tree, n, {JObject, JNull})
@@ -110,15 +97,9 @@ proc initFromJson*[T: object|tuple](dst: var T; tree: JsonTree; n: NodePos) =
   var buf = ""
   for x in keys(tree, n):
     for k, v in dst.fieldPairs:
-      if x.isShort:
-        copyShortStr(buf, x)
-        if buf == k:
-          initFromJson(v, tree, x.firstSon)
-          break
-      else:
-        if x.str == k:
-          initFromJson(v, tree, x.firstSon)
-          break # emulate elif
+      if x.anyStrBuffered == k:
+        initFromJson(v, tree, x.firstSon)
+        break # emulate elif
 
 proc fromJson*[T](tree: JsonTree; path: JsonPtr; t: typedesc[T]): T =
   let n = findNode(tree, path.string)
@@ -148,8 +129,4 @@ iterator pairs*[T](tree: JsonTree; path: JsonPtr; t: typedesc[T]): (lent string,
   var buf = ""
   for x in keys(tree, n):
     initFromJson(item, tree, x.firstSon)
-    if x.isShort:
-      copyShortStr(buf, x)
-      yield (buf, item)
-    else:
-      yield (x.str, item)
+    yield (x.anyStrBuffered, item)
