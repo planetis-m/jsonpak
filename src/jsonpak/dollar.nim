@@ -68,7 +68,7 @@ proc toUgly*(result: var string, tree: JsonTree, n: NodePos) =
           result.add ","
           pendingComma = false
         if action == actionKeyVal:
-          escapeJson((NodePos child.int-1).anyStrBuffer, result)
+          escapeJson(anyStrBuffer(NodePos child.int-1), result)
           result.add ":"
         case child.kind
         of opcodeArray:

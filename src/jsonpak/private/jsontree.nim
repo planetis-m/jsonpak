@@ -86,22 +86,22 @@ template isShort*(n: NodePos): bool = tree.nodes[n.int].isShort
 template shortLen*(n: NodePos): int = tree.nodes[n.int].shortLen
 template get*(n: NodePos; i: int): char = get(tree.nodes[n.int], i)
 
+template copyShortStrToBuffer*(data: string, n: NodePos) =
+  data.setLen(n.shortLen)
+  for i in 0 ..< data.len:
+    data[i] = get(n, i)
+
 template shortStr*(n: NodePos): string =
   var data = newString(n.shortLen)
   for i in 0 ..< data.len:
     data[i] = get(n, i)
   data
 
-template copyShortStr*(data: string, n: NodePos) =
-  data.setLen(n.shortLen)
-  for i in 0 ..< data.len:
-    data[i] = get(n, i)
-
 template anyStr*(n: NodePos): untyped =
   (if n.isShort: n.shortStr else: n.str)
 
 template anyStrBuffer*(x: NodePos): untyped =
-  (if n.isShort: (copyShortStr(buf, n); buf) else: n.str)
+  (if n.isShort: (copyShortStrToBuffer(buf, n); buf) else: n.str)
 
 type
   PatchPos* = distinct int32

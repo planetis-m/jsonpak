@@ -198,12 +198,11 @@ proc rawTest*(a, b: JsonTree, na, nb: NodePos): bool =
       return false
     for keyA in keys(a, na):
       let valA = keyA.firstSon
-      var valB: NodePos
-      if a.nodes[keyA.int].isShort:
-        valB = b.rawGetShort(nb, a.nodes[keyA.int].operand)
-      else:
-        let keyStrA = a.atoms[LitId a.nodes[keyA.int].operand]
-        valB = b.rawGet(nb, keyStrA)
+      let valB = if a.nodes[keyA.int].isShort:
+          b.rawGetShort(nb, a.nodes[keyA.int].operand)
+        else:
+          let keyStrA = a.atoms[LitId a.nodes[keyA.int].operand]
+          b.rawGet(nb, keyStrA)
       if valB.isNil or not rawTest(a, b, valA, valB):
         return false
     return true
