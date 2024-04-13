@@ -70,7 +70,7 @@ proc toUgly*(result: var string, tree: JsonTree, n: NodePos) =
         if action == actionKeyVal:
           if key.isShort:
             copyShortStr(buf, key)
-            buf.escapeJson(result)
+            escapeJson(buf, result)
           else:
             escapeJson(key.str, result)
           result.add ":"
@@ -85,7 +85,7 @@ proc toUgly*(result: var string, tree: JsonTree, n: NodePos) =
           pendingComma = false
         of opcodeInt:
           if child.isShort:
-            result.addInt int64(child.operand)
+            result.addInt cast[int64](child.operand)
           else:
             result.add child.str
           pendingComma = true
@@ -122,7 +122,7 @@ proc toUgly*(result: var string, tree: JsonTree, n: NodePos) =
       escapeJson(n.str, result)
   of opcodeInt:
     if n.isShort:
-      result.addInt int64(n.operand)
+      result.addInt cast[int64](n.operand)
     else:
       result.add n.str
   of opcodeFloat:
