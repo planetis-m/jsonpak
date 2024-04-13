@@ -11,7 +11,7 @@ type
 
 const
   opcodeBits* = 4
-  payloadBits* = sizeof(uint64) - opcodeBits
+  payloadBits* = sizeof(uint64)*8 - opcodeBits
   shortBit = 0b0000_1000
 
   shortLenMask = (1 shl opcodeBits) - 1

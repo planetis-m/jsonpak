@@ -85,11 +85,11 @@ template bval*(n: NodePos): bool = n.operand == 1
 template isShort*(n: NodePos): bool = tree.nodes[n.int].isShort
 template shortLen*(n: NodePos): int = tree.nodes[n.int].shortLen
 
-template setShortLen*(p: uint64; i: int) =
-  p = p or i.uint64 shl opcodeBits
+template setShortLen*(p: uint64; n: int) =
+  p = p or n.uint64
 
-template get(n: NodePos; i: int): char = char(n.operand shr (i * 8) and 0xff)
-template set(p: uint64; i: int; c: char) = p = p or (c.uint64 shl (i * 8))
+template get(n: NodePos; i: int): char = char(n.operand shr (i * 8 + opcodeBits) and 0xff)
+template set(p: uint64; i: int; c: char) = p = p or (c.uint64 shl (i * 8 + opcodeBits))
 
 proc toPayload*(data: string): uint64 =
   result = 0
@@ -137,5 +137,7 @@ proc storeShortAtom*[T: SomeInteger](tree: var JsonTree; kind: uint64, data: T) 
 proc storeAtom*(tree: var JsonTree; kind: uint64; data: string) {.inline.} =
   if data.len <= payloadBits div 8:
     tree.nodes.add toShortNode(kind, toPayload(data))
+    # if data == "email":
+      # echo (tree.nodes[^1].shortLen, NodePos(tree.nodes.high).shortStr, tree.nodes[^1].isShort)
   else:
     tree.nodes.add toAtomNode(tree, kind, data)

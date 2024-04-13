@@ -25,33 +25,26 @@ type
   Action = enum
     actionElem, actionKeyVal, actionPop, actionEnd
 
-proc currentAndNext(it: var JsonIter, tree: JsonTree): (NodePos, uint64, Action) =
+proc currentAndNext(it: var JsonIter, tree: JsonTree): (NodePos, NodePos, Action) =
   if it.pos < it.tosEnd:
     if it.tos.kind == opcodeArray:
-      result = (NodePos it.pos, 0, actionElem)
+      result = (NodePos it.pos, NodePos 0, actionElem)
     else:
-      result = (firstSon(NodePos it.pos), (NodePos it.pos).operand, actionKeyVal)
+      result = (firstSon(NodePos it.pos), NodePos it.pos, actionKeyVal)
       inc it.pos
     nextChild tree, it.pos
   elif it.stack.len > 0:
-    result = (it.tos, 0, actionPop)
+    result = (it.tos, NodePos 0, actionPop)
     let tmp = it.stack.pop()
     it.tos = tmp[0].NodePos
     it.pos = tmp[1]
     it.tosEnd = it.tos.tosEnd
   else:
-    result = (nilNodeId, 0, actionEnd)
+    result = (nilNodeId, NodePos 0, actionEnd)
 
 proc toUgly*(result: var string, tree: JsonTree, n: NodePos) =
   privateAccess(JsonTree)
   var buf = newString(payloadBits div 8)
-  template key: string =
-    if (NodePos keyId).isShort:
-      copyShortStr(buf, keyId.NodePos)
-      buf
-    else:
-      tree.atoms[keyId.LitId]
-
   case n.kind
   of opcodeArray, opcodeObject:
     if n.kind == opcodeArray:
@@ -61,7 +54,7 @@ proc toUgly*(result: var string, tree: JsonTree, n: NodePos) =
     var it = initJsonIter(tree, n)
     var pendingComma = false
     while true:
-      let (child, keyId, action) = currentAndNext(it, tree)
+      let (child, key, action) = currentAndNext(it, tree)
       case action
       of actionPop:
         if child.kind == opcodeArray:
@@ -75,7 +68,11 @@ proc toUgly*(result: var string, tree: JsonTree, n: NodePos) =
           result.add ","
           pendingComma = false
         if action == actionKeyVal:
-          key.escapeJson(result)
+          if key.isShort:
+            copyShortStr(buf, key)
+            buf.escapeJson(result)
+          else:
+            escapeJson(key.str, result)
           result.add ":"
         case child.kind
         of opcodeArray:
