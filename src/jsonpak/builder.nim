@@ -81,9 +81,11 @@ proc initFromJson*[S, T](dst: var array[S, T]; tree: JsonTree; n: NodePos) =
 
 proc initFromJson*[T](dst: var (Table[string, T]|OrderedTable[string, T]); tree: JsonTree; n: NodePos) =
   verifyJsonKind(tree, n, {JObject})
+  var buf = newString(payloadBits div 8)
   for x in keys(tree, n):
     if x.isShort:
-      initFromJson(mgetOrPut(dst, x.shortStr, default(T)), tree, x.firstSon)
+      copyShortStr(buf, x)
+      initFromJson(mgetOrPut(dst, buf, default(T)), tree, x.firstSon)
     else:
       initFromJson(mgetOrPut(dst, x.str, default(T)), tree, x.firstSon)
 
@@ -140,8 +142,7 @@ iterator pairs*[T](tree: JsonTree; path: JsonPtr; t: typedesc[T]): (lent string,
   for x in keys(tree, n):
     initFromJson(item, tree, x.firstSon)
     if x.isShort:
-      for i in 0 ..< buf.len:
-        buf[i] = chr(n.operand shr (i * 8) and 0xFF)
+      copyShortStr(buf, x)
       yield (buf, item)
     else:
       yield (x.str, item)

@@ -86,6 +86,9 @@ template shortStr*(n: NodePos): string =
   for i in 0 ..< data.len:
     data[i] = chr(n.operand shr (i * 8) and 0xFF)
   data
+template copyShortStr*(data: untyped, n: NodePos) =
+  for i in 0 ..< data.len:
+    data[i] = chr(n.operand shr (i * 8) and 0xFF)
 
 template bval*(n: NodePos): bool = n.operand == 1
 

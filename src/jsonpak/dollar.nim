@@ -48,8 +48,7 @@ proc toUgly*(result: var string, tree: JsonTree, n: NodePos) =
   var buf = newString(payloadBits div 8)
   template key: string =
     if (NodePos keyId).isShort:
-      for i in 0 ..< buf.len:
-        buf[i] = chr(n.operand shr (i * 8) and 0xFF)
+      copyShortStr(buf, keyId.NodePos)
       buf
     else: tree.atoms[keyId.LitId]
   case n.kind
@@ -94,16 +93,14 @@ proc toUgly*(result: var string, tree: JsonTree, n: NodePos) =
           pendingComma = true
         of opcodeFloat:
           if child.isShort:
-            for i in 0 ..< buf.len:
-              buf[i] = chr(n.operand shr (i * 8) and 0xFF)
+            copyShortStr(buf, n)
             result.add buf
           else:
             result.add child.str
           pendingComma = true
         of opcodeString:
           if child.isShort:
-            for i in 0 ..< buf.len:
-              buf[i] = chr(n.operand shr (i * 8) and 0xFF)
+            copyShortStr(buf, child)
             escapeJson(buf, result)
           else:
             escapeJson(child.str, result)
@@ -121,8 +118,7 @@ proc toUgly*(result: var string, tree: JsonTree, n: NodePos) =
       result.add "}"
   of opcodeString:
     if n.isShort:
-      for i in 0 ..< buf.len:
-        buf[i] = chr(n.operand shr (i * 8) and 0xFF)
+      copyShortStr(buf, n)
       escapeJson(buf, result)
     else:
       escapeJson(n.str, result)
@@ -133,8 +129,7 @@ proc toUgly*(result: var string, tree: JsonTree, n: NodePos) =
       result.add n.str
   of opcodeFloat:
     if n.isShort:
-      for i in 0 ..< buf.len:
-        buf[i] = chr(n.operand shr (i * 8) and 0xFF)
+      copyShortStr(buf, n)
       result.add buf
     else:
       result.add n.str
