@@ -18,7 +18,10 @@ proc initFromJson*(dst: var string; tree: JsonTree; n: NodePos) =
   if n.kind == opcodeNull:
     dst = ""
   else:
-    dst = n.str
+    if n.isShort:
+      dst = n.shortStr
+    else:
+      dst = n.str
 
 proc initFromJson*(dst: var bool; tree: JsonTree; n: NodePos) =
   verifyJsonKind(tree, n, {JBool})
@@ -44,13 +47,22 @@ proc initFromJson*[T: SomeInteger](dst: var T; tree: JsonTree; n: NodePos) =
 proc initFromJson*[T: SomeFloat](dst: var T; tree: JsonTree; n: NodePos) =
   verifyJsonKind(tree, n, {JInt, JFloat})
   if n.kind == opcodeFloat:
-    dst = T(parseFloat n.str)
+    if n.isShort:
+      dst = T(parseFloat n.shortStr)
+    else:
+      dst = T(parseFloat n.str)
   else:
-    dst = T(parseBiggestInt n.str)
+    if n.isShort:
+      dst = T(cast[int64](n.operand))
+    else:
+      dst = T(parseBiggestInt n.str)
 
 proc initFromJson*[T: enum](dst: var T; tree: JsonTree; n: NodePos) =
   verifyJsonKind(tree, n, {JString})
-  dst = parseEnum[T](n.str)
+  if n.isShort:
+    dst = parseEnum[T](n.shortStr)
+  else:
+    dst = parseEnum[T](n.str)
 
 proc initFromJson*[T](dst: var seq[T]; tree: JsonTree; n: NodePos) =
   verifyJsonKind(tree, n, {JArray})
@@ -70,7 +82,10 @@ proc initFromJson*[S, T](dst: var array[S, T]; tree: JsonTree; n: NodePos) =
 proc initFromJson*[T](dst: var (Table[string, T]|OrderedTable[string, T]); tree: JsonTree; n: NodePos) =
   verifyJsonKind(tree, n, {JObject})
   for x in keys(tree, n):
-    initFromJson(mgetOrPut(dst, x.str, default(T)), tree, x.firstSon)
+    if x.isShort:
+      initFromJson(mgetOrPut(dst, x.shortStr, default(T)), tree, x.firstSon)
+    else:
+      initFromJson(mgetOrPut(dst, x.str, default(T)), tree, x.firstSon)
 
 proc initFromJson*[T](dst: var ref T; tree: JsonTree; n: NodePos) =
   verifyJsonKind(tree, n, {JObject, JNull})
@@ -121,6 +136,12 @@ iterator pairs*[T](tree: JsonTree; path: JsonPtr; t: typedesc[T]): (lent string,
     raisePathError(path.string)
   assert n.kind == opcodeObject
   var item = default(T)
+  var buf = newString(payloadBits div 8)
   for x in keys(tree, n):
     initFromJson(item, tree, x.firstSon)
-    yield (x.str, item)
+    if x.isShort:
+      for i in 0 ..< buf.len:
+        buf[i] = chr(n.operand shr (i * 8) and 0xFF)
+      yield (buf, item)
+    else:
+      yield (x.str, item)

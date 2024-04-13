@@ -40,3 +40,8 @@ template toNode*(kind, operand: uint64): Node =
   Node(operand shl opcodeBits.uint64 or kind)
 
 proc `==`*(a, b: Node): bool {.borrow.}
+
+proc createPayload*(data: string): uint64 =
+  result = 0
+  for i in 0 ..< data.len:
+    result = result or (data[i].uint64 shl (i * 8))

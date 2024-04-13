@@ -10,10 +10,7 @@ proc rawGetShort*(tree: JsonTree, n: NodePos, name: uint64): NodePos =
 proc rawGet*(tree: JsonTree, n: NodePos, name: string): NodePos =
   privateAccess(JsonTree)
   if name.len <= payloadBits div 8:
-    var payload: uint64 = 0
-    for i in 0 ..< name.len:
-      payload = payload or (name[i].uint64 shl (i * 8))
-    return rawGetShort(tree, n, payload)
+    return rawGetShort(tree, n, createPayload(name))
   else:
     let litId = tree.atoms.getKeyId(name)
     if litId == LitId(0):
@@ -154,7 +151,10 @@ proc rawReplace*(result: var JsonTree, tree: JsonTree, n: NodePos) =
     let m = NodePos(i)
     case m.kind
     of opcodeInt, opcodeFloat, opcodeString:
-      result.nodes[i+n.int] = toAtomNode(result, m.kind, m.str)
+      if m.isShort:
+        result.nodes[i+n.int] = tree.nodes[i]
+      else:
+        result.nodes[i+n.int] = toAtomNode(result, m.kind, m.str)
     else:
       result.nodes[i+n.int] = tree.nodes[i]
 

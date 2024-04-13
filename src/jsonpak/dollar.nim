@@ -25,27 +25,33 @@ type
   Action = enum
     actionElem, actionKeyVal, actionPop, actionEnd
 
-proc currentAndNext(it: var JsonIter, tree: JsonTree): (NodePos, LitId, Action) =
+proc currentAndNext(it: var JsonIter, tree: JsonTree): (NodePos, uint64, Action) =
   if it.pos < it.tosEnd:
     if it.tos.kind == opcodeArray:
-      result = (NodePos it.pos, LitId(0), actionElem)
+      result = (NodePos it.pos, 0, actionElem)
     else:
-      let litId = (NodePos it.pos).litId
-      result = (firstSon(NodePos it.pos), litId, actionKeyVal)
+      let nodeId = (NodePos it.pos).operand
+      result = (firstSon(NodePos it.pos), nodeId, actionKeyVal)
       inc it.pos
     nextChild tree, it.pos
   elif it.stack.len > 0:
-    result = (it.tos, LitId(0), actionPop)
+    result = (it.tos, 0, actionPop)
     let tmp = it.stack.pop()
     it.tos = tmp[0].NodePos
     it.pos = tmp[1]
     it.tosEnd = it.tos.tosEnd
   else:
-    result = (nilNodeId, LitId(0), actionEnd)
+    result = (nilNodeId, 0, actionEnd)
 
 proc toUgly*(result: var string, tree: JsonTree, n: NodePos) =
   privateAccess(JsonTree)
-  template key: string = tree.atoms[keyId]
+  var buf = newString(payloadBits div 8)
+  template key: string =
+    if (NodePos keyId).isShort:
+      for i in 0 ..< buf.len:
+        buf[i] = chr(n.operand shr (i * 8) and 0xFF)
+      buf
+    else: tree.atoms[keyId.LitId]
   case n.kind
   of opcodeArray, opcodeObject:
     if n.kind == opcodeArray:
@@ -87,10 +93,20 @@ proc toUgly*(result: var string, tree: JsonTree, n: NodePos) =
             result.add child.str
           pendingComma = true
         of opcodeFloat:
-          result.add child.str
+          if child.isShort:
+            for i in 0 ..< buf.len:
+              buf[i] = chr(n.operand shr (i * 8) and 0xFF)
+            result.add buf
+          else:
+            result.add child.str
           pendingComma = true
         of opcodeString:
-          escapeJson(child.str, result)
+          if child.isShort:
+            for i in 0 ..< buf.len:
+              buf[i] = chr(n.operand shr (i * 8) and 0xFF)
+            escapeJson(buf, result)
+          else:
+            escapeJson(child.str, result)
           pendingComma = true
         of opcodeBool:
           result.add(if child.bval: "true" else: "false")
@@ -104,14 +120,24 @@ proc toUgly*(result: var string, tree: JsonTree, n: NodePos) =
     else:
       result.add "}"
   of opcodeString:
-    escapeJson(n.str, result)
+    if n.isShort:
+      for i in 0 ..< buf.len:
+        buf[i] = chr(n.operand shr (i * 8) and 0xFF)
+      escapeJson(buf, result)
+    else:
+      escapeJson(n.str, result)
   of opcodeInt:
     if n.isShort:
       result.addInt cast[int64](n.operand)
     else:
       result.add n.str
   of opcodeFloat:
-    result.add n.str
+    if n.isShort:
+      for i in 0 ..< buf.len:
+        buf[i] = chr(n.operand shr (i * 8) and 0xFF)
+      result.add buf
+    else:
+      result.add n.str
   of opcodeBool:
     result.add(if n.bval: "true" else: "false")
   of opcodeNull:
