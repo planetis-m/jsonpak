@@ -73,40 +73,40 @@ proc main() =
   bench "move", tree:
     move(t, JsonPtr"/records/500/city", JsonPtr"/records/0/location")
 
-  # # Benchmarks for std/json module
-  # bench "stdlib - extract", JsonNode():
-  #   t = stdTree.copy()
-  #
-  # bench "stdlib - parse", JsonNode():
-  #   t = json.parseJson(JsonData)
-  #
-  # bench "stdlib - toString", stdTree:
-  #   discard $t
-  #
-  # bench "stdlib - fromJson", stdTree:
-  #   discard t["records"][500].to(UserRecord)
-  #
-  # bench "stdlib - toJson", JsonNode():
-  #   t = %UserRecord(id:1,name:"User1",email:"user1@example.com",age:65,city:"Sydney",balance:37341,active:false)
-  #
-  # bench "stdlib - test", stdTree:
-  #   discard t["records"][500]["age"] == %30
-  #
-  # bench "stdlib - replace", stdTree:
-  #   t["records"][500]["age"] = %31
-  #
-  # bench "stdlib - remove", stdTree:
-  #   t["records"][500].delete("city")
-  #
-  # bench "stdlib - add", stdTree:
-  #   t["records"][500]["email"] = %"john@example.com"
-  #
-  # bench "stdlib - copy", stdTree:
-  #   t["records"][500]["newAge"] = t["records"][0]["age"]
-  #
-  # bench "stdlib - move", stdTree:
-  #   t["records"][500]["location"] = t["records"][0]["city"]
-  #   t["records"][0].delete("city")
+  # Benchmarks for std/json module
+  bench "stdlib - extract", JsonNode():
+    t = stdTree.copy()
+
+  bench "stdlib - parse", JsonNode():
+    t = json.parseJson(JsonData)
+
+  bench "stdlib - toString", stdTree:
+    discard $t
+
+  bench "stdlib - fromJson", stdTree:
+    discard t["records"][500].to(UserRecord)
+
+  bench "stdlib - toJson", JsonNode():
+    t = %UserRecord(id:1,name:"User1",email:"user1@example.com",age:65,city:"Sydney",balance:37341,active:false)
+
+  bench "stdlib - test", stdTree:
+    discard t["records"][500]["age"] == %30
+
+  bench "stdlib - replace", stdTree:
+    t["records"][500]["age"] = %31
+
+  bench "stdlib - remove", stdTree:
+    t["records"][500].delete("city")
+
+  bench "stdlib - add", stdTree:
+    t["records"][500]["email"] = %"john@example.com"
+
+  bench "stdlib - copy", stdTree:
+    t["records"][500]["newAge"] = t["records"][0]["age"]
+
+  bench "stdlib - move", stdTree:
+    t["records"][500]["location"] = t["records"][0]["city"]
+    t["records"][0].delete("city")
 
   echo "used Mem: ", formatSize getOccupiedMem()
 

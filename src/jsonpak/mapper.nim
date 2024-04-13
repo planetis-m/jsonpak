@@ -7,7 +7,7 @@ proc toJson*(s: string; tree: var JsonTree) =
 
 proc toJson*[T: SomeInteger](n: T; tree: var JsonTree) =
   if n >= shortIntLow and n <= shortIntHigh:
-    storeShortAtom(tree, opcodeInt, n)
+    storeShortInt(tree, n)
   else:
     storeAtom(tree, opcodeInt, $n)
 
