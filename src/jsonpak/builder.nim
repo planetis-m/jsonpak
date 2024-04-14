@@ -42,7 +42,7 @@ proc initFromJson*[T: SomeInteger](dst: var T; tree: JsonTree; n: NodePos) =
 
 proc initFromJson*[T: SomeFloat](dst: var T; tree: JsonTree; n: NodePos) =
   verifyJsonKind(tree, n, {JInt, JFloat, JRawNumber})
-  if n.kind == JRawNumber:
+  if n.kind == opcodeRawNumber:
     case n.str
     of "nan":
       let b = NaN
