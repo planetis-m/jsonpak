@@ -1,4 +1,4 @@
-import private/[bitabs, jsontree, jsonnode], std/[algorithm, importutils]
+import private/[bitabs, jsontree, jsonnode, rawops], std/[algorithm, importutils]
 
 type
   SortedJsonTree* = distinct JsonTree
@@ -37,7 +37,7 @@ proc sorted*(tree: JsonTree, n: NodePos): SortedJsonTree =
 proc sorted*(tree: JsonTree): SortedJsonTree {.inline.} =
   result = sorted(tree, rootNodeId)
 
-proc rawTest*(tree, value: JsonTree, n: NodePos): bool =
+proc rawTest(tree, value: JsonTree, n: NodePos): bool =
   privateAccess(JsonTree)
   if n.kind != value.nodes[0].kind: return false
   if n.kind == opcodeNull: return true
@@ -57,3 +57,51 @@ proc `==`*(a, b: SortedJsonTree): bool {.inline.} =
   if JsonTree(a).nodes.len != JsonTree(b).nodes.len:
     return false
   rawTest(JsonTree(a), JsonTree(b), rootNodeId)
+
+proc rawDeduplicate(tree: var JsonTree, n: NodePos, parents: var seq[PatchPos]) =
+  privateAccess(JsonTree)
+  case n.kind
+  of opcodeObject:
+    parents.add n.PatchPos
+    var totaldiff = 0
+    var prevKeyId = LitId(0)
+    var pos = n.int+1
+    var len = len(tree, n)
+    var count = 0
+    while count < len:
+      if prevKeyId == LitId(0) or NodePos(pos).str != tree.atoms[prevKeyId]:
+        prevKeyId = NodePos(pos).litId
+        rawDeduplicate(tree, NodePos(pos+1), parents)
+        inc count
+        inc pos
+        nextChild tree, pos
+      else:
+        let oldfull = tree.nodes.len
+        let diff = span(tree, pos+1) + 1
+        let endpos = pos + diff
+        for i in countup(endpos, oldfull-1):
+          tree.nodes[i+diff] = tree.nodes[i]
+        setLen(tree.nodes, oldfull+diff)
+        dec totaldiff, diff
+        dec len
+      # if i == sorted.high or sorted[i] != sorted[i+1]:
+      #   result.add(sorted[i])
+    if totaldiff < 0:
+      rawUpdateParents(tree, parents, totaldiff)
+    discard parents.pop()
+  of opcodeArray:
+    parents.add n.PatchPos
+    var pos = n.int+1
+    let len = len(tree, n)
+    var count = 0
+    while count < len:
+      rawDeduplicate(tree, NodePos(pos), parents)
+      inc count
+      nextChild tree, pos
+    discard parents.pop()
+  else:
+    discard
+
+proc deduplicate*(tree: var SortedJsonTree) =
+  var parents: seq[PatchPos] = @[]
+  rawDeduplicate(JsonTree(tree), rootNodeId, parents)
