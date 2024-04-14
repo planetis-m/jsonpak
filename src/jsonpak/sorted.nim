@@ -5,29 +5,39 @@ type
 
 proc sorted*(tree: JsonTree, n: NodePos): SortedJsonTree =
   privateAccess(JsonTree)
-  var stack = @[n]
+  var stack = @[n.PatchPos]
   var nodes: seq[Node] = @[]
   var atoms = BiTable[string]()
   while stack.len > 0:
-    let curr = stack.pop()
+    let curr = stack.pop().NodePos
     case curr.kind
     of opcodeObject:
+      let parent = PatchPos nodes.len
       nodes.add tree.nodes[curr.int]
       var pairs: seq[(string, PatchPos)] = @[]
       for n in keys(tree, curr):
         pairs.add (n.str, n.PatchPos)
       sort(pairs, proc (a, b: (string, PatchPos)): int = cmp(a[0], b[0]))
+      var prevKey = ""
+      var diff = 0
       for i in countdown(pairs.high, 0):
-        let n = pairs[i][1].NodePos
-        stack.add n.firstSon
-        stack.add n
+        let (key, n) = move pairs[i]
+        if key != prevKey:
+          stack.add PatchPos(n.int+1)
+          stack.add n
+          prevKey = key
+        else:
+          dec diff, span(tree, n.int+1) + 1
+      if diff < 0:
+        let distance = nodes[parent.int].rawSpan + diff
+        nodes[parent.int] = toNode(opcodeObject, distance.uint32)
     of opcodeArray:
       nodes.add tree.nodes[curr.int]
       var items: seq[PatchPos] = @[]
       for n in sonsReadonly(tree, curr):
         items.add n.PatchPos
       for i in countdown(items.high, 0):
-        stack.add items[i].NodePos
+        stack.add items[i]
     of opcodeInt, opcodeFloat, opcodeString:
       nodes.add toNode(curr.kind, uint32 getOrIncl(atoms, curr.str))
     else:
