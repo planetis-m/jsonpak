@@ -60,5 +60,96 @@ proc main =
     let tree2 = sorted(data2)
     assert tree1 != tree2
 
+  block:
+    var tree = sorted(%*{"b": {"d": 4, "d": 3}, "a": {"y": 25, "x": 24}})
+    deduplicate(tree)
+    assert tree == SortedJsonTree(%*{"a": {"x": 24, "y": 25}, "b": {"d": 3}})
+
+  block:
+    var tree = sorted(%*{"a": 1, "b": 2, "a": 3})
+    deduplicate(tree)
+    assert tree == SortedJsonTree(%*{"a": 3, "b": 2})
+
+  block:
+    var tree = sorted(%*{"a": {"x": 1, "y": 2}, "b": {"x": 3, "y": 4}, "a": {"x": 5, "y": 6}})
+    deduplicate(tree)
+    assert tree == SortedJsonTree(%*{"a": {"x": 5, "y": 6}, "b": {"x": 3, "y": 4}})
+
+  block:
+    var tree = sorted(%*{"a": [1, 2, 3], "b": [4, 5, 6], "a": [7, 8, 9]})
+    deduplicate(tree)
+    assert tree == SortedJsonTree(%*{"a": [7, 8, 9], "b": [4, 5, 6]})
+
+  block:
+    var tree = sorted(%*{
+      "a": {
+        "b": {
+          "c": 1,
+          "d": 2
+        },
+        "e": 3
+      },
+      "a": {
+        "b": {
+          "c": 4,
+          "d": 5
+        },
+        "e": 6
+      }
+    })
+    deduplicate(tree)
+    assert tree == SortedJsonTree(%*{
+      "a": {
+        "b": {
+          "c": 4,
+          "d": 5
+        },
+        "e": 6
+      }
+    })
+  # Compiler bug!?
+  # block:
+  #   var tree = sorted(%*{
+  #     "a": {
+  #       "b": {
+  #         "c": {
+  #           "d": 1,
+  #           "e": 2,
+  #           "d": 3
+  #         }
+  #       }
+  #     }
+  #   })
+  #   deduplicate(tree)
+  #   assert tree == SortedJsonTree(%*{
+  #     "a": {
+  #       "b": {
+  #         "c": {
+  #           "d": 3,
+  #           "e": 2
+  #         }
+  #       }
+  #     }
+  #   })
+  #
+  # block:
+  #   var tree = sorted(%*{
+  #     "a": {
+  #       "b": 1,
+  #       "c": 2,
+  #       "b": 3,
+  #       "d": 4,
+  #       "c": 5
+  #     }
+  #   })
+  #   deduplicate(tree)
+  #   assert tree == SortedJsonTree(%*{
+  #     "a": {
+  #       "b": 3,
+  #       "c": 5,
+  #       "d": 4
+  #     }
+  #   })
+
 static: main()
 main()
