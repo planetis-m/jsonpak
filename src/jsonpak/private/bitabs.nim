@@ -32,7 +32,7 @@ proc mustRehash(length, counter: int): bool {.inline.} =
   result = (length * 2 < counter * 3) or (length - counter < 4)
 
 const
-  idStart = 2
+  idStart = 1
 
 template idToIdx(x: LitId): int = x.int - idStart
 
@@ -53,9 +53,9 @@ proc enlarge[T](t: var BiTable[T]) =
       t.keys[j] = move n[i]
 
 proc getKeyId*[T](t: BiTable[T]; v: T): LitId =
-  let origH = hash(v)
-  var h = origH and maxHash(t)
   if t.keys.len != 0:
+    let origH = hash(v)
+    var h = origH and maxHash(t)
     while true:
       let litId = t.keys[h]
       if not isFilled(litId): break
@@ -88,7 +88,6 @@ proc getOrIncl*[T](t: var BiTable[T]; v: T): LitId =
   result = LitId(t.vals.len + idStart)
   t.keys[h] = result
   t.vals.add v
-
 
 proc `[]`*[T](t: var BiTable[T]; litId: LitId): var T {.inline.} =
   let idx = idToIdx litId
