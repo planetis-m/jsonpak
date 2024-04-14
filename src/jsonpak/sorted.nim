@@ -6,8 +6,6 @@ type
 proc rawSorted(result: var JsonTree; tree: JsonTree, n: NodePos) =
   privateAccess(JsonTree)
   var stack = @[n.PatchPos]
-  result.nodes = newSeq[Node](tree.nodes.len)
-  result.atoms = BiTable[string]()
   while stack.len > 0:
     let curr = stack.pop().NodePos
     case curr.kind
@@ -34,7 +32,8 @@ proc rawSorted(result: var JsonTree; tree: JsonTree, n: NodePos) =
       result.nodes.add tree.nodes[curr.int]
 
 proc sorted*(tree: JsonTree): SortedJsonTree {.inline.} =
-  result = JsonTree().SortedJsonTree
+  privateAccess(JsonTree)
+  result = JsonTree(nodes: newSeqOfCap[Node](tree.nodes.len)).SortedJsonTree
   rawSorted(JsonTree(result), tree, rootNodeId)
 
 proc rawTest(tree, value: JsonTree, n: NodePos): bool =
@@ -64,26 +63,24 @@ proc rawDeduplicate(tree: var JsonTree, n: NodePos, parents: var seq[PatchPos]) 
   of opcodeObject:
     parents.add n.PatchPos
     var totaldiff = 0
-    var prevKeyId = LitId(0)
-    var pos = n.int+1
-    var last = len(tree, n)-1
     var count = 0
+    var last = len(tree, n)-1
+    var pos = n.firstSon.int
     while count <= last:
-      if prevKeyId == LitId(0) or NodePos(pos).str != tree.atoms[prevKeyId]:
-        prevKeyId = NodePos(pos).litId
+      if count == last or
+          (var next = pos+1; nextChild tree, next; NodePos(pos).str != NodePos(next).str):
         rawDeduplicate(tree, NodePos(pos+1), parents)
         inc count
-        inc pos
-        nextChild tree, pos
+        pos = next
       else:
+        dec last
         let oldfull = tree.nodes.len
-        let diff = span(tree, pos+1) + 1
+        let diff = 1 + span(tree, pos+1)
         let endpos = pos + diff
         for i in countup(endpos, oldfull-1):
-          tree.nodes[i+diff] = tree.nodes[i]
-        setLen(tree.nodes, oldfull+diff)
+          tree.nodes[i-diff] = tree.nodes[i]
+        setLen(tree.nodes, oldfull-diff)
         dec totaldiff, diff
-        dec last
     if totaldiff < 0:
       rawUpdateParents(tree, parents, totaldiff)
     discard parents.pop()
