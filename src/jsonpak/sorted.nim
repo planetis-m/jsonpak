@@ -12,25 +12,15 @@ proc sorted*(tree: JsonTree, n: NodePos): SortedJsonTree =
     let curr = stack.pop().NodePos
     case curr.kind
     of opcodeObject:
-      let parent = PatchPos nodes.len
       nodes.add tree.nodes[curr.int]
       var pairs: seq[(string, PatchPos)] = @[]
       for n in keys(tree, curr):
         pairs.add (n.str, n.PatchPos)
       sort(pairs, proc (a, b: (string, PatchPos)): int = cmp(a[0], b[0]))
-      var prevKey = ""
-      var diff = 0
       for i in countdown(pairs.high, 0):
-        let (key, n) = move pairs[i]
-        if key != prevKey:
-          stack.add PatchPos(n.int+1)
-          stack.add n
-          prevKey = key
-        else:
-          dec diff, span(tree, n.int+1) + 1
-      if diff < 0:
-        let distance = nodes[parent.int].rawSpan + diff
-        nodes[parent.int] = toNode(opcodeObject, distance.uint32)
+        let n = pairs[i][1].NodePos
+        stack.add PatchPos(n.firstSon)
+        stack.add n.PatchPos
     of opcodeArray:
       nodes.add tree.nodes[curr.int]
       var items: seq[PatchPos] = @[]
