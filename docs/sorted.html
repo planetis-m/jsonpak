@@ -121,7 +121,7 @@
                                         <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
-    
+    The equality comparison for SortedJsonTree is faster than the one for JsonTree.
     <a href="https://github.com/planetis-m/jsonpak/tree/main/src/jsonpak/sorted.nim#L56" class="link-seesrc" target="_blank">Source</a>&nbsp;&nbsp;
 <a href="https://github.com/planetis-m/jsonpak/edit/main/src/jsonpak/sorted.nim#L56" class="link-seesrc" target="_blank" >Edit</a>&nbsp;&nbsp;
 
@@ -134,7 +134,9 @@
   <dt><pre><span class="Keyword">proc</span> <a href="#deduplicate%2CSortedJsonTree"><span class="Identifier">deduplicate</span></a><span class="Other">(</span><span class="Identifier">tree</span><span class="Other">:</span> <span class="Keyword">var</span> <a href="sorted.html#SortedJsonTree"><span class="Identifier">SortedJsonTree</span></a><span class="Other">)</span> {.<span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
-    
+    <p>Deduplicates keys in <tt class="docutils literal"><span class="pre"><span class="Identifier">tree</span></span></tt> recursively. If duplicate keys are found, only the last occurrence of each key is kept.</p>
+<p>The deduplication is performed in-place.</p>
+
     <a href="https://github.com/planetis-m/jsonpak/tree/main/src/jsonpak/sorted.nim#L106" class="link-seesrc" target="_blank">Source</a>&nbsp;&nbsp;
 <a href="https://github.com/planetis-m/jsonpak/edit/main/src/jsonpak/sorted.nim#L106" class="link-seesrc" target="_blank" >Edit</a>&nbsp;&nbsp;
 
@@ -148,7 +150,7 @@
     <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
-    
+    Sorts all the keys of <tt class="docutils literal"><span class="pre"><span class="Identifier">tree</span></span></tt> recursively, ensuring that the resulting tree has its keys in lexicographic order.
     <a href="https://github.com/planetis-m/jsonpak/tree/main/src/jsonpak/sorted.nim#L34" class="link-seesrc" target="_blank">Source</a>&nbsp;&nbsp;
 <a href="https://github.com/planetis-m/jsonpak/edit/main/src/jsonpak/sorted.nim#L34" class="link-seesrc" target="_blank" >Edit</a>&nbsp;&nbsp;
 
@@ -166,7 +168,7 @@
       <div class="twelve-columns footer">
         <span class="nim-sprite"></span>
         <br>
-        <small style="color: var(--hint);">Made with Nim. Generated: 2024-04-15 09:12:11 UTC</small>
+        <small style="color: var(--hint);">Made with Nim. Generated: 2024-04-15 09:19:19 UTC</small>
       </div>
     </div>
   </div>

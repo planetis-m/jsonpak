@@ -32,8 +32,8 @@ proc rawSorted(result: var JsonTree; tree: JsonTree, n: NodePos) =
       result.nodes.add tree.nodes[curr.int]
 
 proc sorted*(tree: JsonTree): SortedJsonTree {.inline.} =
-  # Sorts all the keys of `tree` recursively, ensuring that
-  # the resulting tree has its keys in lexicographic order.
+  ## Sorts all the keys of `tree` recursively, ensuring that
+  ## the resulting tree has its keys in lexicographic order.
   privateAccess(JsonTree)
   result = JsonTree(nodes: newSeqOfCap[Node](tree.nodes.len)).SortedJsonTree
   rawSorted(JsonTree(result), tree, rootNodeId)
@@ -54,7 +54,7 @@ proc rawTest(tree, value: JsonTree, n: NodePos): bool =
   return true
 
 proc `==`*(a, b: SortedJsonTree): bool {.inline.} =
-  # The equality comparison for SortedJsonTree is faster than the one for JsonTree.
+  ## The equality comparison for SortedJsonTree is faster than the one for JsonTree.
   privateAccess(JsonTree)
   if JsonTree(a).nodes.len != JsonTree(b).nodes.len:
     return false
@@ -104,9 +104,9 @@ proc rawDeduplicate(tree: var JsonTree, n: NodePos, parents: var seq[PatchPos]) 
     discard
 
 proc deduplicate*(tree: var SortedJsonTree) =
-  # Deduplicates keys in `tree` recursively. If duplicate keys are found,
-  # only the last occurrence of each key is kept.
-  #
-  # The deduplication is performed in-place.
+  ## Deduplicates keys in `tree` recursively. If duplicate keys are found,
+  ## only the last occurrence of each key is kept.
+  ##
+  ## The deduplication is performed in-place.
   var parents: seq[PatchPos] = @[]
   rawDeduplicate(JsonTree(tree), rootNodeId, parents)
