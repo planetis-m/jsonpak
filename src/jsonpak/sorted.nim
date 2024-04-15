@@ -1,4 +1,4 @@
-import private/[bitabs, jsontree, jsonnode, rawops], std/[algorithm, importutils]
+import private/[bitabs, jsontree, jsonnode, rawops], std/[algorithm, sequtils, importutils]
 
 type
   SortedJsonTree* = distinct JsonTree
@@ -54,7 +54,7 @@ proc rawTest(tree, value: JsonTree, n: NodePos): bool =
   return true
 
 proc `==`*(a, b: SortedJsonTree): bool {.inline.} =
-  ## The equality comparison for SortedJsonTree is faster than the one for JsonTree.
+  ## The equality comparison for `SortedJsonTree` is faster than the one for `JsonTree`.
   privateAccess(JsonTree)
   if JsonTree(a).nodes.len != JsonTree(b).nodes.len:
     return false
@@ -79,13 +79,10 @@ proc rawDeduplicate(tree: var JsonTree, n: NodePos, parents: var seq[PatchPos]) 
         nextChild tree, pos
       else:
         dec last
-        let oldfull = tree.nodes.len
-        let diff = 1 + span(tree, pos+1)
-        let endpos = pos + diff
-        for i in countup(endpos, oldfull-1):
-          tree.nodes[i-diff] = tree.nodes[i]
-        setLen(tree.nodes, oldfull-diff)
-        dec totaldiff, diff
+        let diff = -1 - span(tree, pos+1)
+        let endpos = pos - diff
+        tree.nodes.delete(pos, endpos - 1)
+        inc totaldiff, diff
     if totaldiff < 0:
       rawUpdateParents(tree, parents, totaldiff)
     parents.setLen(parents.high)
@@ -105,7 +102,7 @@ proc rawDeduplicate(tree: var JsonTree, n: NodePos, parents: var seq[PatchPos]) 
 
 proc deduplicate*(tree: var SortedJsonTree) =
   ## Deduplicates keys in `tree` recursively. If duplicate keys are found,
-  ## only the last occurrence of each key is kept.
+  ## only the last occurrence of the key is kept.
   ##
   ## The deduplication is performed in-place.
   var parents: seq[PatchPos] = @[]
