@@ -81,6 +81,11 @@ proc main =
     assert tree == SortedJsonTree(%*{"a": [7, 8, 9], "b": [4, 5, 6]})
 
   block:
+    var tree = sorted(%*[{"a": 1, "b": 2, "a": 3}, 1, {"a": 4, "b": 5, "a": 6}])
+    deduplicate(tree)
+    assert tree == SortedJsonTree(%*[{"a": 3, "b": 2}, 1, {"a": 6, "b": 5}])
+
+  block:
     var tree = sorted(%*{
       "a": {
         "b": {

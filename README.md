@@ -141,6 +141,10 @@ macro `%*`(x: untyped): JsonTree
 # iterators (import jsonpak/builder)
 iterator items[T](tree: JsonTree; path: JsonPtr; t: typedesc[T]): T
 iterator pairs[T](tree: JsonTree; path: JsonPtr; t: typedesc[T]): (lent string, T)
+# SortedJsonTree type (import jsonpak/sorted)
+proc sorted(tree: JsonTree): SortedJsonTree
+proc `==`(a, b: SortedJsonTree): bool
+proc deduplicate(tree: var SortedJsonTree)
 
 ```
 
@@ -148,7 +152,7 @@ iterator pairs[T](tree: JsonTree; path: JsonPtr; t: typedesc[T]): (lent string, 
 
 ```nim
 
-import jsonpak, jsonpak/[patch, jsonptr, extra, builder, mapper, dollar]
+import jsonpak, jsonpak/[patch, parser, jsonptr, extra, builder, mapper, sorted, dollar]
 
 var x = %*{
   "a": [1, 2, 3],
@@ -163,19 +167,19 @@ assert contains(x, JsonPtr"/a")
 assert kind(x, JsonPtr"/a") == JArray
 
 add x, JsonPtr"/a/-", %*[5, 6]
-# """{"a":[1,2,3,[5,6]],"b":4,"c":[5,6],"d":{"e":[7,8],"f":9}}"""
+# {"a":[1,2,3,[5,6]],"b":4,"c":[5,6],"d":{"e":[7,8],"f":9}}
 
 remove x, JsonPtr"/d/e/1"
-# """{"a":[1,2,3,[5,6]],"b":4,"c":[5,6],"d":{"e":[7],"f":9}}"""
+# {"a":[1,2,3,[5,6]],"b":4,"c":[5,6],"d":{"e":[7],"f":9}}
 
 replace x, JsonPtr"/b", %*"foo"
-# """{"a":[1,2,3,[5,6]],"b":"foo","c":[5,6],"d":{"e":[7],"f":9}}"""
+# {"a":[1,2,3,[5,6]],"b":"foo","c":[5,6],"d":{"e":[7],"f":9}}
 
 copy x, JsonPtr"/b", JsonPtr"/d/f"
-# """{"a":[1,2,3,[5,6]],"b":"foo","c":[5,6],"d":{"e":[7],"f":"foo"}}"""
+# {"a":[1,2,3,[5,6]],"b":"foo","c":[5,6],"d":{"e":[7],"f":"foo"}}
 
 move x, JsonPtr"/c", JsonPtr"/b"
-# """{"a":[1,2,3,[5,6]],"b":[5,6],"d":{"e":[7],"f":"foo"}}"""
+# {"a":[1,2,3,[5,6]],"b":[5,6],"d":{"e":[7],"f":"foo"}}
 
 # Comparing, copying, deserializing
 assert test(x, JsonPtr"/d", %*{"e": [7], "f": "foo"})
@@ -187,6 +191,11 @@ for i in items(x, JsonPtr"/b", int): echo i, " "
 # 5 6
 for k, v in pairs(x, JsonPtr"/d", JsonTree): echo (k, v), " "
 # ("e", [7]) ("f", "foo")
+
+# Sorting, deduplicating
+var y = parseJson("""{"a": 1, "b": 2, "a": 3}""").sorted
+deduplicate(y)
+# {"a": 3, "b": 2}
 
 ```
 

@@ -1,4 +1,4 @@
-import jsonpak, jsonpak/[patch, jsonptr, extra, builder, mapper, dollar]
+import jsonpak, jsonpak/[patch, parser, jsonptr, extra, builder, mapper, sorted, dollar]
 
 var x = %*{
   "a": [1, 2, 3],
@@ -37,3 +37,8 @@ for i in items(x, JsonPtr"/b", int): echo i, " "
 # 5 6
 for k, v in pairs(x, JsonPtr"/d", JsonTree): echo (k, v), " "
 # ("e", [7]) ("f", "foo")
+
+# Sorting, deduplicating
+var y = parseJson("""{"a": 1, "b": 2, "a": 3}""").sorted
+deduplicate(y)
+assert y == SortedJsonTree(%*{"a": 3, "b": 2})
