@@ -1,6 +1,6 @@
 # Package
 
-version       = "1.1.0"
+version       = "1.1.1"
 author        = "planetis-m"
 description   = "Packed ASTs for compact and efficient JSON representation, with JSON Pointer, JSON Patch support."
 license       = "MIT"
