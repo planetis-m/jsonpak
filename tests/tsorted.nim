@@ -174,16 +174,17 @@ proc main =
         "b": 1,
         "c": 2,
         "b": 3,
-        "d": 4,
-        "c": 5
+        "b": 4,
+        "d": 5,
+        "c": 6
       }
     })
     deduplicate(tree)
     assert tree == SortedJsonTree(%*{
       "a": {
-        "b": 3,
-        "c": 5,
-        "d": 4
+        "b": 4,
+        "c": 6,
+        "d": 5
       }
     })
 

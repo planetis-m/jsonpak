@@ -61,28 +61,35 @@ proc `==`*(a, b: SortedJsonTree): bool {.inline.} =
   rawTest(JsonTree(a), JsonTree(b), rootNodeId)
 
 proc rawDeduplicate(tree: var JsonTree, n: NodePos, parents: var seq[PatchPos]) =
+  # Todo: Turn the implementation to recursive bfs.
   privateAccess(JsonTree)
   case n.kind
   of opcodeObject:
     parents.add n.PatchPos
     var totaldiff = 0
-    var count = 0
+    var curr = 0
     var last = len(tree, n)-1
     var pos = n.firstSon.int
-    while count <= last:
-      if count == last or
-          (var next = pos+1; nextChild tree, next; NodePos(pos).str != NodePos(next).str):
+    while curr <= last:
+      var i = curr
+      var tmp = pos
+      var diff = 0
+      while i < last and
+          (var next = tmp+1; nextChild tree, next; NodePos(tmp).str == NodePos(next).str):
+        inc diff, 1 + span(tree, tmp+1)
+        tmp = next
+        dec last
+        inc i
+      if i > curr:
+        let endpos = pos + diff
+        tree.nodes.delete(pos, endpos - 1)
+        dec totaldiff, diff
+      else:
+        inc curr
         if not isAtom(tree, pos+1):
           rawDeduplicate(tree, NodePos(pos+1), parents)
-        inc count
         inc pos
         nextChild tree, pos
-      else:
-        dec last
-        let diff = -1 - span(tree, pos+1)
-        let endpos = pos - diff
-        tree.nodes.delete(pos, endpos - 1)
-        inc totaldiff, diff
     if totaldiff < 0:
       rawUpdateParents(tree, parents, totaldiff)
     parents.setLen(parents.high)
@@ -90,11 +97,11 @@ proc rawDeduplicate(tree: var JsonTree, n: NodePos, parents: var seq[PatchPos]) 
     parents.add n.PatchPos
     var pos = n.int+1
     let last = len(tree, n)-1
-    var count = 0
-    while count <= last:
+    var curr = 0
+    while curr <= last:
       if not isAtom(tree, pos):
         rawDeduplicate(tree, NodePos(pos), parents)
-      inc count
+      inc curr
       nextChild tree, pos
     parents.setLen(parents.high)
   else:
