@@ -1,4 +1,4 @@
-import private/[jsontree, jsonnode, rawops], std/importutils
+import private/[jsontree, jsonnode, rawops_sorted], std/importutils
 
 type
   SortedJsonTree* = distinct JsonTree
@@ -15,7 +15,7 @@ proc `==`*(a, b: SortedJsonTree): bool {.inline.} =
   privateAccess(JsonTree)
   if JsonTree(a).nodes.len != JsonTree(b).nodes.len:
     return false
-  rawTestSorted(JsonTree(a), JsonTree(b), rootNodeId)
+  rawTest(JsonTree(a), JsonTree(b), rootNodeId)
 
 proc deduplicate*(tree: var SortedJsonTree) =
   ## Deduplicates keys in `tree` recursively. If duplicate keys are found,
@@ -23,4 +23,4 @@ proc deduplicate*(tree: var SortedJsonTree) =
   ##
   ## The deduplication is performed in-place.
   var parents: seq[PatchPos] = @[]
-  rawDeduplicateSorted(JsonTree(tree), rootNodeId, parents)
+  rawDeduplicate(JsonTree(tree), rootNodeId, parents)
