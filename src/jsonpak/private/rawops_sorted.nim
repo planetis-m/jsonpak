@@ -1,13 +1,15 @@
 import bitabs, jsonnode, jsontree, rawops, std/[importutils, algorithm, sequtils]
 
-proc rawSorted*(result: var JsonTree; tree: JsonTree, n: NodePos) =
+proc rawSorted*(tree: JsonTree, n: NodePos): JsonTree =
   privateAccess(JsonTree)
+  var nodes = newSeqOfCap[Node](tree.nodes.len)
+  var atoms = BiTable[string]()
   var stack = @[n.PatchPos]
   while stack.len > 0:
     let curr = stack.pop().NodePos
     case curr.kind
     of opcodeObject:
-      result.nodes.add tree.nodes[curr.int]
+      nodes.add tree.nodes[curr.int]
       var pairs: seq[(string, PatchPos)] = @[]
       for n in keys(tree, curr):
         pairs.add (n.str, n.PatchPos)
@@ -17,16 +19,17 @@ proc rawSorted*(result: var JsonTree; tree: JsonTree, n: NodePos) =
         stack.add PatchPos(n.firstSon)
         stack.add n.PatchPos
     of opcodeArray:
-      result.nodes.add tree.nodes[curr.int]
+      nodes.add tree.nodes[curr.int]
       var items: seq[PatchPos] = @[]
       for n in sonsReadonly(tree, curr):
         items.add n.PatchPos
       for i in countdown(items.high, 0):
         stack.add items[i]
     of opcodeInt, opcodeFloat, opcodeString:
-      result.nodes.add toAtomNode(result, curr.kind, curr.str)
+      nodes.add toNode(curr.kind, uint32 getOrIncl(atoms, curr.str))
     else:
-      result.nodes.add tree.nodes[curr.int]
+      nodes.add tree.nodes[curr.int]
+  result = JsonTree(nodes: nodes, atoms: atoms)
 
 proc rawTest*(tree, value: JsonTree, n: NodePos): bool =
   privateAccess(JsonTree)

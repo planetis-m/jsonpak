@@ -1,4 +1,4 @@
-import private/[jsontree, jsonnode, rawops_sorted], std/importutils
+import private/[jsontree, rawops_sorted], std/importutils
 
 type
   SortedJsonTree* = distinct JsonTree
@@ -6,9 +6,7 @@ type
 proc sorted*(tree: JsonTree): SortedJsonTree {.inline.} =
   ## Sorts all the keys of `tree` recursively, ensuring that
   ## the resulting tree has its keys in lexicographic order.
-  privateAccess(JsonTree)
-  result = JsonTree(nodes: newSeqOfCap[Node](tree.nodes.len)).SortedJsonTree
-  rawSorted(JsonTree(result), tree, rootNodeId)
+  result = rawSorted(tree, rootNodeId).SortedJsonTree
 
 proc `==`*(a, b: SortedJsonTree): bool {.inline.} =
   ## The equality comparison for `SortedJsonTree` is faster than the one for `JsonTree`.
