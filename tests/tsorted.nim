@@ -107,49 +107,75 @@ proc main =
         "e": 6
       }
     })
-  # Compiler bug!?
-  # block:
-  #   var tree = sorted(%*{
-  #     "a": {
-  #       "b": {
-  #         "c": {
-  #           "d": 1,
-  #           "e": 2,
-  #           "d": 3
-  #         }
-  #       }
-  #     }
-  #   })
-  #   deduplicate(tree)
-  #   assert tree == SortedJsonTree(%*{
-  #     "a": {
-  #       "b": {
-  #         "c": {
-  #           "d": 3,
-  #           "e": 2
-  #         }
-  #       }
-  #     }
-  #   })
-  #
-  # block:
-  #   var tree = sorted(%*{
-  #     "a": {
-  #       "b": 1,
-  #       "c": 2,
-  #       "b": 3,
-  #       "d": 4,
-  #       "c": 5
-  #     }
-  #   })
-  #   deduplicate(tree)
-  #   assert tree == SortedJsonTree(%*{
-  #     "a": {
-  #       "b": 3,
-  #       "c": 5,
-  #       "d": 4
-  #     }
-  #   })
+
+  block:
+    var tree = sorted(%*{
+      "a": {
+        "b": {
+          "c": {
+            "d": 1,
+            "e": 2,
+            "d": 3
+          }
+        }
+      }
+    })
+    deduplicate(tree)
+    assert tree == SortedJsonTree(%*{
+      "a": {
+        "b": {
+          "c": {
+            "d": 3,
+            "e": 2
+          }
+        }
+      }
+    })
+
+  block:
+    var tree = sorted(%*{
+      "a": {
+        "b": 1,
+        "c": 2,
+        "b": 3,
+        "d": 4,
+        "c": 5
+      }
+    })
+    deduplicate(tree)
+    assert tree == SortedJsonTree(%*{
+      "a": {
+        "b": 3,
+        "c": 5,
+        "d": 4
+      }
+    })
+
+  block:
+    var tree = sorted(%*{
+      "a": {
+        "b": 1,
+        "c": 2,
+        "b": 3,
+        "d": 4,
+        "c": 5
+      },
+      "a": {
+        "b": 1,
+        "c": 2,
+        "b": 3,
+        "d": 4,
+        "c": 5
+      }
+    })
+    deduplicate(tree)
+    assert tree == SortedJsonTree(%*{
+      "a": {
+        "b": 3,
+        "c": 5,
+        "d": 4
+      }
+    })
 
 static: main()
 main()

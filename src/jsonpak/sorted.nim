@@ -72,7 +72,8 @@ proc rawDeduplicate(tree: var JsonTree, n: NodePos, parents: var seq[PatchPos]) 
         if not isAtom(tree, pos+1):
           rawDeduplicate(tree, NodePos(pos+1), parents)
         inc count
-        pos = next
+        inc pos
+        nextChild tree, pos
       else:
         dec last
         let oldfull = tree.nodes.len
