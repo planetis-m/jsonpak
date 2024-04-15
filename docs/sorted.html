@@ -5,7 +5,7 @@
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>src/jsonpak/sorted</title>
+<title>jsonpak/sorted</title>
 
 <!-- Favicon -->
 <link rel="shortcut icon" href="data:image/x-icon;base64,AAABAAEAEBAAAAEAIABoBAAAFgAAACgAAAAQAAAAIAAAAAEAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD///8A////AP///wD///8A////AP///wD///8A////AP///wD///8A////AP///wD///8A////AP///wD///8A////AP///wD///8A////AP///wD///8A////AAAAAAUAAAAF////AP///wD///8A////AP///wD///8A////AP///wD///8A////AAAAAAIAAABbAAAAlQAAAKIAAACbAAAAmwAAAKIAAACVAAAAWwAAAAL///8A////AP///wD///8A////AAAAABQAAADAAAAAYwAAAA3///8A////AP///wD///8AAAAADQAAAGMAAADAAAAAFP///wD///8A////AP///wAAAACdAAAAOv///wD///8A////AP///wD///8A////AP///wD///8AAAAAOgAAAJ3///8A////AP///wAAAAAnAAAAcP///wAAAAAoAAAASv///wD///8A////AP///wAAAABKAAAAKP///wAAAABwAAAAJ////wD///8AAAAAgQAAABwAAACIAAAAkAAAAJMAAACtAAAAFQAAABUAAACtAAAAkwAAAJAAAACIAAAAHAAAAIH///8A////AAAAAKQAAACrAAAAaP///wD///8AAAAARQAAANIAAADSAAAARf///wD///8AAAAAaAAAAKsAAACk////AAAAADMAAACcAAAAnQAAABj///8A////AP///wAAAAAYAAAAGP///wD///8A////AAAAABgAAACdAAAAnAAAADMAAAB1AAAAwwAAAP8AAADpAAAAsQAAAE4AAAAb////AP///wAAAAAbAAAATgAAALEAAADpAAAA/wAAAMMAAAB1AAAAtwAAAOkAAAD/AAAA/wAAAP8AAADvAAAA3gAAAN4AAADeAAAA3gAAAO8AAAD/AAAA/wAAAP8AAADpAAAAtwAAAGUAAAA/AAAA3wAAAP8AAAD/AAAA/wAAAP8AAAD/AAAA/wAAAP8AAAD/AAAA/wAAAP8AAADfAAAAPwAAAGX///8A////AAAAAEgAAADtAAAAvwAAAL0AAADGAAAA7wAAAO8AAADGAAAAvQAAAL8AAADtAAAASP///wD///8A////AP///wD///8AAAAAO////wD///8A////AAAAAIcAAACH////AP///wD///8AAAAAO////wD///8A////AP///wD///8A////AP///wD///8A////AP///wD///8A////AP///wD///8A////AP///wD///8A////AP///wD///8A////AP///wD///8A////AP///wD///8A////AP///wD///8A////AP///wD///8A////AP///wD///8A//8AAP//AAD4HwAA7/cAAN/7AAD//wAAoYUAAJ55AACf+QAAh+EAAAAAAADAAwAA4AcAAP5/AAD//wAA//8AAA=="/>
@@ -20,7 +20,7 @@
 <body>
   <div class="document" id="documentId">
     <div class="container">
-      <h1 class="title">src/jsonpak/sorted</h1>
+      <h1 class="title">jsonpak/sorted</h1>
       <div class="row">
   <div class="three columns">
     <div class="theme-select-wrapper">
@@ -67,13 +67,12 @@
   <li><a class="reference" href="#%3D%3D%2CSortedJsonTree%2CSortedJsonTree" title="`==`(a, b: SortedJsonTree): bool">`==`(a, b: SortedJsonTree): bool</a></li>
 
 </ul>
-<ul class="simple nested-toc-section">rawTest
-  <li><a class="reference" href="#rawTest%2CJsonTree%2CJsonTree%2CNodePos" title="rawTest(tree, value: JsonTree; n: NodePos): bool">rawTest(tree, value: JsonTree; n: NodePos): bool</a></li>
+<ul class="simple nested-toc-section">deduplicate
+  <li><a class="reference" href="#deduplicate%2CSortedJsonTree" title="deduplicate(tree: var SortedJsonTree)">deduplicate(tree: var SortedJsonTree)</a></li>
 
 </ul>
 <ul class="simple nested-toc-section">sorted
   <li><a class="reference" href="#sorted%2CJsonTree" title="sorted(tree: JsonTree): SortedJsonTree">sorted(tree: JsonTree): SortedJsonTree</a></li>
-<li><a class="reference" href="#sorted%2CJsonTree%2CNodePos" title="sorted(tree: JsonTree; n: NodePos): SortedJsonTree">sorted(tree: JsonTree; n: NodePos): SortedJsonTree</a></li>
 
 </ul>
 
@@ -94,7 +93,7 @@
     <div class="section" id="6">
   <h1><a class="toc-backref" href="#6">Imports</a></h1>
   <dl class="item">
-    <a class="reference external" href="bitabs.html">bitabs</a>, <a class="reference external" href="jsontree.html">jsontree</a>, <a class="reference external" href="jsonnode.html">jsonnode</a>
+    <a class="reference external" href="bitabs.html">bitabs</a>, <a class="reference external" href="jsontree.html">jsontree</a>, <a class="reference external" href="jsonnode.html">jsonnode</a>, <a class="reference external" href="rawops.html">rawops</a>
   </dl>
 </div>
 <div class="section" id="7">
@@ -123,22 +122,21 @@
   <dd>
     
     
-    <a href="https://github.com/planetis-m/jsonpak/tree/main/src/jsonpak/sorted.nim#L55" class="link-seesrc" target="_blank">Source</a>&nbsp;&nbsp;
-<a href="https://github.com/planetis-m/jsonpak/edit/main/src/jsonpak/sorted.nim#L55" class="link-seesrc" target="_blank" >Edit</a>&nbsp;&nbsp;
+    <a href="https://github.com/planetis-m/jsonpak/tree/main/src/jsonpak/sorted.nim#L56" class="link-seesrc" target="_blank">Source</a>&nbsp;&nbsp;
+<a href="https://github.com/planetis-m/jsonpak/edit/main/src/jsonpak/sorted.nim#L56" class="link-seesrc" target="_blank" >Edit</a>&nbsp;&nbsp;
 
   </dd>
 </div>
 
 </div>
-<div id="rawTest-procs-all">
-  <div id="rawTest,JsonTree,JsonTree,NodePos">
-  <dt><pre><span class="Keyword">proc</span> <a href="#rawTest%2CJsonTree%2CJsonTree%2CNodePos"><span class="Identifier">rawTest</span></a><span class="Other">(</span><span class="Identifier">tree</span><span class="Other">,</span> <span class="Identifier">value</span><span class="Other">:</span> <a href="jsontree.html#JsonTree"><span class="Identifier">JsonTree</span></a><span class="Other">;</span> <span class="Identifier">n</span><span class="Other">:</span> <a href="jsontree.html#NodePos"><span class="Identifier">NodePos</span></a><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">bool</span> {.<span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
-    <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
+<div id="deduplicate-procs-all">
+  <div id="deduplicate,SortedJsonTree">
+  <dt><pre><span class="Keyword">proc</span> <a href="#deduplicate%2CSortedJsonTree"><span class="Identifier">deduplicate</span></a><span class="Other">(</span><span class="Identifier">tree</span><span class="Other">:</span> <span class="Keyword">var</span> <a href="sorted.html#SortedJsonTree"><span class="Identifier">SortedJsonTree</span></a><span class="Other">)</span> {.<span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
   <dd>
     
     
-    <a href="https://github.com/planetis-m/jsonpak/tree/main/src/jsonpak/sorted.nim#L40" class="link-seesrc" target="_blank">Source</a>&nbsp;&nbsp;
-<a href="https://github.com/planetis-m/jsonpak/edit/main/src/jsonpak/sorted.nim#L40" class="link-seesrc" target="_blank" >Edit</a>&nbsp;&nbsp;
+    <a href="https://github.com/planetis-m/jsonpak/tree/main/src/jsonpak/sorted.nim#L106" class="link-seesrc" target="_blank">Source</a>&nbsp;&nbsp;
+<a href="https://github.com/planetis-m/jsonpak/edit/main/src/jsonpak/sorted.nim#L106" class="link-seesrc" target="_blank" >Edit</a>&nbsp;&nbsp;
 
   </dd>
 </div>
@@ -151,19 +149,8 @@
   <dd>
     
     
-    <a href="https://github.com/planetis-m/jsonpak/tree/main/src/jsonpak/sorted.nim#L37" class="link-seesrc" target="_blank">Source</a>&nbsp;&nbsp;
-<a href="https://github.com/planetis-m/jsonpak/edit/main/src/jsonpak/sorted.nim#L37" class="link-seesrc" target="_blank" >Edit</a>&nbsp;&nbsp;
-
-  </dd>
-</div>
-<div id="sorted,JsonTree,NodePos">
-  <dt><pre><span class="Keyword">proc</span> <a href="#sorted%2CJsonTree%2CNodePos"><span class="Identifier">sorted</span></a><span class="Other">(</span><span class="Identifier">tree</span><span class="Other">:</span> <a href="jsontree.html#JsonTree"><span class="Identifier">JsonTree</span></a><span class="Other">;</span> <span class="Identifier">n</span><span class="Other">:</span> <a href="jsontree.html#NodePos"><span class="Identifier">NodePos</span></a><span class="Other">)</span><span class="Other">:</span> <a href="sorted.html#SortedJsonTree"><span class="Identifier">SortedJsonTree</span></a> {.<span><span class="Other pragmadots">...</span></span><span class="pragmawrap"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span><span class="Other">,</span>
-    <span class="Identifier">forbids</span><span class="Other">:</span> <span class="Other">[</span><span class="Other">]</span></span>.}</pre></dt>
-  <dd>
-    
-    
-    <a href="https://github.com/planetis-m/jsonpak/tree/main/src/jsonpak/sorted.nim#L6" class="link-seesrc" target="_blank">Source</a>&nbsp;&nbsp;
-<a href="https://github.com/planetis-m/jsonpak/edit/main/src/jsonpak/sorted.nim#L6" class="link-seesrc" target="_blank" >Edit</a>&nbsp;&nbsp;
+    <a href="https://github.com/planetis-m/jsonpak/tree/main/src/jsonpak/sorted.nim#L34" class="link-seesrc" target="_blank">Source</a>&nbsp;&nbsp;
+<a href="https://github.com/planetis-m/jsonpak/edit/main/src/jsonpak/sorted.nim#L34" class="link-seesrc" target="_blank" >Edit</a>&nbsp;&nbsp;
 
   </dd>
 </div>
@@ -179,7 +166,7 @@
       <div class="twelve-columns footer">
         <span class="nim-sprite"></span>
         <br>
-        <small style="color: var(--hint);">Made with Nim. Generated: 2024-04-05 12:50:27 UTC</small>
+        <small style="color: var(--hint);">Made with Nim. Generated: 2024-04-15 09:12:11 UTC</small>
       </div>
     </div>
   </div>
