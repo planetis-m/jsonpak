@@ -61,7 +61,6 @@ proc `==`*(a, b: SortedJsonTree): bool {.inline.} =
   rawTest(JsonTree(a), JsonTree(b), rootNodeId)
 
 proc rawDeduplicate(tree: var JsonTree, n: NodePos, parents: var seq[PatchPos]) =
-  # Todo: Turn the implementation to recursive bfs.
   privateAccess(JsonTree)
   case n.kind
   of opcodeObject:
@@ -76,9 +75,9 @@ proc rawDeduplicate(tree: var JsonTree, n: NodePos, parents: var seq[PatchPos]) 
       var diff = 0
       while i < last and
           (var next = tmp+1; nextChild tree, next; NodePos(tmp).str == NodePos(next).str):
+        dec last
         inc diff, 1 + span(tree, tmp+1)
         tmp = next
-        dec last
         inc i
       if i > curr:
         let endpos = pos + diff
