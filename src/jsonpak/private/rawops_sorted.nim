@@ -52,9 +52,9 @@ proc rawDeduplicate*(tree: var JsonTree, n: NodePos, parents: var seq[PatchPos])
   of opcodeObject:
     parents.add n.PatchPos
     var totaldiff = 0
+    var pos = n.firstSon.int
     var curr = 0
     var last = len(tree, n)-1
-    var pos = n.firstSon.int
     while curr <= last:
       var i = curr
       var tmp = pos
@@ -71,8 +71,8 @@ proc rawDeduplicate*(tree: var JsonTree, n: NodePos, parents: var seq[PatchPos])
         dec totaldiff, diff
       else:
         inc curr
-        if not isAtom(tree, pos+1):
-          rawDeduplicate(tree, NodePos(pos+1), parents)
+        if isAtom(tree, pos+1): discard
+        else: rawDeduplicate(tree, NodePos(pos+1), parents)
         inc pos
         nextChild tree, pos
     if totaldiff < 0:
@@ -80,12 +80,12 @@ proc rawDeduplicate*(tree: var JsonTree, n: NodePos, parents: var seq[PatchPos])
     parents.setLen(parents.high)
   of opcodeArray:
     parents.add n.PatchPos
-    var pos = n.int+1
+    var pos = n.firstSon.int
     let last = len(tree, n)-1
     var curr = 0
     while curr <= last:
-      if not isAtom(tree, pos):
-        rawDeduplicate(tree, NodePos(pos), parents)
+      if isAtom(tree, pos): discard
+      else: rawDeduplicate(tree, NodePos(pos), parents)
       inc curr
       nextChild tree, pos
     parents.setLen(parents.high)
