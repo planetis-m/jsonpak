@@ -1,4 +1,4 @@
-import private/[jsontree, rawops_sorted], std/importutils
+import private/[jsontree, rawops_sorted], std/[importutils, hashes]
 
 type
   SortedJsonTree* = distinct JsonTree
