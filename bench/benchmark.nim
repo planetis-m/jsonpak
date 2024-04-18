@@ -1,6 +1,6 @@
 import std/[times, strutils, strformat, stats]
 import std/json except `%*`
-import jsonpak, jsonpak/[extra, patch, parser, jsonptr, mapper, builder]
+import jsonpak, jsonpak/[extra, patch, parser, jsonptr, mapper, builder, sorted]
 
 const
   JsonData = readFile("test.json")
@@ -73,6 +73,13 @@ proc main() =
   bench "move", tree:
     move(t, JsonPtr"/records/500/city", JsonPtr"/records/0/location")
 
+  bench "sort", newEmptyTree().SortedJsonTree:
+    t = sorted(tree)
+
+  tree = sorted(tree).JsonTree
+  bench "hash", tree:
+    discard hash(t.SortedJsonTree)
+
   # Benchmarks for std/json module
   bench "stdlib - extract", JsonNode():
     t = stdTree.copy()
@@ -82,6 +89,9 @@ proc main() =
 
   bench "stdlib - toString", stdTree:
     discard $t
+
+  bench "stdlib - hash", stdTree:
+    discard hash(t)
 
   bench "stdlib - fromJson", stdTree:
     discard t["records"][500].to(UserRecord)

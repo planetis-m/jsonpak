@@ -13,7 +13,12 @@ proc `==`*(a, b: SortedJsonTree): bool {.inline.} =
   privateAccess(JsonTree)
   if JsonTree(a).nodes.len != JsonTree(b).nodes.len:
     return false
-  rawTest(JsonTree(a), JsonTree(b), rootNodeId)
+  result = rawTest(JsonTree(a), JsonTree(b), rootNodeId)
+
+proc copy*(tree: SortedJsonTree): SortedJsonTree =
+  ## Returns a fresh copy of `tree`.
+  result = JsonTree().SortedJsonTree
+  rawExtract(JsonTree(result), JsonTree(tree), rootNodeId)
 
 proc deduplicate*(tree: var SortedJsonTree) =
   ## Deduplicates keys in `tree` recursively. If duplicate keys are found,

@@ -1,4 +1,5 @@
 import bitabs, jsonnode, jsontree, rawops, std/[importutils, algorithm, sequtils, hashes]
+export rawExtract
 
 proc rawSorted*(tree: JsonTree, n: NodePos): JsonTree =
   privateAccess(JsonTree)
