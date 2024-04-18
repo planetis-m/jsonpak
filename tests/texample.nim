@@ -42,4 +42,4 @@ for k, v in pairs(x, JsonPtr"/d", JsonTree): echo (k, v), " "
 var y = parseJson("""{"b":5,"a":1,"b":{"d":4,"c":2,"d":3}}""").sorted
 deduplicate(y)
 assert y == SortedJsonTree(%*{"a": 1, "b": {"c": 2, "d": 3}})
-echo hash(y) # -8015265616443833839
+echo hash(y) # -3485509795705892506
