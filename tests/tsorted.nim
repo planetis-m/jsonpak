@@ -1,4 +1,4 @@
-import jsonpak, jsonpak/[mapper, sorted]
+import jsonpak, jsonpak/[mapper, sorted, parser]
 
 proc main =
   block: # empty object
@@ -187,6 +187,52 @@ proc main =
         "d": 5
       }
     })
+
+  block:
+    let tree1 = sorted(%*{"a": 1, "b": 2, "c": 3})
+    let tree2 = sorted(%*{"c": 3, "a": 1, "b": 2})
+    assert hash(tree1) == hash(tree2)
+
+  block: # object with duplicate keys
+    var tree1 = sorted(%*{"a": 1, "b": 2, "a": 3})
+    deduplicate(tree1)
+    let tree2 = SortedJsonTree(%*{"a": 3, "b": 2})
+    assert hash(tree1) == hash(tree2)
+
+  block:
+    let tree1 = SortedJsonTree(%*{"a": 1, "b": "2", "c": 3})
+    let tree2 = SortedJsonTree(%*{"a": "1", "b": 2, "c": "3"})
+    assert hash(tree1) != hash(tree2)
+
+  block: # object with arrays in different order
+    let tree1 = SortedJsonTree(%*{"a": [1, 2, 3], "b": [4, 5, 6]})
+    let tree2 = SortedJsonTree(%*{"a": [4, 5, 6], "b": [1, 2, 3]})
+    assert hash(tree1) != hash(tree2)
+
+  block: # deeply nested objects
+    let tree1 = SortedJsonTree(%*{"a": {"b": {"c": {"d": 2}}}})
+    let tree2 = SortedJsonTree(%*{"a": {"b": {"c": {"d": 1}}}})
+    assert hash(tree1) != hash(tree2)
+
+  block: # object with empty arrays and objects
+    let tree1 = SortedJsonTree(%*{"a": {}, "b": {}})
+    let tree2 = SortedJsonTree(%*{"a": [], "b": []})
+    assert hash(tree1) != hash(tree2)
+
+  block: # object with different float representations (scientific notation)
+    let tree1 = parseJson("""{"a": 1.0, "b": 2.0, "c": 3.0}""").SortedJsonTree
+    let tree2 = parseJson("""{"a": 1e0, "b": 2e0, "c": 3e0}""").SortedJsonTree
+    assert hash(tree1) == hash(tree2)
+
+  block: # object with different float representations (trailing zeros)
+    let tree1 = parseJson("""{"a": 1.0, "b": 2.0, "c": 3.0}""").SortedJsonTree
+    let tree2 = parseJson("""{"a": 1.00000, "b": 2.00000, "c": 3.00000}""").SortedJsonTree
+    assert hash(tree1) == hash(tree2)
+
+  block: # object with different float representations (leading zeros)
+    let tree1 = parseJson("""{"a": 1.0, "b": 2.0, "c": 3.0}""").SortedJsonTree
+    let tree2 = parseJson("""{"a": 01.0, "b": 02.0, "c": 03.0}""").SortedJsonTree
+    assert hash(tree1) == hash(tree2)
 
 static: main()
 main()
