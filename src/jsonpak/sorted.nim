@@ -22,3 +22,7 @@ proc deduplicate*(tree: var SortedJsonTree) =
   ## The deduplication is performed in-place.
   var parents: seq[PatchPos] = @[]
   rawDeduplicate(JsonTree(tree), rootNodeId, parents)
+
+proc hash*(tree: SortedJsonTree): Hash =
+  ## Stable and fast hashes
+  result = rawHash(tree, rootNodeId)

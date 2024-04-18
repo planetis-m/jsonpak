@@ -1,4 +1,4 @@
-import bitabs, jsonnode, jsontree, rawops, std/[importutils, algorithm, sequtils]
+import bitabs, jsonnode, jsontree, rawops, std/[importutils, algorithm, sequtils, hashes]
 
 proc rawSorted*(tree: JsonTree, n: NodePos): JsonTree =
   privateAccess(JsonTree)
@@ -91,3 +91,16 @@ proc rawDeduplicate*(tree: var JsonTree, n: NodePos, parents: var seq[PatchPos])
     parents.setLen(parents.high)
   else:
     discard
+
+proc rawHash*(tree: JsonTree, n: NodePos): Hash =
+  privateAccess(JsonTree)
+  var h = Hash(0)
+  let L = span(tree, n.int)
+  for i in 0..<L:
+    let n = NodePos(i+n.int) # careful
+    case n.kind
+    of opcodeInt, opcodeFloat, opcodeString:
+      h = h !& (hash(n.kind) !& hash(n.str))
+    else:
+      h = h !& hash(tree.nodes[n.int])
+  result = !$h

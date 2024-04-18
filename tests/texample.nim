@@ -39,6 +39,6 @@ for k, v in pairs(x, JsonPtr"/d", JsonTree): echo (k, v), " "
 # ("e", [7]) ("f", "foo")
 
 # Sorting, deduplicating
-var y = parseJson("""{"a": 1, "b": 2, "a": 3}""").sorted
+var y = parseJson("""{"b":5,"a":1,"b":{"d":4,"c":2,"d":3}}""").sorted
 deduplicate(y)
-assert y == SortedJsonTree(%*{"a": 3, "b": 2})
+assert y == SortedJsonTree(%*{"a": 1, "b": {"c": 2, "d": 3}})
