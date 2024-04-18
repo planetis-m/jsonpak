@@ -25,4 +25,4 @@ proc deduplicate*(tree: var SortedJsonTree) =
 
 proc hash*(tree: SortedJsonTree): Hash =
   ## Stable and fast hashes
-  result = rawHash(tree, rootNodeId)
+  result = rawHash(JsonTree(tree), rootNodeId)
