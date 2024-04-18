@@ -98,6 +98,9 @@ proc rawHash*(tree: JsonTree, n: NodePos): Hash =
   let L = span(tree, n.int)
   for i in 0..<L:
     let n = NodePos(i+n.int) # careful
-    # as the keys are hashes of the values, we simply use them instead
-    h = h !& hash(tree.nodes[n.int])
+    case n.kind
+    of opcodeInt, opcodeFloat, opcodeString:
+      h = h !& (hash(n.kind) !& hash(n.str))
+    else:
+      h = h !& hash(tree.nodes[n.int])
   result = !$h
