@@ -204,6 +204,11 @@ proc main =
     let tree2 = SortedJsonTree(%*{"a": "1", "b": 2, "c": "3"})
     assert hash(tree1) != hash(tree2)
 
+  block:
+    let tree1 = SortedJsonTree(%*{"a": 1, "b": 2.0, "c": 3})
+    let tree2 = SortedJsonTree(%*{"a": 1.0, "b": 2, "c": 3.0})
+    assert hash(tree1) != hash(tree2)
+
   block: # object with arrays in different order
     let tree1 = SortedJsonTree(%*{"a": [1, 2, 3], "b": [4, 5, 6]})
     let tree2 = SortedJsonTree(%*{"a": [4, 5, 6], "b": [1, 2, 3]})
@@ -233,6 +238,36 @@ proc main =
     let tree1 = parseJson("""{"a": 1.0, "b": 2.0, "c": 3.0}""").SortedJsonTree
     let tree2 = parseJson("""{"a": 01.0, "b": 02.0, "c": 03.0}""").SortedJsonTree
     assert hash(tree1) == hash(tree2)
+
+  block: # object with strings containing special characters
+    let tree1 = SortedJsonTree(%*{"a": "hello", "b": "world!", "c": "123"})
+    let tree2 = SortedJsonTree(%*{"a": "hello", "b": "world\u0021", "c": "123"})
+    assert hash(tree1) == hash(tree2)
+
+  block: # object with strings containing escape sequences
+    let tree1 = SortedJsonTree(%*{"a": "line1\nline2", "b": "tab\tcharacter"})
+    let tree2 = SortedJsonTree(%*{"a": "line1\\nline2", "b": "tab\\tcharacter"})
+    assert hash(tree1) != hash(tree2)
+
+  block: # object with strings containing Unicode characters
+    let tree1 = SortedJsonTree(%*{"a": "Hello 世界", "b": "Привет мир"})
+    let tree2 = SortedJsonTree(%*{"a": "Hello \u4e16\u754c", "b": "\u041f\u0440\u0438\u0432\u0435\u0442 \u043c\u0438\u0440"})
+    assert hash(tree1) == hash(tree2)
+
+  block: # object with strings containing control characters
+    let tree1 = SortedJsonTree(%*{"a": "text\u0000text", "b": "text\u001ftext"})
+    let tree2 = SortedJsonTree(%*{"a": "text\\u0000text", "b": "text\\u001ftext"})
+    assert hash(tree1) != hash(tree2)
+
+  block: # object with strings containing leading/trailing whitespace
+    let tree1 = SortedJsonTree(%*{"a": "  hello  ", "b": "\tworld\t"})
+    let tree2 = SortedJsonTree(%*{"a": "hello", "b": "world"})
+    assert hash(tree1) != hash(tree2)
+
+  block: # object with empty strings
+    let tree1 = SortedJsonTree(%*{"a": "", "b": ""})
+    let tree2 = SortedJsonTree(%*{"a": " ", "b": " "})
+    assert hash(tree1) != hash(tree2)
 
 static: main()
 main()
