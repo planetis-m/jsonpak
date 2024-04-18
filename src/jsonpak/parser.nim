@@ -1,4 +1,4 @@
-import std/[parsejson, streams], private/[jsontree, jsonnode]
+import std/[parsejson, streams, strutils], private/[jsontree, jsonnode]
 export JsonParsingError
 
 proc parseJsonAtom(tree: var JsonTree; p: var JsonParser) =
@@ -10,7 +10,7 @@ proc parseJsonAtom(tree: var JsonTree; p: var JsonParser) =
     storeAtom(tree, opcodeInt, p.a)
     discard getTok(p)
   of tkFloat:
-    storeAtom(tree, opcodeFloat, p.a)
+    storeAtom(tree, opcodeFloat, $parseFloat(p.a)) # roundtrip
     discard getTok(p)
   of tkTrue:
     storeAtom(tree, opcodeTrue)

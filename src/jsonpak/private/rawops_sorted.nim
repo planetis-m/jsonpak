@@ -94,8 +94,6 @@ proc rawDeduplicate*(tree: var JsonTree, n: NodePos, parents: var seq[PatchPos])
 
 proc rawHash*(tree: JsonTree, n: NodePos): Hash =
   privateAccess(JsonTree)
-  # iff we knew that BiTable.vals doesn't contain
-  # stale entries we could significantly speed this up.
   var h = Hash(0)
   let L = span(tree, n.int)
   for i in 0..<L:
