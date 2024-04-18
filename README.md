@@ -145,6 +145,7 @@ iterator pairs[T](tree: JsonTree; path: JsonPtr; t: typedesc[T]): (lent string, 
 proc sorted(tree: JsonTree): SortedJsonTree
 proc `==`(a, b: SortedJsonTree): bool
 proc deduplicate(tree: var SortedJsonTree)
+proc hash(tree: SortedJsonTree): Hash
 
 ```
 
@@ -192,10 +193,11 @@ for i in items(x, JsonPtr"/b", int): echo i, " "
 for k, v in pairs(x, JsonPtr"/d", JsonTree): echo (k, v), " "
 # ("e", [7]) ("f", "foo")
 
-# Sorting, deduplicating
+# Sorting, deduplicating, repeatable hashes
 var y = parseJson("""{"b":5,"a":1,"b":{"d":4,"c":2,"d":3}}""").sorted
 deduplicate(y)
 # {"a": 1, "b": {"c": 2, "d": 3}}
+echo hash(y) # -3485509795705892506
 
 ```
 
