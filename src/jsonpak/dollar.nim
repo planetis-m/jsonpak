@@ -1,5 +1,29 @@
-from std/json import escapeJsonUnquoted, escapeJson
 import private/[bitabs, jsonnode, jsontree], std/importutils
+from std/strutils import toHex
+
+proc escapeJsonUnquoted*(s: string; result: var string) =
+  ## Converts a string `s` to its JSON representation without quotes.
+  ## Appends to `result`.
+  for c in s:
+    case c
+    of '\L': result.add("\\n")
+    of '\b': result.add("\\b")
+    of '\f': result.add("\\f")
+    of '\t': result.add("\\t")
+    of '\v': result.add("\\u000b")
+    of '\r': result.add("\\r")
+    of '"': result.add("\\\"")
+    of '\0'..'\7': result.add("\\u000" & $ord(c))
+    of '\14'..'\31': result.add("\\u00" & toHex(ord(c), 2))
+    of '\\': result.add("\\\\")
+    else: result.add(c)
+
+proc escapeJson*(s: string; result: var string) =
+  ## Converts a string `s` to its JSON representation with quotes.
+  ## Appends to `result`.
+  result.add("\"")
+  escapeJsonUnquoted(s, result)
+  result.add("\"")
 
 type
   JsonIter = object

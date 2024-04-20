@@ -2,6 +2,7 @@
 ## of (Table[LitId, Val], Table[Val, LitId]).
 
 import std/[hashes, assertions]
+from std/math import nextPowerOfTwo
 
 const
   defaultInitialSize = 64
@@ -14,6 +15,13 @@ type
   BiTable*[T] = object
     vals: seq[T] # indexed by LitId
     keys: seq[Key] # indexed by hash(val)
+
+proc slotsNeeded(count: Natural): int {.inline.} =
+  # Make sure to synchronize with `mustRehash`
+  result = nextPowerOfTwo(count * 3 div 2 + 4)
+
+proc initBiTable*[T](initialSize = defaultInitialSize): BiTable[T] =
+  BiTable[T](vals: @[], keys: newSeq[Key](slotsNeeded(initialSize)))
 
 proc nextTry(h, maxHash: Hash): Hash {.inline.} =
   result = (h + 1) and maxHash
