@@ -148,9 +148,10 @@ proc rawTest*(a, b: JsonTree, na, nb: NodePos): bool =
   of opcodeInt, opcodeFloat, opcodeString:
     return a.atoms[LitId a.nodes[na.int].operand] == b.atoms[LitId b.nodes[nb.int].operand]
   of opcodeArray:
+    if span(a, na.int) != span(b, nb.int):
+      return false
     let lenA = len(a, na)
-    let lenB = len(b, nb)
-    if lenA != lenB:
+    if lenA != len(b, nb):
       return false
     var posA = na.int+1
     var posB = nb.int+1
@@ -161,9 +162,9 @@ proc rawTest*(a, b: JsonTree, na, nb: NodePos): bool =
       b.nextChild(posB)
     return true
   of opcodeObject:
-    let lenA = len(a, na)
-    let lenB = len(b, nb)
-    if lenA != lenB:
+    if span(a, na.int) != span(b, nb.int):
+      return false
+    if len(a, na) != len(b, nb):
       return false
     for keyA in keys(a, na):
       let valA = keyA.firstSon
