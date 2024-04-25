@@ -208,17 +208,19 @@ various operations on a JSON document containing 1,000 entries.
 
 | Op\Lib   | jsonpak  | std/json |
 |----------|----------|----------|
-| Extract  | 0.2805   | 0.7552   |
-| toString | 0.8243   | 0.6683   |
-| fromJson | 0.0033   | 0.0009   |
+| Extract  | 0.2679   | 0.6892   |
+| toString | 0.8314   | 0.6853   |
+| fromJson | 0.0040   | 0.0008   |
 | toJson   | 0.0007   | 0.0005   |
-| Parse    | 1.5065   | 1.7205   |
-| Test     | 0.0035   | 0.0005   |
-| Replace  | 0.0036   | 0.0006   |
-| Remove   | 0.0124   | 0.0009   |
-| Add      | 0.0035   | 0.0006   |
-| Copy     | 0.0120   | 0.0007   |
-| Move     | 0.0212   | 0.0011   |
+| Parse    | 0.9767   | 1.4560   |
+| Test     | 0.0041   | 0.0005   |
+| Replace  | 0.0043   | 0.0005   |
+| Remove   | 0.0131   | 0.0008   |
+| Add      | 0.0043   | 0.0005   |
+| Copy     | 0.0086   | 0.0005   |
+| Move     | 0.0179   | 0.0008   |
+| Sort     | 0.8483   | 0.1953   |
+| Hash     | 0.1045   | 0.1484   |
 
 However, the standard library's representation occupies approximately 13.4MiB,
 whereas ours only takes up 2.8MiB. Therefore, this library aims to optimize

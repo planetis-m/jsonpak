@@ -26,6 +26,20 @@ template bench(name, tree, code: untyped) =
   let globalDuration = cpuTime() - globalStart
   printStats(name, stats, globalDuration)
 
+import std/tables
+
+proc sort(n: JsonNode) =
+  ## Sort a JSON node
+  case n.kind
+  of JArray:
+    for e in mitems(n.elems):
+      sort(e)
+  of JObject:
+    sort(n.fields, proc (x, y: (string, JsonNode)): int = cmp[string](x[0], y[0]))
+    for k, v in mpairs(n.fields):
+      sort(v)
+  else: discard
+
 type
   UserRecord = object
     id: int
@@ -117,6 +131,9 @@ proc main() =
   bench "stdlib - move", stdTree:
     t["records"][500]["location"] = t["records"][0]["city"]
     t["records"][0].delete("city")
+
+  bench "stdlib - sort", stdTree:
+    t.sort
 
   echo "used Mem: ", formatSize getOccupiedMem()
 
