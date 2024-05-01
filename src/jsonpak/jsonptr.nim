@@ -92,14 +92,10 @@ proc getArrayIndex(token: string): int =
   except ValueError:
     raiseSyntaxError(token)
 
-template copyTokenToBuffer(buf, src, first, last) =
+template copySubStr(buf, src, first, last) =
   buf.setLen(last-first)
-  when nimvm:
-    for i in 0..high(buf):
-      buf[i] = src[i+first]
-  else:
-    if first < last:
-      copyMem(cstring(buf), addr src[first], buf.len)
+  for i in 0..high(buf):
+    buf[i] = src[i+first]
 
 proc findNode*(tree: JsonTree, path: string): NodePos =
   var
@@ -111,7 +107,7 @@ proc findNode*(tree: JsonTree, path: string): NodePos =
     var first = last
     while last < len(path) and path[last] != '/':
       inc(last)
-    copyTokenToBuffer(cur, path, first, last)
+    copySubStr(cur, path, first, last)
 
     case n.kind
     of opcodeObject:
@@ -152,7 +148,7 @@ proc findNodeMut*(tree: JsonTree, path: string): PathResult =
     var first = last
     while last < len(path) and path[last] != '/':
       inc(last)
-    copyTokenToBuffer(cur, path, first, last)
+    copySubStr(cur, path, first, last)
 
     case n.kind
     of opcodeObject:
