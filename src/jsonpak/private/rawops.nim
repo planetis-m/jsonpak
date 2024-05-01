@@ -60,13 +60,19 @@ proc rawAddKeyValuePair*(result: var JsonTree, src, dest: NodePos, key: string) 
   let L = span(result, src.int) + 1
   let oldfull = result.nodes.len
   setLen(result.nodes, oldfull+L)
-  for i in countdown(oldfull-1, dest.int):
-    result.nodes[i+L] = result.nodes[i]
+  when nimvm:
+    for i in countdown(oldfull-1, dest.int):
+      result.nodes[i+L] = result.nodes[i]
+  else:
+    moveMem(addr result.nodes[dest.int+L], addr result.nodes[dest.int], (oldfull-dest.int)*sizeof(Node))
   result.nodes[dest.int] = toAtomNode(result, opcodeString, key)
   let src =
     if src >= dest: NodePos(src.int+L) else: src
-  for i in 0..<L-1:
-    result.nodes[dest.int+i+1] = result.nodes[src.int+i]
+  when nimvm:
+    for i in 0..<L-1:
+      result.nodes[dest.int+i+1] = result.nodes[src.int+i]
+  else:
+    moveMem(addr result.nodes[dest.int+1], addr result.nodes[src.int], (L-1)*sizeof(Node))
 
 proc rawAddKeyValuePair*(result: var JsonTree, tree: JsonTree, n: NodePos, key: string) =
   privateAccess(JsonTree)
@@ -120,12 +126,18 @@ proc rawReplace*(result: var JsonTree, tree: JsonTree, n: NodePos) =
   if diff > 0:
     # Expand the nodes sequence if the new value is larger
     setLen(result.nodes, oldfull+diff)
-    for i in countdown(oldfull-1, endpos):
-      result.nodes[i+diff] = result.nodes[i]
+    when nimvm:
+      for i in countdown(oldfull-1, endpos):
+        result.nodes[i+diff] = result.nodes[i]
+    else:
+      moveMem(addr result.nodes[endpos+diff], addr result.nodes[endpos], (oldfull-endpos)*sizeof(Node))
   elif diff < 0:
     # Shrink the nodes sequence if the new value is smaller
-    for i in countup(endpos, oldfull-1):
-      result.nodes[i+diff] = result.nodes[i]
+    when nimvm:
+      for i in countup(endpos, oldfull-1):
+        result.nodes[i+diff] = result.nodes[i]
+    else:
+      moveMem(addr result.nodes[endpos+diff], addr result.nodes[endpos], (oldfull-endpos)*sizeof(Node))
     setLen(result.nodes, oldfull+diff)
   # Copy the new nodes into the nodes sequence
   for i in 0..<L:
