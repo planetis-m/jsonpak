@@ -219,9 +219,24 @@ proc main =
     let tree2 = SortedJsonTree(%*{"a": {"b": {"c": {"d": 1}}}})
     assert hash(tree1) != hash(tree2)
 
+  block: # deeply nested objects
+    let tree1 = SortedJsonTree(%*{"a": {"b": {"c": {"d": 2}}}})
+    let tree2 = SortedJsonTree(%*{"a": nil, "b": nil, "c": nil, "d": 2})
+    assert hash(tree1) != hash(tree2)
+
   block: # object with empty arrays and objects
     let tree1 = SortedJsonTree(%*{"a": {}, "b": {}})
     let tree2 = SortedJsonTree(%*{"a": [], "b": []})
+    assert hash(tree1) != hash(tree2)
+
+  block: # object with empty arrays and objects
+    let tree1 = SortedJsonTree(%*[{"a": []}, {"b": []}])
+    let tree2 = SortedJsonTree(%*{"a": [], "b": []})
+    assert hash(tree1) != hash(tree2)
+
+  block: # object with arrays and objects
+    let tree1 = SortedJsonTree(%*[{"a": 1}, {"b": 2}])
+    let tree2 = SortedJsonTree(%*["a", 1, "b", 2])
     assert hash(tree1) != hash(tree2)
 
   block: # object with different float representations (scientific notation)
