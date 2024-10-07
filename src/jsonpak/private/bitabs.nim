@@ -18,7 +18,7 @@ type
 
 proc slotsNeeded(count: Natural): int {.inline.} =
   # Make sure to synchronize with `mustRehash`
-  result = nextPowerOfTwo(count * 3 div 2 + 4)
+  result = nextPowerOfTwo(count div 2 + count + 4)
 
 proc initBiTable*[T](initialSize = defaultInitialSize): BiTable[T] =
   BiTable[T](vals: @[], keys: newSeq[Key](slotsNeeded(initialSize)))
@@ -39,7 +39,7 @@ proc len*[T](t: BiTable[T]): int = t.vals.len
 
 proc mustRehash(length, counter: int): bool {.inline.} =
   assert(length > counter)
-  result = (length * 2 < counter * 3) or (length - counter < 4)
+  result = (length < (counter + counter div 2)) or (length - counter < 4)
 
 const
   idStart = 1

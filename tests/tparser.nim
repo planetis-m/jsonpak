@@ -21,7 +21,7 @@ proc main =
     for data in items(invalid):
       try:
         discard parseJson(data)
-        assert false, "Expected PathError"
+        assert false, "Expected JsonParsingError"
       except JsonParsingError:
         assert true
 
