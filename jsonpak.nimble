@@ -37,3 +37,4 @@ task docs, "Generate documentation":
       exec("nim doc --index:on --verbosity:0 --git.url:" & projectUrl &
           " --git.devel:main --git.commit:main --out:" & doc & " " & (srcDir / file))
     exec("nim buildIndex --out:" & (docsDir / "index.html") & " " & docsDir)
+

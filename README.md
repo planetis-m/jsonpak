@@ -204,23 +204,41 @@ echo hash(y) # -3485509795705892506
 ## Benchmarks
 
 This section details the average time (in milliseconds) it takes to perform
-various operations on a JSON document containing 1,000 entries.
+various operations on a JSON document containing 5,000 entries.
 
-| Op\Lib   | jsonpak  | std/json |
-|----------|----------|----------|
-| Extract  | 0.2679   | 0.6892   |
-| toString | 0.8314   | 0.6853   |
-| fromJson | 0.0040   | 0.0008   |
-| toJson   | 0.0007   | 0.0005   |
-| Parse    | 0.9767   | 1.4560   |
-| Test     | 0.0041   | 0.0005   |
-| Replace  | 0.0043   | 0.0005   |
-| Remove   | 0.0131   | 0.0008   |
-| Add      | 0.0043   | 0.0005   |
-| Copy     | 0.0086   | 0.0005   |
-| Move     | 0.0179   | 0.0008   |
-| Sort     | 0.8483   | 0.1953   |
-| Hash     | 0.1045   | 0.1484   |
+| Operation  | jsonpak | stdlib | packedjson |
+|------------|---------|--------|------------|
+| extract    | 0.9391  | 1.7484 | 1.5262     |
+| parse      | 2.7465  | 3.4968 | 2.2307     |
+| toString   | 2.0415  | 1.7226 | 1.8254     |
+| fromJson   | 0.0123  | 0.0020 | N/A        |
+| toJson     | 0.0004  | 0.0003 | N/A        |
+| test       | 0.0118  | 0.0009 | 0.1548     |
+| replace    | 0.0125  | 0.0010 | 0.1531     |
+| remove     | 0.0448  | 0.0013 | 0.3594     |
+| add        | 0.0124  | 0.0010 | 0.4212     |
+| copy       | 0.0620  | 0.0010 | 0.7135     |
+| move       | 0.1116  | 0.0017 | 0.8014     |
+| sort       | 2.6130  | 0.6494 | N/A        |
+| hash       | 0.2531  | 0.4139 | 0.0237     |
+
+For 1,000 entries:
+
+| Operation  | jsonpak | stdlib | packedjson |
+|------------|---------|--------|------------|
+| extract    | 0.2487  | 0.3085 | 0.0302     |
+| parse      | 0.4592  | 0.6378 | 0.3851     |
+| toString   | 0.4106  | 0.3375 | 0.3412     |
+| fromJson   | 0.0032  | 0.0004 | N/A        |
+| toJson     | 0.0004  | 0.0003 | N/A        |
+| test       | 0.0031  | 0.0002 | 0.0409     |
+| replace    | 0.0032  | 0.0002 | 0.0405     |
+| remove     | 0.0067  | 0.0003 | 0.0639     |
+| add        | 0.0033  | 0.0003 | 0.0662     |
+| copy       | 0.0123  | 0.0003 | 0.1158     |
+| move       | 0.0165  | 0.0004 | 0.1312     |
+| sort       | 0.4964  | 0.1258 | N/A        |
+| hash       | 0.0496  | 0.0687 | 0.0046     |
 
 However, the standard library's representation occupies approximately 13.4MiB,
 whereas ours only takes up 2.8MiB. Therefore, this library aims to optimize

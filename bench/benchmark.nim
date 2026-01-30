@@ -1,7 +1,7 @@
 import std/[times, strutils, strformat, stats]
 import std/json except `%*`
 import jsonpak, jsonpak/[extra, patch, parser, jsonptr, mapper, builder, sorted]
-import packedjson
+import packedjson except `%`
 
 const
   JsonData = readFile("test.json")
@@ -29,14 +29,14 @@ template bench(name, tree, code: untyped) =
 
 import std/tables
 
-proc sort(n: JsonNode) =
+proc sort(n: json.JsonNode) =
   ## Sort a JSON node
   case n.kind
   of JArray:
     for e in mitems(n.elems):
       sort(e)
   of JObject:
-    sort(n.fields, proc (x, y: (string, JsonNode)): int = cmp[string](x[0], y[0]))
+    sort(n.fields, proc (x, y: (string, json.JsonNode)): int = cmp[string](x[0], y[0]))
     for k, v in mpairs(n.fields):
       sort(v)
   else: discard
@@ -72,16 +72,16 @@ proc main() =
     t = toJson(UserRecord(id:1,name:"User1",email:"user1@example.com",age:65,city:"Sydney",balance:37341,active:false))
 
   bench "test", tree:
-    discard test(t, JsonPtr"/records/500/age", %*30)
+    discard test(t, JsonPtr"/records/500/age", mapper.`%*`30)
 
   bench "replace", tree:
-    replace(t, JsonPtr"/records/500/age", %*31)
+    replace(t, JsonPtr"/records/500/age", mapper.`%*`31)
 
   bench "remove", tree:
     remove(t, JsonPtr"/records/500/city")
 
   bench "add", tree:
-    add(t, JsonPtr"/records/500/email", %*"john@example.com")
+    add(t, JsonPtr"/records/500/email", mapper.`%*`"john@example.com")
 
   bench "copy", tree:
     copy(t, JsonPtr"/records/500/age", JsonPtr"/records/0/newAge")
@@ -92,15 +92,15 @@ proc main() =
   bench "sort", newEmptyTree().SortedJsonTree:
     t = sorted(tree)
 
-  tree = sorted(tree).JsonTree
+  tree = jsonpak.JsonTree(sorted(tree))
   bench "hash", tree:
     discard hash(t.SortedJsonTree)
 
   # Benchmarks for std/json module
-  bench "stdlib - extract", JsonNode():
+  bench "stdlib - extract", json.JsonNode():
     t = stdTree.copy()
 
-  bench "stdlib - parse", JsonNode():
+  bench "stdlib - parse", json.JsonNode():
     t = json.parseJson(JsonData)
 
   bench "stdlib - toString", stdTree:
@@ -112,20 +112,20 @@ proc main() =
   bench "stdlib - fromJson", stdTree:
     discard t["records"][500].to(UserRecord)
 
-  bench "stdlib - toJson", JsonNode():
-    t = %UserRecord(id:1,name:"User1",email:"user1@example.com",age:65,city:"Sydney",balance:37341,active:false)
+  bench "stdlib - toJson", json.JsonNode():
+    t = json.`%`UserRecord(id:1,name:"User1",email:"user1@example.com",age:65,city:"Sydney",balance:37341,active:false)
 
   bench "stdlib - test", stdTree:
-    discard t["records"][500]["age"] == %30
+    discard t["records"][500]["age"] == json.`%`30
 
   bench "stdlib - replace", stdTree:
-    t["records"][500]["age"] = %31
+    t["records"][500]["age"] = json.`%`31
 
   bench "stdlib - remove", stdTree:
     t["records"][500].delete("city")
 
   bench "stdlib - add", stdTree:
-    t["records"][500]["email"] = %"john@example.com"
+    t["records"][500]["email"] = json.`%`"john@example.com"
 
   bench "stdlib - copy", stdTree:
     t["records"][500]["newAge"] = t["records"][0]["age"]
@@ -138,8 +138,11 @@ proc main() =
     t.sort
 
   # Benchmarks for packedjson module
-  bench "packedjson - parse", PackedNode():
+  bench "packedjson - parse", packedjson.newJNull():
     t = packedjson.parseJson(JsonData)
+
+  bench "packedjson - extract", packedjson.newJNull():
+    t = packedTree.copy()
 
   bench "packedjson - toString", packedTree:
     discard $t
@@ -148,23 +151,34 @@ proc main() =
     discard hash(t)
 
   bench "packedjson - test", packedTree:
-    discard t["records"][500]["age"] == 30
+    discard t["records"][500]["age"] == packedjson.newJInt(30)
 
-  bench "packedjson - replace", packedTree:
-    t["records"][500]["age"] = 31
+  bench "packedjson - replace", packedjson.JsonTree(packedTree):
+    let rec = t["records"]
+    var user = packedjson.JsonTree(rec[500])
+    user["age"] = packedjson.newJInt(31)
 
-  bench "packedjson - remove", packedTree:
-    t["records"][500].delete("city")
+  bench "packedjson - remove", packedjson.JsonTree(packedTree):
+    let rec = t["records"]
+    var user = packedjson.JsonTree(rec[500])
+    user.delete("city")
 
-  bench "packedjson - add", packedTree:
-    t["records"][500]["email"] = "john@example.com"
+  bench "packedjson - add", packedjson.JsonTree(packedTree):
+    let rec = t["records"]
+    var user = packedjson.JsonTree(rec[500])
+    user["email"] = packedjson.newJString("john@example.com")
 
-  bench "packedjson - copy", packedTree:
-    t["records"][500]["newAge"] = t["records"][0]["age"]
+  bench "packedjson - copy", packedjson.JsonTree(packedTree):
+    let rec = t["records"]
+    var user = packedjson.JsonTree(rec[500])
+    user["newAge"] = t["records"][0]["age"]
 
-  bench "packedjson - move", packedTree:
-    t["records"][500]["location"] = t["records"][0]["city"]
-    t["records"][0].delete("city")
+  bench "packedjson - move", packedjson.JsonTree(packedTree):
+    let rec = t["records"]
+    var rec0 = packedjson.JsonTree(rec[0])
+    var rec500 = packedjson.JsonTree(rec[500])
+    rec500["location"] = rec0["city"]
+    rec0.delete("city")
 
   echo "used Mem: ", formatSize getOccupiedMem()
 
