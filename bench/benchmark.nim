@@ -1,6 +1,7 @@
 import std/[times, strutils, strformat, stats]
 import std/json except `%*`
 import jsonpak, jsonpak/[extra, patch, parser, jsonptr, mapper, builder, sorted]
+import packedjson
 
 const
   JsonData = readFile("test.json")
@@ -53,6 +54,7 @@ proc main() =
   var
     stdTree = json.parseJson(JsonData)
     tree = parser.parseJson(JsonData)
+    packedTree = packedjson.parseJson(JsonData)
 
   bench "extract", newEmptyTree():
     t = extract(tree, JsonPtr"")
@@ -134,6 +136,35 @@ proc main() =
 
   bench "stdlib - sort", stdTree:
     t.sort
+
+  # Benchmarks for packedjson module
+  bench "packedjson - parse", PackedNode():
+    t = packedjson.parseJson(JsonData)
+
+  bench "packedjson - toString", packedTree:
+    discard $t
+
+  bench "packedjson - hash", packedTree:
+    discard hash(t)
+
+  bench "packedjson - test", packedTree:
+    discard t["records"][500]["age"] == 30
+
+  bench "packedjson - replace", packedTree:
+    t["records"][500]["age"] = 31
+
+  bench "packedjson - remove", packedTree:
+    t["records"][500].delete("city")
+
+  bench "packedjson - add", packedTree:
+    t["records"][500]["email"] = "john@example.com"
+
+  bench "packedjson - copy", packedTree:
+    t["records"][500]["newAge"] = t["records"][0]["age"]
+
+  bench "packedjson - move", packedTree:
+    t["records"][500]["location"] = t["records"][0]["city"]
+    t["records"][0].delete("city")
 
   echo "used Mem: ", formatSize getOccupiedMem()
 
